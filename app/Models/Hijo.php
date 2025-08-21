@@ -23,6 +23,11 @@ class Hijo extends Model
         'informacion_adicional'
     ];
 
+    protected $casts = [
+        'nums_emergencia' => 'array',
+        'fecha_nacimiento' => 'date'
+    ];
+
     public function usuario()
     {
         return $this->belongsTo(User::class, 'user_id');
