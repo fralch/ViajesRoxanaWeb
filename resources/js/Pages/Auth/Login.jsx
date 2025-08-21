@@ -39,8 +39,8 @@ export default function Login() {
 
               {/* Usuario */}
               <div className="mb-6">
-                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
-                  Usuario
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                  Email
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -53,18 +53,18 @@ export default function Login() {
                     </svg>
                   </div>
                   <input
-                    id="username"
-                    name="username"
-                    type="text"
-                    autoComplete="username"
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
                     required
-                    placeholder="Usuario"
-                    value={data.username}
-                    onChange={(e) => setData('username', e.target.value)}
+                    placeholder="Email"
+                    value={data.email}
+                    onChange={(e) => setData('email', e.target.value)}
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200 text-gray-900 placeholder-gray-500"
                   />
                 </div>
-                {errors.username && <div className="text-sm text-red-600 mt-1">{errors.username}</div>}
+                {errors.email && <div className="text-sm text-red-600 mt-1">{errors.email}</div>}
               </div>
 
               {/* Contraseña */}
