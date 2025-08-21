@@ -6,6 +6,7 @@ import DangerButton from '@/Components/DangerButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import Modal from '@/Components/Modal';
+import Card from '@/Components/Card';
 
 export default function Index({ grupos, filters }) {
     const [search, setSearch] = useState(filters.search || '');
@@ -78,7 +79,7 @@ export default function Index({ grupos, filters }) {
                         Gestión de Grupos
                     </h2>
                     <Link href={route('grupos.create')}>
-                        <PrimaryButton className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-300 transition-colors duration-200">
+                        <PrimaryButton size="lg" className="gap-2">
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                             </svg>
@@ -92,7 +93,7 @@ export default function Index({ grupos, filters }) {
 
             <div className="px-4 py-8">
                 <div className="w-full max-w-7xl mx-auto">
-                    <div className="bg-white/90 backdrop-blur rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                    <Card className="overflow-hidden">
                         <div className="px-6 sm:px-8 py-6 sm:py-8">
                             {/* Barra de búsqueda */}
                             <div className="mb-8">
@@ -107,16 +108,19 @@ export default function Index({ grupos, filters }) {
                                         />
                                     </div>
                                     <div className="flex gap-3">
-                                        <PrimaryButton type="submit" className="inline-flex items-center gap-2 px-4 py-3 rounded-xl font-semibold text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-300">
+                                        <PrimaryButton type="submit" className="gap-2">
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                             </svg>
                                             Buscar
                                         </PrimaryButton>
                                         {search && (
-                                            <SecondaryButton type="button" onClick={clearSearch} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 focus:ring-2 focus:ring-red-500">
+                                            <PrimaryButton type="button" onClick={clearSearch} variant="outline" className="gap-2">
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
                                                 Limpiar
-                                            </SecondaryButton>
+                                            </PrimaryButton>
                                         )}
                                     </div>
                                 </form>
@@ -251,10 +255,10 @@ export default function Index({ grupos, filters }) {
                                                 <Link
                                                     key={index}
                                                     href={link.url}
-                                                    className={`px-3 py-2 text-sm border rounded ${
+                                                    className={`px-3 py-2 text-sm border rounded-lg transition-all duration-200 ${
                                                         link.active
-                                                            ? 'bg-indigo-500 text-white border-indigo-500'
-                                                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                                            ? 'bg-red-600 text-white border-red-600 shadow-sm'
+                                                            : 'bg-white text-gray-700 border-gray-300 hover:bg-red-50 hover:border-red-300'
                                                     }`}
                                                     dangerouslySetInnerHTML={{ __html: link.label }}
                                                 />
@@ -264,7 +268,7 @@ export default function Index({ grupos, filters }) {
                                 </div>
                             )}
                         </div>
-                    </div>
+                    </Card>
                 </div>
             </div>
 

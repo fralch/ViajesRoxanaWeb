@@ -11,18 +11,18 @@ export default function AuthenticatedLayout({ header, children }) {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-rose-50 via-orange-50 to-amber-50">
-            <nav className="bg-gradient-to-r from-red-600 to-red-800 border-b border-red-700 shadow-lg">
+            <nav className="bg-white/95 backdrop-blur border-b border-gray-200 shadow-sm sticky top-0 z-50">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="flex h-16 justify-between">
                         <div className="flex">
                             <div className="flex shrink-0 items-center">
                                 <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity duration-200">
                                     <img 
-                                        src="/imgs/logo-roxana-blanco-min.png" 
+                                        src="/imgs/logo-viajesroxana.png" 
                                         alt="Viajes Roxana" 
-                                        className="h-10 w-auto"
+                                        className="h-8 w-auto"
                                     />
-                                    <span className="text-xl font-bold text-white tracking-wide">
+                                    <span className="text-lg font-bold text-red-600 tracking-wide">
                                         VIAJES ROXANA
                                     </span>
                                 </Link>
@@ -36,8 +36,13 @@ export default function AuthenticatedLayout({ header, children }) {
                                         <span className="inline-flex rounded-md">
                                             <button
                                                 type="button"
-                                                className="inline-flex items-center px-4 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-700 hover:bg-red-600 focus:outline-none transition ease-in-out duration-150 shadow-md"
+                                                className="inline-flex items-center px-4 py-2 border border-red-200 text-sm leading-4 font-medium rounded-xl text-red-600 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 shadow-sm"
                                             >
+                                                <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center mr-2">
+                                                    <svg className="w-3 h-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                    </svg>
+                                                </div>
                                                 {user.name}
 
                                                 <svg
@@ -81,7 +86,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                         (previousState) => !previousState,
                                     )
                                 }
-                                className="inline-flex items-center justify-center rounded-md p-2 text-white transition duration-150 ease-in-out hover:bg-red-700 hover:text-white focus:bg-red-700 focus:text-white focus:outline-none"
+                                className="inline-flex items-center justify-center rounded-xl p-2 text-red-600 transition duration-150 ease-in-out hover:bg-red-50 focus:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500"
                             >
                                 <svg
                                     className="h-6 w-6"
@@ -125,12 +130,12 @@ export default function AuthenticatedLayout({ header, children }) {
                 >
 
 
-                    <div className="border-t border-gray-200 pb-1 pt-4">
+                    <div className="border-t border-gray-200 pb-1 pt-4 bg-white/95">
                         <div className="px-4">
-                            <div className="text-base font-medium text-gray-800">
+                            <div className="text-base font-medium text-red-600">
                                 {user.name}
                             </div>
-                            <div className="text-sm font-medium text-gray-500">
+                            <div className="text-sm font-medium text-gray-600">
                                 {user.email}
                             </div>
                         </div>
@@ -152,11 +157,14 @@ export default function AuthenticatedLayout({ header, children }) {
             </nav>
 
             {header && (
-                <header className="bg-gradient-to-r from-gray-50 to-white shadow-sm border-b border-gray-200">
-                    <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-                            {header}
-                        </h1>
+                <header className="bg-white/80 backdrop-blur border-b border-gray-100">
+                    <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
+                        <div className="flex items-center gap-3">
+                            <div className="w-1 h-8 bg-red-500 rounded-full"></div>
+                            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+                                {header}
+                            </h1>
+                        </div>
                     </div>
                 </header>
             )}
