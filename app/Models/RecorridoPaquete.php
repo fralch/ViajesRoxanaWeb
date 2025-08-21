@@ -6,5 +6,5 @@ use Illuminate\Database\Eloquent\Model;
 
 class RecorridoPaquete extends Model
 {
-    //
+    protected $table = 'recorrido_paquetes';
 }
