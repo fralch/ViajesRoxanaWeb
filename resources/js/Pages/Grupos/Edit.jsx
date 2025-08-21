@@ -55,12 +55,25 @@ export default function Edit({ grupo, paquetes }) {
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex justify-between items-center">
-                    <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                        Editar Grupo: {grupo.nombre}
-                    </h2>
+                <div className="flex justify-between items-center bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-4 rounded-lg shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-semibold">
+                                Editar Grupo
+                            </h2>
+                            <p className="text-sm text-white/80">{grupo.nombre}</p>
+                        </div>
+                    </div>
                     <Link href={route('grupos.index')}>
-                        <SecondaryButton>
+                        <SecondaryButton className="bg-white/10 hover:bg-white/20 text-white border-white/30 hover:border-white/50">
+                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
                             Volver a Grupos
                         </SecondaryButton>
                     </Link>
@@ -69,16 +82,23 @@ export default function Edit({ grupo, paquetes }) {
         >
             <Head title={`Editar Grupo - ${grupo.nombre}`} />
 
-            <div className="py-12">
+            <div className="py-8">
                 <div className="mx-auto max-w-4xl sm:px-6 lg:px-8">
-                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                        <div className="p-6">
+                    <div className="overflow-hidden bg-white shadow-lg sm:rounded-xl border border-gray-100">
+                        <div className="p-8">
                             <form onSubmit={handleSubmit} className="space-y-6">
                                 {/* Información básica del grupo */}
-                                <div className="bg-gray-50 p-4 rounded-lg">
-                                    <h3 className="text-lg font-medium text-gray-900 mb-4">
-                                        Información del Grupo
-                                    </h3>
+                                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-100">
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                                            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        </div>
+                                        <h3 className="text-lg font-semibold text-gray-900">
+                                            Información del Grupo
+                                        </h3>
+                                    </div>
                                     
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         {/* Selección de paquete */}
@@ -88,7 +108,7 @@ export default function Edit({ grupo, paquetes }) {
                                                 id="paquete_id"
                                                 value={data.paquete_id}
                                                 onChange={(e) => setData('paquete_id', e.target.value)}
-                                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                className="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white"
                                                 required
                                             >
                                                 <option value="">Seleccionar paquete...</option>
@@ -142,7 +162,7 @@ export default function Edit({ grupo, paquetes }) {
                                                         type="checkbox"
                                                         checked={data.activo}
                                                         onChange={(e) => setData('activo', e.target.checked)}
-                                                        className="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                        className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                                     />
                                                     <span className="ml-2 text-sm text-gray-600">
                                                         Grupo activo
@@ -154,40 +174,63 @@ export default function Edit({ grupo, paquetes }) {
                                 </div>
 
                                 {/* Información del encargado */}
-                                <div className="bg-gray-50 p-4 rounded-lg">
-                                    <h3 className="text-lg font-medium text-gray-900 mb-4">
-                                        Información del Encargado
-                                    </h3>
+                                <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-xl border border-amber-100">
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                                            <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                            </svg>
+                                        </div>
+                                        <h3 className="text-lg font-semibold text-gray-900">
+                                            Información del Encargado
+                                        </h3>
+                                    </div>
 
                                     {/* Tipo de encargado */}
                                     <div className="mb-6">
                                         <InputLabel value="Tipo de Encargado" />
-                                        <div className="mt-2 flex gap-4">
-                                            <label className="flex items-center">
+                                        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <label className="relative flex items-center p-4 bg-white rounded-lg border-2 border-gray-200 cursor-pointer hover:border-blue-300 transition-colors duration-200">
                                                 <input
                                                     type="radio"
                                                     name="tipo_encargado"
                                                     value="interno"
                                                     checked={tipoEncargado === 'interno'}
                                                     onChange={(e) => handleTipoEncargadoChange(e.target.value)}
-                                                    className="text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                                                    className="text-blue-600 border-gray-300 focus:ring-blue-500"
                                                 />
-                                                <span className="ml-2 text-sm text-gray-700">
-                                                    Encargado Interno
-                                                </span>
+                                                <div className="ml-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                                        </svg>
+                                                        <span className="text-sm font-medium text-gray-900">
+                                                            Encargado Interno
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-xs text-gray-500 mt-1">Personal de la empresa</p>
+                                                </div>
                                             </label>
-                                            <label className="flex items-center">
+                                            <label className="relative flex items-center p-4 bg-white rounded-lg border-2 border-gray-200 cursor-pointer hover:border-amber-300 transition-colors duration-200">
                                                 <input
                                                     type="radio"
                                                     name="tipo_encargado"
                                                     value="agencia"
                                                     checked={tipoEncargado === 'agencia'}
                                                     onChange={(e) => handleTipoEncargadoChange(e.target.value)}
-                                                    className="text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                                                    className="text-amber-600 border-gray-300 focus:ring-amber-500"
                                                 />
-                                                <span className="ml-2 text-sm text-gray-700">
-                                                    Encargado de Agencia
-                                                </span>
+                                                <div className="ml-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                                        </svg>
+                                                        <span className="text-sm font-medium text-gray-900">
+                                                            Encargado de Agencia
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-xs text-gray-500 mt-1">Contacto externo</p>
+                                                </div>
                                             </label>
                                         </div>
                                         <InputError message={errors.tipo_encargado} className="mt-2" />
@@ -273,14 +316,32 @@ export default function Edit({ grupo, paquetes }) {
                                 </div>
 
                                 {/* Botones de acción */}
-                                <div className="flex justify-end gap-4 pt-6 border-t">
+                                <div className="flex justify-end gap-4 pt-6 border-t border-gray-200">
                                     <Link href={route('grupos.index')}>
-                                        <SecondaryButton type="button">
+                                        <SecondaryButton type="button" className="flex items-center gap-2 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors duration-200">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
                                             Cancelar
                                         </SecondaryButton>
                                     </Link>
-                                    <PrimaryButton type="submit" disabled={processing}>
-                                        {processing ? 'Actualizando...' : 'Actualizar Grupo'}
+                                    <PrimaryButton type="submit" disabled={processing} className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-lg transition-colors duration-200">
+                                        {processing ? (
+                                            <>
+                                                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                    <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                                Actualizando...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                                </svg>
+                                                Actualizar Grupo
+                                            </>
+                                        )}
                                     </PrimaryButton>
                                 </div>
                             </form>

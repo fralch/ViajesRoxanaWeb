@@ -1,0 +1,149 @@
+{
+  "designSystem": {
+    "brand": {
+      "name": "Viajes Roxana",
+      "logo": "/imgs/logo-viajesroxana.png"
+    },
+    "colors": {
+      "primary": {
+        "brand": "#dc2626",
+        "hover": "#b91c1c",
+        "light": "#fef2f2",
+        "focus": "#fca5a5"
+      },
+      "secondary": {
+        "blue": "#2563eb",
+        "blueLight": "#eff6ff",
+        "green": "#16a34a",
+        "greenLight": "#f0fdf4",
+        "amber": "#f59e0b",
+        "amberLight": "#fffbeb"
+      },
+      "neutral": {
+        "gray50": "#f9fafb",
+        "gray100": "#f3f4f6",
+        "gray200": "#e5e7eb",
+        "gray300": "#d1d5db",
+        "gray400": "#9ca3af",
+        "gray500": "#6b7280",
+        "gray600": "#4b5563",
+        "gray700": "#374151",
+        "gray800": "#1f2937",
+        "gray900": "#111827"
+      },
+      "status": {
+        "error": "#dc2626",
+        "errorLight": "#fef2f2",
+        "errorBorder": "#fca5a5",
+        "success": "#16a34a",
+        "successLight": "#f0fdf4",
+        "warning": "#f59e0b",
+        "warningLight": "#fffbeb"
+      }
+    },
+    "backgrounds": {
+      "page": "bg-gradient-to-br from-rose-50 via-orange-50 to-amber-50",
+      "auth": "bg-gradient-to-br from-red-50 to-orange-50",
+      "card": "bg-white/90 backdrop-blur",
+      "cardAuth": "bg-white",
+      "infoSection": "bg-gradient-to-r from-blue-50 to-indigo-50",
+      "childCard": "bg-gray-50/60",
+      "consent": "bg-amber-50",
+      "stickyBottom": "bg-gradient-to-t from-white/80 to-transparent"
+    },
+    "spacing": {
+      "page": "px-4 py-8",
+      "cardPadding": "px-6 sm:px-8 py-6 sm:py-8",
+      "authCardPadding": "px-8 py-10",
+      "section": "mb-8",
+      "field": "mb-6",
+      "grid": "gap-4"
+    },
+    "shadows": {
+      "card": "shadow-xl",
+      "input": "shadow-sm"
+    },
+    "borders": {
+      "card": "border border-gray-100",
+      "input": "border border-gray-300",
+      "inputError": "border-red-400",
+      "infoSection": "border border-blue-200",
+      "childCard": "border border-gray-200",
+      "consent": "border border-amber-200"
+    },
+    "borderRadius": {
+      "card": "rounded-2xl",
+      "input": "rounded-xl",
+      "button": "rounded-xl",
+      "authButton": "rounded-lg",
+      "childCard": "rounded-xl",
+      "small": "rounded-lg",
+      "full": "rounded-full"
+    },
+    "typography": {
+      "pageTitle": "text-2xl font-bold text-red-600",
+      "sectionTitle": "text-lg sm:text-xl font-semibold text-gray-900",
+      "cardTitle": "text-2xl font-semibold text-gray-800",
+      "fieldLabel": "text-sm font-medium text-gray-700",
+      "helper": "text-xs text-gray-500",
+      "error": "text-xs text-red-600",
+      "childTitle": "text-sm font-semibold text-gray-800",
+      "infoTitle": "text-xl font-bold text-blue-900",
+      "infoSubtitle": "text-sm text-blue-600 font-medium",
+      "legal": "text-[11px] leading-tight text-gray-500"
+    },
+    "components": {
+      "TextField": {
+        "base": "w-full px-4 py-3 border rounded-xl shadow-sm focus:outline-none focus:ring-2 transition disabled:opacity-60 disabled:cursor-not-allowed",
+        "normal": "bg-white/80 backdrop-blur border-gray-300 focus:ring-red-500 focus:border-red-500 placeholder-gray-400",
+        "error": "border-red-400 focus:ring-red-400 focus:border-red-400",
+        "authStyle": "pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+      },
+      "Button": {
+        "primary": "w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-semibold text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-300",
+        "secondary": "inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 focus:ring-2 focus:ring-red-500",
+        "danger": "text-xs font-medium text-red-600 hover:text-red-700 focus:ring-2 focus:ring-red-500 rounded-lg px-2 py-1",
+        "auth": "w-full py-3 px-4 bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-300 text-white font-medium rounded-lg text-lg"
+      },
+      "Card": {
+        "main": "bg-white/90 backdrop-blur rounded-2xl shadow-xl border border-gray-100 overflow-hidden",
+        "auth": "bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden",
+        "child": "p-4 rounded-xl border border-gray-200 bg-gray-50/60",
+        "info": "p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl"
+      },
+      "Icon": {
+        "size": "w-5 h-5",
+        "sizeSmall": "w-4 h-4",
+        "sectionIndicator": "inline-flex h-2 w-2 rounded-full bg-red-500"
+      },
+      "Layout": {
+        "container": "w-full max-w-3xl",
+        "authContainer": "w-full max-w-md",
+        "minHeight": "min-h-screen",
+        "center": "flex items-center justify-center"
+      }
+    },
+    "forms": {
+      "grid": {
+        "single": "grid grid-cols-1 gap-4",
+        "double": "grid grid-cols-1 sm:grid-cols-2 gap-4",
+        "docGrid": "grid grid-cols-2 gap-3"
+      },
+      "spacing": {
+        "field": "space-y-1",
+        "section": "mb-5"
+      }
+    },
+    "animations": {
+      "spin": "animate-spin",
+      "transitions": "transition-colors duration-200"
+    },
+    "accessibility": {
+      "focusRing": "focus:ring-2",
+      "ariaLabels": true,
+      "roleAlert": "role=\"alert\"",
+      "ariaInvalid": "aria-invalid",
+      "describedBy": "aria-describedby"
+    }
+  }
+}

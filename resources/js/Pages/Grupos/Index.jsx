@@ -46,11 +46,13 @@ export default function Index({ grupos, filters }) {
 
     const getStatusBadge = (activo) => {
         return activo ? (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                <span className="inline-flex h-2 w-2 rounded-full bg-green-500 mr-2"></span>
                 Activo
             </span>
         ) : (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                <span className="inline-flex h-2 w-2 rounded-full bg-red-500 mr-2"></span>
                 Inactivo
             </span>
         );
@@ -58,11 +60,11 @@ export default function Index({ grupos, filters }) {
 
     const getTipoEncargadoBadge = (tipo) => {
         return tipo === 'interno' ? (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+            <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
                 Interno
             </span>
         ) : (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+            <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
                 Agencia
             </span>
         );
@@ -72,11 +74,14 @@ export default function Index({ grupos, filters }) {
         <AuthenticatedLayout
             header={
                 <div className="flex justify-between items-center">
-                    <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                    <h2 className="text-2xl font-bold text-red-600">
                         Gestión de Grupos
                     </h2>
                     <Link href={route('grupos.create')}>
-                        <PrimaryButton>
+                        <PrimaryButton className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-300 transition-colors duration-200">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
                             Crear Nuevo Grupo
                         </PrimaryButton>
                     </Link>
@@ -85,37 +90,42 @@ export default function Index({ grupos, filters }) {
         >
             <Head title="Grupos" />
 
-            <div className="py-12">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                        <div className="p-6">
+            <div className="px-4 py-8">
+                <div className="w-full max-w-7xl mx-auto">
+                    <div className="bg-white/90 backdrop-blur rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                        <div className="px-6 sm:px-8 py-6 sm:py-8">
                             {/* Barra de búsqueda */}
-                            <div className="mb-6">
-                                <form onSubmit={handleSearch} className="flex gap-4">
-                                    <div className="flex-1">
+                            <div className="mb-8">
+                                <form onSubmit={handleSearch} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="sm:col-span-1">
                                         <TextInput
                                             type="text"
                                             placeholder="Buscar por nombre de grupo, encargado o paquete..."
                                             value={search}
                                             onChange={(e) => setSearch(e.target.value)}
-                                            className="w-full"
+                                            className="w-full px-4 py-3 bg-white/80 backdrop-blur border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 placeholder-gray-400"
                                         />
                                     </div>
-                                    <PrimaryButton type="submit">
-                                        Buscar
-                                    </PrimaryButton>
-                                    {search && (
-                                        <SecondaryButton type="button" onClick={clearSearch}>
-                                            Limpiar
-                                        </SecondaryButton>
-                                    )}
+                                    <div className="flex gap-3">
+                                        <PrimaryButton type="submit" className="inline-flex items-center gap-2 px-4 py-3 rounded-xl font-semibold text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-300">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                            </svg>
+                                            Buscar
+                                        </PrimaryButton>
+                                        {search && (
+                                            <SecondaryButton type="button" onClick={clearSearch} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 focus:ring-2 focus:ring-red-500">
+                                                Limpiar
+                                            </SecondaryButton>
+                                        )}
+                                    </div>
                                 </form>
                             </div>
 
                             {/* Tabla de grupos */}
-                            <div className="overflow-x-auto">
+                            <div className="overflow-x-auto rounded-xl border border-gray-200">
                                 <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
+                                    <thead className="bg-gradient-to-r from-red-50 to-orange-50">
                                         <tr>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 Grupo
@@ -188,14 +198,20 @@ export default function Index({ grupos, filters }) {
                                                         <div className="flex gap-2">
                                                             <Link
                                                                 href={route('grupos.edit', grupo.id)}
-                                                                className="text-indigo-600 hover:text-indigo-900"
+                                                                className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-200"
                                                             >
+                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                                </svg>
                                                                 Editar
                                                             </Link>
                                                             <button
                                                                 onClick={() => confirmDelete(grupo)}
-                                                                className="text-red-600 hover:text-red-900"
+                                                                className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200"
                                                             >
+                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                </svg>
                                                                 Eliminar
                                                             </button>
                                                         </div>
@@ -254,20 +270,40 @@ export default function Index({ grupos, filters }) {
 
             {/* Modal de confirmación de eliminación */}
             <Modal show={showDeleteModal} onClose={() => setShowDeleteModal(false)}>
-                <div className="p-6">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">
-                        Confirmar eliminación
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-6">
-                        ¿Estás seguro de que deseas eliminar el grupo "{grupoToDelete?.nombre}"? 
-                        Esta acción no se puede deshacer.
-                    </p>
+                <div className="p-8 bg-white rounded-xl">
+                    <div className="flex items-center gap-4 mb-6">
+                        <div className="flex-shrink-0 w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                            <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-semibold text-gray-900 mb-1">
+                                Confirmar eliminación
+                            </h2>
+                            <p className="text-sm text-gray-600">
+                                Esta acción no se puede deshacer
+                            </p>
+                        </div>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                        <p className="text-sm text-gray-700">
+                            ¿Estás seguro de que deseas eliminar el grupo <span className="font-medium text-gray-900">"{grupoToDelete?.nombre}"</span>? 
+                            Todos los datos asociados se perderán permanentemente.
+                        </p>
+                    </div>
                     <div className="flex justify-end gap-3">
-                        <SecondaryButton onClick={() => setShowDeleteModal(false)}>
+                        <SecondaryButton 
+                            onClick={() => setShowDeleteModal(false)}
+                            className="px-6 py-2.5 text-sm font-medium"
+                        >
                             Cancelar
                         </SecondaryButton>
-                        <DangerButton onClick={deleteGrupo}>
-                            Eliminar
+                        <DangerButton 
+                            onClick={deleteGrupo}
+                            className="px-6 py-2.5 text-sm font-medium bg-red-600 hover:bg-red-700 focus:ring-red-500"
+                        >
+                            Eliminar grupo
                         </DangerButton>
                     </div>
                 </div>
