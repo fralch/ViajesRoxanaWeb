@@ -7,6 +7,7 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import Modal from '@/Components/Modal';
 import Card from '@/Components/Card';
+import { showDelete, showSuccess, showError } from '../../utils/swal';
 
 export default function Index({ paquetes, filters }) {
   const [search, setSearch] = useState(filters.search || '');
@@ -29,21 +30,26 @@ export default function Index({ paquetes, filters }) {
     });
   };
 
-  const confirmDelete = (paquete) => {
-    setPaqueteToDelete(paquete);
-    setShowDeleteModal(true);
-  };
-
-  const deletePaquete = () => {
-    if (paqueteToDelete) {
-      router.delete(route('paquetes.destroy', paqueteToDelete.id), {
+  const confirmDelete = async (paquete) => {
+    const result = await showDelete(
+      `¿Eliminar "${paquete.nombre}"?`,
+      'Esta acción eliminará el paquete y todos sus grupos asociados'
+    );
+    
+    if (result.isConfirmed) {
+      router.delete(route('paquetes.destroy', paquete.id), {
         onSuccess: () => {
-          setShowDeleteModal(false);
-          setPaqueteToDelete(null);
+          showSuccess('¡Eliminado!', 'El paquete ha sido eliminado exitosamente.');
+        },
+        onError: () => {
+          showError('Error', 'No se pudo eliminar el paquete. Intenta nuevamente.');
         }
       });
     }
   };
+
+  // Función eliminada - ya no necesitamos modal personalizado
+  const deletePaquete = () => {};  // Mantener para evitar errores
 
   const getStatusBadge = (activo) => {
     return activo ? (

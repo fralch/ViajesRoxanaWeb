@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { useForm } from "@inertiajs/react";
 import axios from "axios";
+import { showSuccess, showError, showWarning, showToast } from "../../utils/swal";
 
 function classNames(...c) {
   return c.filter(Boolean).join(" ");
@@ -193,16 +194,19 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
         setExistingUserData(response.data);
         setShowUserExistsWarning(true);
         setDniValidated(true);
+        showToast('Usuario encontrado en el sistema', 'info');
       } else {
         setShowUserExistsWarning(false);
         setExistingUserData(null);
         setDniValidated(true);
+        showToast('DNI disponible para registro', 'success');
       }
     } catch (error) {
       console.log('Error verificando DNI:', error);
       setShowUserExistsWarning(false);
       setExistingUserData(null);
       setDniValidated(false);
+      showError('Error de verificación', 'No se pudo verificar el DNI. Intenta nuevamente.');
     } finally {
       setDniLoading(false);
     }
@@ -232,8 +236,19 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
       setShowUserExistsWarning(false);
       setExistingUserData(null);
       setDniValidated(true);
+      showToast('Datos cargados correctamente', 'success');
     }
   };
+
+  // Efecto para mostrar mensajes flash y errores al cargar
+  useEffect(() => {
+    if (flash?.success) {
+      showSuccess('¡Éxito!', flash.success);
+    }
+    if (error) {
+      showError('Error', error);
+    }
+  }, [flash, error]);
 
   // Efecto para validar DNI cuando cambia - ÚNICA verificación
   useEffect(() => {
@@ -391,7 +406,16 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
   const handleSubmit = (e) => {
     e.preventDefault();
     clearErrors();
-    if (!validateClient()) return;
+    
+    if (!validateClient()) {
+      showWarning('Formulario incompleto', 'Por favor completa todos los campos requeridos correctamente.');
+      return;
+    }
+
+    if (!dniValidated) {
+      showWarning('DNI no validado', 'Debes completar y validar el DNI antes de enviar el formulario.');
+      return;
+    }
 
     // Determinar la URL según si es inscripción específica o formulario general
     const submitUrl = paquete && grupo 
@@ -401,6 +425,13 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
     post(submitUrl, {
       preserveScroll: true,
       onSuccess: () => {
+        // Mostrar alerta de éxito
+        showSuccess(
+          '¡Inscripción exitosa!', 
+          'Los datos se han guardado correctamente. Recibirás un correo con los detalles.'
+        );
+        
+        // Resetear formulario
         setData({
           parent_name: "",
           parent_phone: "",
@@ -424,6 +455,18 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
         setShowUserExistsWarning(false);
         setExistingUserData(null);
       },
+      onError: (errors) => {
+        // Mostrar errores específicos
+        if (errors.capacity) {
+          showError('Sin cupos disponibles', errors.capacity);
+        } else if (errors.children) {
+          showError('Error en datos de hijos', errors.children);
+        } else if (Object.keys(errors).length > 0) {
+          showError('Error en el formulario', 'Por favor revisa los datos ingresados.');
+        } else {
+          showError('Error inesperado', 'No se pudo procesar la inscripción. Intenta nuevamente.');
+        }
+      }
     });
   };
 
@@ -515,29 +558,7 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
               </div>
             )}
 
-            {/* Mostrar mensajes */}
-            {error && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
-            )}
-            
-            {flash?.success && (
-              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl">
-                <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <p className="text-sm text-green-700">{flash.success}</p>
-                </div>
-              </div>
-            )}
-            
-            {errors.capacity && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-                <p className="text-sm text-red-700">{errors.capacity}</p>
-              </div>
-            )}
+            {/* Mensajes flash ahora manejados por SweetAlert */}
 
            {/* Datos del padre/madre/tutor */}
             <section className="mb-8">

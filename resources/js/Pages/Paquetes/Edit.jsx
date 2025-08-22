@@ -6,6 +6,7 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import InputLabel from '@/Components/InputLabel';
 import InputError from '@/Components/InputError';
+import { showSuccess, showError } from '../../utils/swal';
 
 export default function Edit({ paquete }) {
   const { data, setData, put, processing, errors } = useForm({
@@ -17,7 +18,14 @@ export default function Edit({ paquete }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    put(route('paquetes.update', paquete.id));
+    put(route('paquetes.update', paquete.id), {
+      onSuccess: () => {
+        showSuccess('¡Paquete actualizado!', 'Los cambios han sido guardados exitosamente.');
+      },
+      onError: () => {
+        showError('Error', 'No se pudo actualizar el paquete. Revisa los datos ingresados.');
+      }
+    });
   };
 
   return (
