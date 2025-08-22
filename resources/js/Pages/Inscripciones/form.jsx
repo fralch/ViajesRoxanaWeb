@@ -563,7 +563,7 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
            {/* Datos del padre/madre/tutor */}
             <section className="mb-8">
             <SectionTitle subtitle="Usaremos estos datos para crear tu cuenta.">
-                Datos del tutor
+                Datos del padre
             </SectionTitle>
 
             <div className="grid grid-cols-1 gap-4">
@@ -795,7 +795,7 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
               {!dniValidated && (
                 <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-xl">
                   <p className="text-sm text-gray-600 text-center">
-                    🔒 Esta sección se habilitará después de validar el DNI del tutor
+                    🔒 Esta sección se habilitará después de validar el DNI del padre
                   </p>
                 </div>
               )}
