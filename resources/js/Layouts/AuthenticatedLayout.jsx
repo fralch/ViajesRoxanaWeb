@@ -156,12 +156,7 @@ export default function AuthenticatedLayout({ header, children }) {
             {header && (
                 <header className="bg-white/80 backdrop-blur border-b border-gray-100">
                     <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
-                        <div className="flex items-center gap-3">
-                            <div className="w-1 h-8 bg-red-500 rounded-full"></div>
-                            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-                                {header}
-                            </h1>
-                        </div>
+                        {header}
                     </div>
                 </header>
             )}
