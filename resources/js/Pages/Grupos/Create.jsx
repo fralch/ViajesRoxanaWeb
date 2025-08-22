@@ -9,8 +9,8 @@ import InputError from '@/Components/InputError';
 
 export default function Create({ paquetes }) {
   const [tipoEncargado, setTipoEncargado] = useState('interno');
-  const [encargados, setEncargados] = useState([{ nombre: '', celular: '' }]);
-  const [encargadosAgencia, setEncargadosAgencia] = useState([{ nombre: '', celular: '' }]);
+  const [encargados, setEncargados] = useState([{ tipo: 'interno', tipoEspecifico: '', nombre: '', celular: '' }]);
+  const [encargadosAgencia, setEncargadosAgencia] = useState([{ tipo: 'agencia', tipoEspecifico: '', nombre: '', celular: '' }]);
 
   const { data, setData, post, processing, errors, reset } = useForm({
     paquete_id: '',
@@ -46,7 +46,7 @@ export default function Create({ paquetes }) {
         nombre_encargado_agencia: [''],
         celular_encargado_agencia: [''],
       });
-      setEncargadosAgencia([{ nombre: '', celular: '' }]);
+      setEncargadosAgencia([{ tipo: 'agencia', tipoEspecifico: '', nombre: '', celular: '' }]);
     } else {
       setData({
         ...data,
@@ -54,12 +54,12 @@ export default function Create({ paquetes }) {
         nombre_encargado: [''],
         celular_encargado: [''],
       });
-       setEncargados([{ nombre: '', celular: '' }]);
+       setEncargados([{ tipo: 'interno', tipoEspecifico: '', nombre: '', celular: '' }]);
      }
    };
 
    const addEncargado = () => {
-     const newEncargados = [...encargados, { nombre: '', celular: '' }];
+     const newEncargados = [...encargados, { tipo: 'interno', tipoEspecifico: '', nombre: '', celular: '' }];
      setEncargados(newEncargados);
      setData('nombre_encargado', newEncargados.map(e => e.nombre));
      setData('celular_encargado', newEncargados.map(e => e.celular));
@@ -81,7 +81,7 @@ export default function Create({ paquetes }) {
    };
 
    const addEncargadoAgencia = () => {
-     const newEncargados = [...encargadosAgencia, { nombre: '', celular: '' }];
+     const newEncargados = [...encargadosAgencia, { tipo: 'agencia', tipoEspecifico: '', nombre: '', celular: '' }];
      setEncargadosAgencia(newEncargados);
      setData('nombre_encargado_agencia', newEncargados.map(e => e.nombre));
      setData('celular_encargado_agencia', newEncargados.map(e => e.celular));
@@ -346,7 +346,28 @@ export default function Create({ paquetes }) {
                           </PrimaryButton>
                         </div>
                         {encargados.map((encargado, index) => (
-                          <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white rounded-lg border border-gray-200">
+                          <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-white rounded-lg border border-gray-200 relative">
+                            {/* Badge de tipo de encargado */}
+                            <div className="absolute top-2 right-2">
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                </svg>
+                                Interno
+                              </span>
+                            </div>
+                            <div>
+                              <InputLabel htmlFor={`tipo_especifico_${index}`} value="Tipo Específico" />
+                              <TextInput
+                                id={`tipo_especifico_${index}`}
+                                type="text"
+                                value={encargado.tipoEspecifico}
+                                onChange={(e) => updateEncargado(index, 'tipoEspecifico', e.target.value)}
+                                className="mt-1 block w-full"
+                                placeholder="Ej: Profesor, Auxiliar, Coordinador"
+                                required
+                              />
+                            </div>
                             <div>
                               <InputLabel htmlFor={`nombre_encargado_${index}`} value="Nombre del Encargado" />
                               <TextInput
@@ -405,7 +426,28 @@ export default function Create({ paquetes }) {
                           </PrimaryButton>
                         </div>
                         {encargadosAgencia.map((encargado, index) => (
-                          <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white rounded-lg border border-gray-200">
+                          <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-white rounded-lg border border-gray-200 relative">
+                            {/* Badge de tipo de encargado */}
+                            <div className="absolute top-2 right-2">
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
+                                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6" />
+                                </svg>
+                                Agencia
+                              </span>
+                            </div>
+                            <div>
+                              <InputLabel htmlFor={`tipo_especifico_agencia_${index}`} value="Tipo Específico" />
+                              <TextInput
+                                id={`tipo_especifico_agencia_${index}`}
+                                type="text"
+                                value={encargado.tipoEspecifico}
+                                onChange={(e) => updateEncargadoAgencia(index, 'tipoEspecifico', e.target.value)}
+                                className="mt-1 block w-full"
+                                placeholder="Ej: Guía, Coordinador, Asistente"
+                                required
+                              />
+                            </div>
                             <div>
                               <InputLabel htmlFor={`nombre_encargado_agencia_${index}`} value="Nombre del Encargado de Agencia" />
                               <TextInput
