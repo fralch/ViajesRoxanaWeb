@@ -133,7 +133,7 @@ export default function Index({ inscripciones, filters }) {
                             <p className="text-sm text-gray-700 truncate max-w-xs">{inscripcion.grupo.nombre}</p>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">{inscripcion.usuario.name}</div>
+                            <div className="text-sm text-gray-900">{inscripcion.user.name}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-center">
                             <div className="flex items-center justify-center gap-2">

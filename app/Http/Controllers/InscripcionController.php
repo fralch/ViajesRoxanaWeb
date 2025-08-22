@@ -22,7 +22,7 @@ class InscripcionController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Inscripcion::with(['hijo', 'paquete', 'grupo', 'usuario']);
+        $query = Inscripcion::with(['hijo', 'paquete', 'grupo', 'user']);
         
         // Si no es admin, solo mostrar sus propias inscripciones
         if (!Auth::user()->is_admin) {
@@ -134,7 +134,7 @@ class InscripcionController extends Controller
         }
         
         return Inertia::render('Inscripciones/Show', [
-            'inscripcion' => $inscripcion->load(['hijo', 'paquete', 'grupo', 'usuario'])
+            'inscripcion' => $inscripcion->load(['hijo', 'paquete', 'grupo', 'user'])
         ]);
     }
 
@@ -154,7 +154,7 @@ class InscripcionController extends Controller
         }
 
         return Inertia::render('Inscripciones/Edit', [
-            'inscripcion' => $inscripcion->load(['hijo', 'paquete', 'grupo', 'usuario']),
+            'inscripcion' => $inscripcion->load(['hijo', 'paquete', 'grupo', 'user']),
             'paquetes' => $paquetes,
             'grupos' => $grupos,
             'hijos' => $hijos
