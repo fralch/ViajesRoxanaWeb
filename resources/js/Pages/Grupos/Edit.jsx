@@ -36,9 +36,10 @@ export default function Edit({ grupo, paquetes }) {
         capacidad: grupo.capacidad || '',
         fecha_inicio: grupo.fecha_inicio || '',
         fecha_fin: grupo.fecha_fin || '',
-        tipo_encargado: Array.isArray(grupo.tipo_encargado) ? grupo.tipo_encargado : [grupo.tipo_encargado || 'interno'],
+        tipo_encargado: Array.isArray(grupo.tipo_encargado) ? grupo.tipo_encargado : [grupo.tipo_encargado || ''],
         nombre_encargado: Array.isArray(grupo.nombre_encargado) ? grupo.nombre_encargado : [grupo.nombre_encargado || ''],
         celular_encargado: Array.isArray(grupo.celular_encargado) ? grupo.celular_encargado : [grupo.celular_encargado || ''],
+        tipo_encargado_agencia: Array.isArray(grupo.tipo_encargado_agencia) ? grupo.tipo_encargado_agencia : [grupo.tipo_encargado_agencia || ''],
         nombre_encargado_agencia: Array.isArray(grupo.nombre_encargado_agencia) ? grupo.nombre_encargado_agencia : [grupo.nombre_encargado_agencia || ''],
         celular_encargado_agencia: Array.isArray(grupo.celular_encargado_agencia) ? grupo.celular_encargado_agencia : [grupo.celular_encargado_agencia || ''],
         activo: grupo.activo !== undefined ? grupo.activo : true
@@ -53,32 +54,42 @@ export default function Edit({ grupo, paquetes }) {
         if (grupo.nombre_encargado && grupo.celular_encargado) {
             const nombresArray = Array.isArray(grupo.nombre_encargado) ? grupo.nombre_encargado : [grupo.nombre_encargado];
             const celularesArray = Array.isArray(grupo.celular_encargado) ? grupo.celular_encargado : [grupo.celular_encargado];
+            const tiposArray = Array.isArray(grupo.tipo_encargado) ? grupo.tipo_encargado : [grupo.tipo_encargado || ''];
             
             const encargadosIniciales = nombresArray.map((nombre, index) => ({
                 tipo: 'interno',
-                tipoEspecifico: '',
+                tipoEspecifico: tiposArray[index] || '',
                 nombre: nombre || '',
                 celular: celularesArray[index] || ''
             }));
             
             if (encargadosIniciales.length > 0 && encargadosIniciales[0].nombre) {
                 setEncargados(encargadosIniciales);
+                setData({
+                    ...data,
+                    tipo_encargado: encargadosIniciales.map(e => e.tipoEspecifico)
+                });
             }
         }
         
         if (grupo.nombre_encargado_agencia && grupo.celular_encargado_agencia) {
             const nombresAgenciaArray = Array.isArray(grupo.nombre_encargado_agencia) ? grupo.nombre_encargado_agencia : [grupo.nombre_encargado_agencia];
             const celularesAgenciaArray = Array.isArray(grupo.celular_encargado_agencia) ? grupo.celular_encargado_agencia : [grupo.celular_encargado_agencia];
+            const tiposAgenciaArray = Array.isArray(grupo.tipo_encargado_agencia) ? grupo.tipo_encargado_agencia : [grupo.tipo_encargado_agencia || ''];
             
             const encargadosAgenciaIniciales = nombresAgenciaArray.map((nombre, index) => ({
                 tipo: 'agencia',
-                tipoEspecifico: '',
+                tipoEspecifico: tiposAgenciaArray[index] || '',
                 nombre: nombre || '',
                 celular: celularesAgenciaArray[index] || ''
             }));
             
             if (encargadosAgenciaIniciales.length > 0 && encargadosAgenciaIniciales[0].nombre) {
                 setEncargadosAgencia(encargadosAgenciaIniciales);
+                setData({
+                    ...data,
+                    tipo_encargado_agencia: encargadosAgenciaIniciales.map(e => e.tipoEspecifico)
+                });
             }
         }
     }, [grupo]);
@@ -119,6 +130,7 @@ export default function Edit({ grupo, paquetes }) {
         setEncargados(newEncargados);
         setData({
             ...data,
+            tipo_encargado: newEncargados.map(e => e.tipoEspecifico),
             nombre_encargado: newEncargados.map(e => e.nombre),
             celular_encargado: newEncargados.map(e => e.celular)
         });
@@ -129,6 +141,7 @@ export default function Edit({ grupo, paquetes }) {
         setEncargados(newEncargados);
         setData({
             ...data,
+            tipo_encargado: newEncargados.map(e => e.tipoEspecifico),
             nombre_encargado: newEncargados.map(e => e.nombre),
             celular_encargado: newEncargados.map(e => e.celular)
         });
@@ -140,6 +153,7 @@ export default function Edit({ grupo, paquetes }) {
         setEncargados(newEncargados);
         setData({
             ...data,
+            tipo_encargado: newEncargados.map(e => e.tipoEspecifico),
             nombre_encargado: newEncargados.map(e => e.nombre),
             celular_encargado: newEncargados.map(e => e.celular)
         });
@@ -151,6 +165,7 @@ export default function Edit({ grupo, paquetes }) {
         setEncargadosAgencia(newEncargados);
         setData({
             ...data,
+            tipo_encargado_agencia: newEncargados.map(e => e.tipoEspecifico),
             nombre_encargado_agencia: newEncargados.map(e => e.nombre),
             celular_encargado_agencia: newEncargados.map(e => e.celular)
         });
@@ -161,6 +176,7 @@ export default function Edit({ grupo, paquetes }) {
         setEncargadosAgencia(newEncargados);
         setData({
             ...data,
+            tipo_encargado_agencia: newEncargados.map(e => e.tipoEspecifico),
             nombre_encargado_agencia: newEncargados.map(e => e.nombre),
             celular_encargado_agencia: newEncargados.map(e => e.celular)
         });
@@ -172,6 +188,7 @@ export default function Edit({ grupo, paquetes }) {
         setEncargadosAgencia(newEncargados);
         setData({
             ...data,
+            tipo_encargado_agencia: newEncargados.map(e => e.tipoEspecifico),
             nombre_encargado_agencia: newEncargados.map(e => e.nombre),
             celular_encargado_agencia: newEncargados.map(e => e.celular)
         });

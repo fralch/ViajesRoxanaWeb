@@ -203,27 +203,33 @@ export default function Index({ grupos, filters }) {
                                                         <div>
                                                             {Array.isArray(grupo.nombre_encargado) && grupo.nombre_encargado.length > 0 ? (
                                                                 <div>
+                                                                    <div className="text-xs font-medium text-gray-600 mb-1">Internos:</div>
                                                                     {grupo.nombre_encargado.map((nombre, index) => (
                                                                         <div key={index} className="mb-1">
                                                                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                                                {nombre}
+                                                                                {grupo.tipo_encargado?.[index] ? `${grupo.tipo_encargado[index]} - ` : ''}{nombre}
                                                                             </span>
                                                                         </div>
                                                                     ))}
                                                                 </div>
-                                                            ) : Array.isArray(grupo.nombre_encargado_agencia) && grupo.nombre_encargado_agencia.length > 0 ? (
-                                                                <div>
+                                                            ) : null}
+                                                            {Array.isArray(grupo.nombre_encargado_agencia) && grupo.nombre_encargado_agencia.length > 0 ? (
+                                                                <div className={Array.isArray(grupo.nombre_encargado) && grupo.nombre_encargado.length > 0 ? 'mt-2' : ''}>
+                                                                    <div className="text-xs font-medium text-gray-600 mb-1">Agencia:</div>
                                                                     {grupo.nombre_encargado_agencia.map((nombre, index) => (
                                                                         <div key={index} className="mb-1">
                                                                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                                                                                {nombre}
+                                                                                {grupo.tipo_encargado_agencia?.[index] ? `${grupo.tipo_encargado_agencia[index]} - ` : ''}{nombre}
                                                                             </span>
                                                                         </div>
                                                                     ))}
                                                                 </div>
-                                                            ) : (
-                                                                <span className="text-gray-400">Sin encargados</span>
-                                                            )}
+                                                            ) : null}
+                                                            {!Array.isArray(grupo.nombre_encargado) || grupo.nombre_encargado.length === 0 ? (
+                                                                !Array.isArray(grupo.nombre_encargado_agencia) || grupo.nombre_encargado_agencia.length === 0 ? (
+                                                                    <span className="text-gray-400">Sin encargados</span>
+                                                                ) : null
+                                                            ) : null}
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">

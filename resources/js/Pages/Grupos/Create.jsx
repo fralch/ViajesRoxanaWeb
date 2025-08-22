@@ -18,9 +18,10 @@ export default function Create({ paquetes }) {
     fecha_inicio: '',
     fecha_fin: '',
     capacidad: '',
-    tipo_encargado: ['interno'],
+    tipo_encargado: [''],
     nombre_encargado: [''],
     celular_encargado: [''],
+    tipo_encargado_agencia: [''],
     nombre_encargado_agencia: [''],
     celular_encargado_agencia: [''],
     activo: true,
@@ -61,6 +62,7 @@ export default function Create({ paquetes }) {
    const addEncargado = () => {
      const newEncargados = [...encargados, { tipo: 'interno', tipoEspecifico: '', nombre: '', celular: '' }];
      setEncargados(newEncargados);
+     setData('tipo_encargado', newEncargados.map(e => e.tipoEspecifico));
      setData('nombre_encargado', newEncargados.map(e => e.nombre));
      setData('celular_encargado', newEncargados.map(e => e.celular));
    };
@@ -68,6 +70,7 @@ export default function Create({ paquetes }) {
    const removeEncargado = (index) => {
      const newEncargados = encargados.filter((_, i) => i !== index);
      setEncargados(newEncargados);
+     setData('tipo_encargado', newEncargados.map(e => e.tipoEspecifico));
      setData('nombre_encargado', newEncargados.map(e => e.nombre));
      setData('celular_encargado', newEncargados.map(e => e.celular));
    };
@@ -76,6 +79,7 @@ export default function Create({ paquetes }) {
      const newEncargados = [...encargados];
      newEncargados[index][field] = value;
      setEncargados(newEncargados);
+     setData('tipo_encargado', newEncargados.map(e => e.tipoEspecifico));
      setData('nombre_encargado', newEncargados.map(e => e.nombre));
      setData('celular_encargado', newEncargados.map(e => e.celular));
    };
@@ -83,6 +87,7 @@ export default function Create({ paquetes }) {
    const addEncargadoAgencia = () => {
      const newEncargados = [...encargadosAgencia, { tipo: 'agencia', tipoEspecifico: '', nombre: '', celular: '' }];
      setEncargadosAgencia(newEncargados);
+     setData('tipo_encargado_agencia', newEncargados.map(e => e.tipoEspecifico));
      setData('nombre_encargado_agencia', newEncargados.map(e => e.nombre));
      setData('celular_encargado_agencia', newEncargados.map(e => e.celular));
    };
@@ -90,6 +95,7 @@ export default function Create({ paquetes }) {
    const removeEncargadoAgencia = (index) => {
      const newEncargados = encargadosAgencia.filter((_, i) => i !== index);
      setEncargadosAgencia(newEncargados);
+     setData('tipo_encargado_agencia', newEncargados.map(e => e.tipoEspecifico));
      setData('nombre_encargado_agencia', newEncargados.map(e => e.nombre));
      setData('celular_encargado_agencia', newEncargados.map(e => e.celular));
    };
@@ -98,6 +104,7 @@ export default function Create({ paquetes }) {
      const newEncargados = [...encargadosAgencia];
      newEncargados[index][field] = value;
      setEncargadosAgencia(newEncargados);
+     setData('tipo_encargado_agencia', newEncargados.map(e => e.tipoEspecifico));
      setData('nombre_encargado_agencia', newEncargados.map(e => e.nombre));
      setData('celular_encargado_agencia', newEncargados.map(e => e.celular));
    };
