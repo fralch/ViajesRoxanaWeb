@@ -154,7 +154,10 @@ export default function Index({ grupos, filters }) {
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 Estado
                                             </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Formulario
+                                            </th>
+                                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 Acciones
                                             </th>
                                         </tr>
@@ -206,23 +209,22 @@ export default function Index({ grupos, filters }) {
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         {getStatusBadge(grupo.activo)}
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                        <div className="flex gap-2 flex-wrap">
-                                                            {/* Enlace al formulario público */}
+                                                    
+                                                    {/* Columna del Formulario */}
+                                                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                        <div className="flex items-center justify-center gap-2">
                                                             <a
                                                                 href={`/paquete/${grupo.paquete_id}/grupo/${grupo.id}/form`}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors duration-200"
-                                                                title="Abrir formulario público de inscripción"
+                                                                className="inline-flex items-center justify-center w-8 h-8 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors duration-200"
+                                                                title="Abrir formulario público"
                                                             >
                                                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-2M7 13l3 3 7-7M13 5h8m0 0v8m0-8l-8 8" />
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-2M13 5h8m0 0v8m0-8l-8 8" />
                                                                 </svg>
-                                                                Formulario
                                                             </a>
                                                             
-                                                            {/* Copiar enlace */}
                                                             <button
                                                                 onClick={() => {
                                                                     const url = `${window.location.origin}/paquete/${grupo.paquete_id}/grupo/${grupo.id}/form`;
@@ -233,10 +235,10 @@ export default function Index({ grupos, filters }) {
                                                                         alert('No se pudo copiar el enlace');
                                                                     });
                                                                 }}
-                                                                className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-medium rounded-lg transition-colors duration-200 ${
+                                                                className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition-colors duration-200 ${
                                                                     copiedGrupoId === grupo.id 
                                                                         ? 'text-green-600 bg-green-50' 
-                                                                        : 'text-purple-600 hover:text-purple-700 hover:bg-purple-50'
+                                                                        : 'text-gray-600 hover:text-purple-600 hover:bg-purple-50'
                                                                 }`}
                                                                 title="Copiar enlace del formulario"
                                                             >
@@ -249,26 +251,31 @@ export default function Index({ grupos, filters }) {
                                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                                                     </svg>
                                                                 )}
-                                                                {copiedGrupoId === grupo.id ? 'Copiado' : 'Copiar'}
                                                             </button>
-                                                            
+                                                        </div>
+                                                    </td>
+                                                    
+                                                    {/* Columna de Acciones */}
+                                                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                        <div className="flex items-center justify-center gap-2">
                                                             <Link
                                                                 href={route('grupos.edit', grupo.id)}
-                                                                className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-200"
+                                                                className="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-200"
+                                                                title="Editar grupo"
                                                             >
                                                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                                                 </svg>
-                                                                Editar
                                                             </Link>
+                                                            
                                                             <button
                                                                 onClick={() => confirmDelete(grupo)}
-                                                                className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                                                                className="inline-flex items-center justify-center w-8 h-8 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                                                                title="Eliminar grupo"
                                                             >
                                                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                                 </svg>
-                                                                Eliminar
                                                             </button>
                                                         </div>
                                                     </td>
@@ -276,7 +283,7 @@ export default function Index({ grupos, filters }) {
                                             ))
                                         ) : (
                                             <tr>
-                                                <td colSpan="6" className="px-6 py-12 text-center">
+                                                <td colSpan="7" className="px-6 py-12 text-center">
                                                     <div className="flex flex-col items-center justify-center text-gray-500">
                                                         <svg className="w-12 h-12 mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
