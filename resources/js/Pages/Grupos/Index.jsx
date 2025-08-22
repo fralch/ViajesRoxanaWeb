@@ -146,16 +146,16 @@ export default function Index({ grupos, filters }) {
                                                 Paquete
                                             </th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Fechas
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 Capacidad
                                             </th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Encargado
+                                                Encargados
                                             </th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 Estado
-                                            </th>
-                                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Formulario
                                             </th>
                                             <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 Acciones
@@ -186,31 +186,51 @@ export default function Index({ grupos, filters }) {
                                                             </div>
                                                         </div>
                                                     </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div>
+                                                            <div className="text-sm font-medium text-gray-900">
+                                                                {grupo.fecha_inicio ? new Date(grupo.fecha_inicio).toLocaleDateString('es-ES') : 'No definida'}
+                                                            </div>
+                                                            <div className="text-sm text-gray-500">
+                                                                {grupo.fecha_fin ? new Date(grupo.fecha_fin).toLocaleDateString('es-ES') : 'No definida'}
+                                                            </div>
+                                                        </div>
+                                                    </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                         {grupo.capacidad} personas
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <div>
-                                                            <div className="flex items-center gap-2 mb-1">
-                                                                {getTipoEncargadoBadge(grupo.tipo_encargado)}
-                                                            </div>
-                                                            <div className="text-sm font-medium text-gray-900">
-                                                                {grupo.tipo_encargado === 'interno' 
-                                                                    ? grupo.nombre_encargado 
-                                                                    : grupo.nombre_encargado_agencia}
-                                                            </div>
-                                                            <div className="text-sm text-gray-500">
-                                                                {grupo.tipo_encargado === 'interno' 
-                                                                    ? grupo.celular_encargado 
-                                                                    : grupo.celular_encargado_agencia}
-                                                            </div>
+                                                            {Array.isArray(grupo.nombre_encargado) && grupo.nombre_encargado.length > 0 ? (
+                                                                <div>
+                                                                    {grupo.nombre_encargado.map((nombre, index) => (
+                                                                        <div key={index} className="mb-1">
+                                                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                                                {nombre}
+                                                                            </span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            ) : Array.isArray(grupo.nombre_encargado_agencia) && grupo.nombre_encargado_agencia.length > 0 ? (
+                                                                <div>
+                                                                    {grupo.nombre_encargado_agencia.map((nombre, index) => (
+                                                                        <div key={index} className="mb-1">
+                                                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                                                                                {nombre}
+                                                                            </span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-gray-400">Sin encargados</span>
+                                                            )}
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         {getStatusBadge(grupo.activo)}
                                                     </td>
                                                     
-                                                    {/* Columna del Formulario */}
+                                                    {/* Columna de Acciones */}
                                                     <td className="px-6 py-4 whitespace-nowrap text-center">
                                                         <div className="flex items-center justify-center gap-2">
                                                             <a
@@ -248,16 +268,11 @@ export default function Index({ grupos, filters }) {
                                                                     </svg>
                                                                 ) : (
                                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                                                     </svg>
                                                                 )}
                                                             </button>
-                                                        </div>
-                                                    </td>
-                                                    
-                                                    {/* Columna de Acciones */}
-                                                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                        <div className="flex items-center justify-center gap-2">
+                                                            
                                                             <Link
                                                                 href={route('grupos.edit', grupo.id)}
                                                                 className="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-200"

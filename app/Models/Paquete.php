@@ -12,14 +12,10 @@ class Paquete extends Model
         'nombre',
         'destino', 
         'descripcion',
-        'fecha_inicio',
-        'fecha_fin',
         'activo'
     ];
 
     protected $casts = [
-        'fecha_inicio' => 'date',
-        'fecha_fin' => 'date',
         'activo' => 'boolean'
     ];
 

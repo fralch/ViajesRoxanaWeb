@@ -21,7 +21,8 @@ class User extends Authenticatable
         'name',
         'email',
         'phone',
-        'password',
+        'password', 
+        'is_admin'
     ];
 
     /**
@@ -44,6 +45,25 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_admin' => 'boolean',
         ];
+    }
+
+    /**
+     * Relaciones
+     */
+    public function hijos()
+    {
+        return $this->hasMany(Hijo::class);
+    }
+
+    public function inscripciones()
+    {
+        return $this->hasMany(Inscripcion::class, 'usuario_id');
+    }
+
+    public function notificaciones()
+    {
+        return $this->hasMany(Notificacion::class);
     }
 }

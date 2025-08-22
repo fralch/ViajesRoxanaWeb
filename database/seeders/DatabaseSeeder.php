@@ -13,11 +13,33 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $this->call([
+            PaqueteSeeder::class,
+            GrupoSeeder::class,
+            HijoSeeder::class,
+            InscripcionSeeder::class,
+            GeolocalizacionSeeder::class,
+            RecorridoPaqueteSeeder::class,
+            TrazabilidadSeeder::class,
+            NotificacionSeeder::class,
+        ]);
+
+        // Crear usuarios de prueba
+        User::factory()->create([
+            'name' => 'Administrador',
+            'email' => 'admin@viajesroxana.com',
+            'phone' => '3001234567',
+            'is_admin' => true,
+        ]);
 
         User::factory()->create([
-            'name' => 'Test User',
+            'name' => 'Usuario Test',
             'email' => 'test@example.com',
+            'phone' => '3007654321',
+            'is_admin' => false,
         ]);
+
+        // Crear usuarios adicionales
+        User::factory(8)->create();
     }
 }

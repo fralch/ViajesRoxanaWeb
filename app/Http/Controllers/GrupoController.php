@@ -21,7 +21,8 @@ class GrupoController extends Controller
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('nombre', 'like', "%{$search}%")
-                  ->orWhere('nombre_encargado', 'like', "%{$search}%")
+                  ->orWhereJsonContains('nombre_encargado', $search)
+                  ->orWhereJsonContains('nombre_encargado_agencia', $search)
                   ->orWhereHas('paquete', function($pq) use ($search) {
                       $pq->where('nombre', 'like', "%{$search}%");
                   });
@@ -58,12 +59,21 @@ class GrupoController extends Controller
         $validated = $request->validate([
             'paquete_id' => 'required|exists:paquetes,id',
             'nombre' => 'required|string|max:255',
+            'fecha_inicio' => 'required|date|after_or_equal:today',
+            'fecha_fin' => 'required|date|after:fecha_inicio',
             'capacidad' => 'required|integer|min:1|max:100',
-            'tipo_encargado' => 'required|in:interno,agencia',
-            'nombre_encargado' => 'required_if:tipo_encargado,interno|string|max:255|nullable',
-            'celular_encargado' => 'required_if:tipo_encargado,interno|string|max:20|nullable',
-            'nombre_encargado_agencia' => 'required_if:tipo_encargado,agencia|string|max:255|nullable',
-            'celular_encargado_agencia' => 'required_if:tipo_encargado,agencia|string|max:20|nullable',
+            'tipo_encargado' => 'required|array',
+            'tipo_encargado.*' => 'required|string|max:255',
+            'nombre_encargado' => 'required|array',
+            'nombre_encargado.*' => 'required|string|max:255',
+            'celular_encargado' => 'required|array',
+            'celular_encargado.*' => 'required|string|max:20',
+            'tipo_encargado_agencia' => 'nullable|array',
+            'tipo_encargado_agencia.*' => 'nullable|string|max:255',
+            'nombre_encargado_agencia' => 'nullable|array',
+            'nombre_encargado_agencia.*' => 'nullable|string|max:255',
+            'celular_encargado_agencia' => 'nullable|array',
+            'celular_encargado_agencia.*' => 'nullable|string|max:20',
             'activo' => 'boolean'
         ]);
         
@@ -106,12 +116,21 @@ class GrupoController extends Controller
         $validated = $request->validate([
             'paquete_id' => 'required|exists:paquetes,id',
             'nombre' => 'required|string|max:255',
+            'fecha_inicio' => 'required|date',
+            'fecha_fin' => 'required|date|after:fecha_inicio',
             'capacidad' => 'required|integer|min:1|max:100',
-            'tipo_encargado' => 'required|in:interno,agencia',
-            'nombre_encargado' => 'required_if:tipo_encargado,interno|string|max:255|nullable',
-            'celular_encargado' => 'required_if:tipo_encargado,interno|string|max:20|nullable',
-            'nombre_encargado_agencia' => 'required_if:tipo_encargado,agencia|string|max:255|nullable',
-            'celular_encargado_agencia' => 'required_if:tipo_encargado,agencia|string|max:20|nullable',
+            'tipo_encargado' => 'required|array',
+            'tipo_encargado.*' => 'required|string|max:255',
+            'nombre_encargado' => 'required|array',
+            'nombre_encargado.*' => 'required|string|max:255',
+            'celular_encargado' => 'required|array',
+            'celular_encargado.*' => 'required|string|max:20',
+            'tipo_encargado_agencia' => 'nullable|array',
+            'tipo_encargado_agencia.*' => 'nullable|string|max:255',
+            'nombre_encargado_agencia' => 'nullable|array',
+            'nombre_encargado_agencia.*' => 'nullable|string|max:255',
+            'celular_encargado_agencia' => 'nullable|array',
+            'celular_encargado_agencia.*' => 'nullable|string|max:20',
             'activo' => 'boolean'
         ]);
         

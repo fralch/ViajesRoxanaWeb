@@ -9,16 +9,20 @@ import InputError from '@/Components/InputError';
 
 export default function Create({ paquetes }) {
   const [tipoEncargado, setTipoEncargado] = useState('interno');
+  const [encargados, setEncargados] = useState([{ nombre: '', celular: '' }]);
+  const [encargadosAgencia, setEncargadosAgencia] = useState([{ nombre: '', celular: '' }]);
 
   const { data, setData, post, processing, errors, reset } = useForm({
     paquete_id: '',
     nombre: '',
+    fecha_inicio: '',
+    fecha_fin: '',
     capacidad: '',
-    tipo_encargado: 'interno',
-    nombre_encargado: '',
-    celular_encargado: '',
-    nombre_encargado_agencia: '',
-    celular_encargado_agencia: '',
+    tipo_encargado: ['interno'],
+    nombre_encargado: [''],
+    celular_encargado: [''],
+    nombre_encargado_agencia: [''],
+    celular_encargado_agencia: [''],
     activo: true,
   });
 
@@ -34,23 +38,69 @@ export default function Create({ paquetes }) {
 
   const handleTipoEncargadoChange = (tipo) => {
     setTipoEncargado(tipo);
-    setData('tipo_encargado', tipo);
+    setData('tipo_encargado', [tipo]);
     if (tipo === 'interno') {
       setData({
         ...data,
-        tipo_encargado: tipo,
-        nombre_encargado_agencia: '',
-        celular_encargado_agencia: '',
+        tipo_encargado: [tipo],
+        nombre_encargado_agencia: [''],
+        celular_encargado_agencia: [''],
       });
+      setEncargadosAgencia([{ nombre: '', celular: '' }]);
     } else {
       setData({
         ...data,
-        tipo_encargado: tipo,
-        nombre_encargado: '',
-        celular_encargado: '',
+        tipo_encargado: [tipo],
+        nombre_encargado: [''],
+        celular_encargado: [''],
       });
-    }
-  };
+       setEncargados([{ nombre: '', celular: '' }]);
+     }
+   };
+
+   const addEncargado = () => {
+     const newEncargados = [...encargados, { nombre: '', celular: '' }];
+     setEncargados(newEncargados);
+     setData('nombre_encargado', newEncargados.map(e => e.nombre));
+     setData('celular_encargado', newEncargados.map(e => e.celular));
+   };
+
+   const removeEncargado = (index) => {
+     const newEncargados = encargados.filter((_, i) => i !== index);
+     setEncargados(newEncargados);
+     setData('nombre_encargado', newEncargados.map(e => e.nombre));
+     setData('celular_encargado', newEncargados.map(e => e.celular));
+   };
+
+   const updateEncargado = (index, field, value) => {
+     const newEncargados = [...encargados];
+     newEncargados[index][field] = value;
+     setEncargados(newEncargados);
+     setData('nombre_encargado', newEncargados.map(e => e.nombre));
+     setData('celular_encargado', newEncargados.map(e => e.celular));
+   };
+
+   const addEncargadoAgencia = () => {
+     const newEncargados = [...encargadosAgencia, { nombre: '', celular: '' }];
+     setEncargadosAgencia(newEncargados);
+     setData('nombre_encargado_agencia', newEncargados.map(e => e.nombre));
+     setData('celular_encargado_agencia', newEncargados.map(e => e.celular));
+   };
+
+   const removeEncargadoAgencia = (index) => {
+     const newEncargados = encargadosAgencia.filter((_, i) => i !== index);
+     setEncargadosAgencia(newEncargados);
+     setData('nombre_encargado_agencia', newEncargados.map(e => e.nombre));
+     setData('celular_encargado_agencia', newEncargados.map(e => e.celular));
+   };
+
+   const updateEncargadoAgencia = (index, field, value) => {
+     const newEncargados = [...encargadosAgencia];
+     newEncargados[index][field] = value;
+     setEncargadosAgencia(newEncargados);
+     setData('nombre_encargado_agencia', newEncargados.map(e => e.nombre));
+     setData('celular_encargado_agencia', newEncargados.map(e => e.celular));
+   };
 
   return (
     <AuthenticatedLayout
@@ -147,6 +197,34 @@ export default function Create({ paquetes }) {
                         required
                       />
                       <InputError message={errors.capacidad} className="mt-2" />
+                    </div>
+
+                    {/* Fecha de Inicio */}
+                    <div>
+                      <InputLabel htmlFor="fecha_inicio" value="Fecha de Inicio" />
+                      <TextInput
+                        id="fecha_inicio"
+                        type="date"
+                        value={data.fecha_inicio}
+                        onChange={(e) => setData('fecha_inicio', e.target.value)}
+                        className="mt-1 block w-full"
+                        required
+                      />
+                      <InputError message={errors.fecha_inicio} className="mt-2" />
+                    </div>
+
+                    {/* Fecha de Fin */}
+                    <div>
+                      <InputLabel htmlFor="fecha_fin" value="Fecha de Fin" />
+                      <TextInput
+                        id="fecha_fin"
+                        type="date"
+                        value={data.fecha_fin}
+                        onChange={(e) => setData('fecha_fin', e.target.value)}
+                        className="mt-1 block w-full"
+                        required
+                      />
+                      <InputError message={errors.fecha_fin} className="mt-2" />
                     </div>
 
                     {/* Estado activo */}
@@ -251,65 +329,125 @@ export default function Create({ paquetes }) {
                   </div>
 
                   {/* Campos del encargado */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-6">
                     {tipoEncargado === 'interno' ? (
-                      <>
-                        <div>
-                          <InputLabel htmlFor="nombre_encargado" value="Nombre del Encargado" />
-                          <TextInput
-                            id="nombre_encargado"
-                            type="text"
-                            value={data.nombre_encargado}
-                            onChange={(e) => setData('nombre_encargado', e.target.value)}
-                            className="mt-1 block w-full"
-                            placeholder="Nombre completo del encargado"
-                            required
-                          />
-                          <InputError message={errors.nombre_encargado} className="mt-2" />
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-md font-medium text-gray-900">Encargados Internos</h4>
+                          <PrimaryButton
+                            type="button"
+                            onClick={addEncargado}
+                            className="px-3 py-2 text-xs"
+                          >
+                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                            Agregar Encargado
+                          </PrimaryButton>
                         </div>
-                        <div>
-                          <InputLabel htmlFor="celular_encargado" value="Celular del Encargado" />
-                          <TextInput
-                            id="celular_encargado"
-                            type="tel"
-                            value={data.celular_encargado}
-                            onChange={(e) => setData('celular_encargado', e.target.value)}
-                            className="mt-1 block w-full"
-                            placeholder="Ej: +51 999 888 777"
-                            required
-                          />
-                          <InputError message={errors.celular_encargado} className="mt-2" />
-                        </div>
-                      </>
+                        {encargados.map((encargado, index) => (
+                          <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white rounded-lg border border-gray-200">
+                            <div>
+                              <InputLabel htmlFor={`nombre_encargado_${index}`} value="Nombre del Encargado" />
+                              <TextInput
+                                id={`nombre_encargado_${index}`}
+                                type="text"
+                                value={encargado.nombre}
+                                onChange={(e) => updateEncargado(index, 'nombre', e.target.value)}
+                                className="mt-1 block w-full"
+                                placeholder="Nombre completo del encargado"
+                                required
+                              />
+                            </div>
+                            <div>
+                              <InputLabel htmlFor={`celular_encargado_${index}`} value="Celular del Encargado" />
+                              <div className="flex gap-2">
+                                <TextInput
+                                  id={`celular_encargado_${index}`}
+                                  type="tel"
+                                  value={encargado.celular}
+                                  onChange={(e) => updateEncargado(index, 'celular', e.target.value)}
+                                  className="mt-1 block w-full"
+                                  placeholder="Ej: +51 999 888 777"
+                                  required
+                                />
+                                {encargados.length > 1 && (
+                                  <SecondaryButton
+                                    type="button"
+                                    onClick={() => removeEncargado(index)}
+                                    className="mt-1 px-3 py-2 text-red-600 hover:text-red-700"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                  </SecondaryButton>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        <InputError message={errors.nombre_encargado} className="mt-2" />
+                        <InputError message={errors.celular_encargado} className="mt-2" />
+                      </div>
                     ) : (
-                      <>
-                        <div>
-                          <InputLabel htmlFor="nombre_encargado_agencia" value="Nombre del Encargado de Agencia" />
-                          <TextInput
-                            id="nombre_encargado_agencia"
-                            type="text"
-                            value={data.nombre_encargado_agencia}
-                            onChange={(e) => setData('nombre_encargado_agencia', e.target.value)}
-                            className="mt-1 block w-full"
-                            placeholder="Nombre completo del encargado de agencia"
-                            required
-                          />
-                          <InputError message={errors.nombre_encargado_agencia} className="mt-2" />
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-md font-medium text-gray-900">Encargados de Agencia</h4>
+                          <PrimaryButton
+                            type="button"
+                            onClick={addEncargadoAgencia}
+                            className="px-3 py-2 text-xs"
+                          >
+                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                            Agregar Encargado
+                          </PrimaryButton>
                         </div>
-                        <div>
-                          <InputLabel htmlFor="celular_encargado_agencia" value="Celular del Encargado de Agencia" />
-                          <TextInput
-                            id="celular_encargado_agencia"
-                            type="tel"
-                            value={data.celular_encargado_agencia}
-                            onChange={(e) => setData('celular_encargado_agencia', e.target.value)}
-                            className="mt-1 block w-full"
-                            placeholder="Ej: +51 999 888 777"
-                            required
-                          />
-                          <InputError message={errors.celular_encargado_agencia} className="mt-2" />
-                        </div>
-                      </>
+                        {encargadosAgencia.map((encargado, index) => (
+                          <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white rounded-lg border border-gray-200">
+                            <div>
+                              <InputLabel htmlFor={`nombre_encargado_agencia_${index}`} value="Nombre del Encargado de Agencia" />
+                              <TextInput
+                                id={`nombre_encargado_agencia_${index}`}
+                                type="text"
+                                value={encargado.nombre}
+                                onChange={(e) => updateEncargadoAgencia(index, 'nombre', e.target.value)}
+                                className="mt-1 block w-full"
+                                placeholder="Nombre completo del encargado de agencia"
+                                required
+                              />
+                            </div>
+                            <div>
+                              <InputLabel htmlFor={`celular_encargado_agencia_${index}`} value="Celular del Encargado de Agencia" />
+                              <div className="flex gap-2">
+                                <TextInput
+                                  id={`celular_encargado_agencia_${index}`}
+                                  type="tel"
+                                  value={encargado.celular}
+                                  onChange={(e) => updateEncargadoAgencia(index, 'celular', e.target.value)}
+                                  className="mt-1 block w-full"
+                                  placeholder="Ej: +51 999 888 777"
+                                  required
+                                />
+                                {encargadosAgencia.length > 1 && (
+                                  <SecondaryButton
+                                    type="button"
+                                    onClick={() => removeEncargadoAgencia(index)}
+                                    className="mt-1 px-3 py-2 text-red-600 hover:text-red-700"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                  </SecondaryButton>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        <InputError message={errors.nombre_encargado_agencia} className="mt-2" />
+                        <InputError message={errors.celular_encargado_agencia} className="mt-2" />
+                      </div>
                     )}
                   </div>
                 </div>
