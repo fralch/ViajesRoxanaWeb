@@ -12,6 +12,7 @@ export default function Index({ grupos, filters }) {
     const [search, setSearch] = useState(filters.search || '');
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [grupoToDelete, setGrupoToDelete] = useState(null);
+    const [copiedGrupoId, setCopiedGrupoId] = useState(null);
 
     const handleSearch = (e) => {
         e.preventDefault();
@@ -206,7 +207,51 @@ export default function Index({ grupos, filters }) {
                                                         {getStatusBadge(grupo.activo)}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                        <div className="flex gap-2">
+                                                        <div className="flex gap-2 flex-wrap">
+                                                            {/* Enlace al formulario público */}
+                                                            <a
+                                                                href={`/paquete/${grupo.paquete_id}/grupo/${grupo.id}/form`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors duration-200"
+                                                                title="Abrir formulario público de inscripción"
+                                                            >
+                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-2M7 13l3 3 7-7M13 5h8m0 0v8m0-8l-8 8" />
+                                                                </svg>
+                                                                Formulario
+                                                            </a>
+                                                            
+                                                            {/* Copiar enlace */}
+                                                            <button
+                                                                onClick={() => {
+                                                                    const url = `${window.location.origin}/paquete/${grupo.paquete_id}/grupo/${grupo.id}/form`;
+                                                                    navigator.clipboard.writeText(url).then(() => {
+                                                                        setCopiedGrupoId(grupo.id);
+                                                                        setTimeout(() => setCopiedGrupoId(null), 2000);
+                                                                    }).catch(() => {
+                                                                        alert('No se pudo copiar el enlace');
+                                                                    });
+                                                                }}
+                                                                className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-medium rounded-lg transition-colors duration-200 ${
+                                                                    copiedGrupoId === grupo.id 
+                                                                        ? 'text-green-600 bg-green-50' 
+                                                                        : 'text-purple-600 hover:text-purple-700 hover:bg-purple-50'
+                                                                }`}
+                                                                title="Copiar enlace del formulario"
+                                                            >
+                                                                {copiedGrupoId === grupo.id ? (
+                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                                    </svg>
+                                                                ) : (
+                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                                                    </svg>
+                                                                )}
+                                                                {copiedGrupoId === grupo.id ? 'Copiado' : 'Copiar'}
+                                                            </button>
+                                                            
                                                             <Link
                                                                 href={route('grupos.edit', grupo.id)}
                                                                 className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-200"
