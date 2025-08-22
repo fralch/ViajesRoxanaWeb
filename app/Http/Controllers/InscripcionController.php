@@ -295,8 +295,9 @@ class InscripcionController extends Controller
         }
 
         DB::transaction(function () use ($validated, $paquete, $grupo) {
-            // Buscar usuario existente por email, teléfono o nombre similar
-            $user = User::where('email', $validated['parent_email'])
+            // Buscar usuario existente por DNI (prioridad), email, teléfono o nombre similar
+            $user = User::where('dni', $validated['parent_dni'])
+                        ->orWhere('email', $validated['parent_email'])
                         ->orWhere('phone', $validated['parent_phone'])
                         ->orWhere('name', 'LIKE', trim($validated['parent_name']))
                         ->first();
@@ -310,6 +311,7 @@ class InscripcionController extends Controller
                     'name' => $validated['parent_name'],
                     'email' => $validated['parent_email'],
                     'phone' => $validated['parent_phone'],
+                    'dni' => $validated['parent_dni'],
                     'password' => Hash::make($password),
                     'email_verified_at' => now(),
                     'is_admin' => false,
@@ -320,6 +322,7 @@ class InscripcionController extends Controller
                     'name' => $validated['parent_name'],
                     'email' => $validated['parent_email'],
                     'phone' => $validated['parent_phone'],
+                    'dni' => $validated['parent_dni'],
                 ]);
             }
 
@@ -374,18 +377,30 @@ class InscripcionController extends Controller
     public function checkUserExists(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|min:3',
-            'phone' => 'required|string|regex:/^9\d{8}$/',
+            'name' => 'string|min:1',
+            'phone' => 'string|min:1',
+            'dni' => 'nullable|string|regex:/^\d{8}$/',
         ]);
 
         $name = trim($request->name);
         $phone = $request->phone;
+        $dni = $request->dni;
 
-        // Buscar usuario por nombre exacto o teléfono
-        $user = User::where(function($query) use ($name, $phone) {
-            $query->where('name', 'LIKE', $name)
-                  ->orWhere('phone', $phone);
-        })->first();
+        // Buscar usuario primordialmente por DNI
+        $user = null;
+        
+        if ($dni) {
+            // Prioridad 1: Buscar por DNI exacto
+            $user = User::where('dni', $dni)->first();
+        }
+        
+        if (!$user) {
+            // Prioridad 2: Buscar por teléfono o nombre si no se encontró por DNI
+            $user = User::where(function($query) use ($name, $phone) {
+                $query->where('phone', $phone)
+                      ->orWhere('name', 'LIKE', $name);
+            })->first();
+        }
 
         if ($user) {
             // Si encontramos usuario, obtener sus hijos
@@ -397,6 +412,7 @@ class InscripcionController extends Controller
                     'name' => $user->name,
                     'email' => $user->email,
                     'phone' => $user->phone,
+                    'dni' => $user->dni,
                 ],
                 'children' => $hijos->map(function($hijo) {
                     return [

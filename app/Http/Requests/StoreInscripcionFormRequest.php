@@ -37,6 +37,11 @@ class StoreInscripcionFormRequest extends FormRequest
                 'email',
                 'max:255'
             ],
+            'parent_dni' => [
+                'required',
+                'string',
+                'regex:/^\d{8}$/'
+            ],
             'children' => [
                 'required',
                 'array',
@@ -77,6 +82,8 @@ class StoreInscripcionFormRequest extends FormRequest
             'parent_phone.regex' => 'El celular debe ser un número peruano válido (9 dígitos empezando en 9).',
             'parent_email.required' => 'El correo electrónico es obligatorio.',
             'parent_email.email' => 'El correo electrónico debe tener un formato válido.',
+            'parent_dni.required' => 'El DNI es obligatorio.',
+            'parent_dni.regex' => 'El DNI debe tener exactamente 8 dígitos.',
             'children.required' => 'Debe registrar al menos un hijo.',
             'children.min' => 'Debe registrar al menos un hijo.',
             'children.max' => 'No puede registrar más de 5 hijos a la vez.',
@@ -100,6 +107,7 @@ class StoreInscripcionFormRequest extends FormRequest
             'parent_name' => 'nombre del tutor',
             'parent_phone' => 'celular',
             'parent_email' => 'correo electrónico',
+            'parent_dni' => 'DNI',
             'children.*.name' => 'nombre del hijo',
             'children.*.docType' => 'tipo de documento',
             'children.*.docNumber' => 'número de documento',

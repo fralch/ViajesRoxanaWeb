@@ -26,6 +26,7 @@ const TextField = ({
   pattern,
   max,
   min,
+  disabled = false,
 }) => (
   <div className="space-y-1">
     <label htmlFor={id} className={labelStyles}>
@@ -38,6 +39,7 @@ const TextField = ({
       onChange={onChange}
       placeholder={placeholder}
       required={required}
+      disabled={disabled}
       aria-invalid={!!error}
       aria-describedby={describedby}
       autoComplete={autoComplete}
@@ -149,6 +151,7 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
     parent_name: "",
     parent_phone: "",
     parent_email: "",
+    parent_dni: "",
     children: [
       {
         name: "",
@@ -169,12 +172,50 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
   const [showUserExistsWarning, setShowUserExistsWarning] = useState(false);
   const [existingUserData, setExistingUserData] = useState(null);
   const [checkingUser, setCheckingUser] = useState(false);
+  const [dniValidated, setDniValidated] = useState(false);
+  const [dniLoading, setDniLoading] = useState(false);
 
-  // Función para verificar si el usuario ya existe
-  const checkUserExists = async (name, phone) => {
-    if (!name?.trim() || name.trim().length < 3 || !phone?.trim() || phone.trim().length < 9) {
+  // Función para validar DNI específicamente
+  const validateDNI = async (dni) => {
+    if (!dni?.trim() || dni.trim().length !== 8) {
+      setDniValidated(false);
       setShowUserExistsWarning(false);
       setExistingUserData(null);
+      return;
+    }
+
+    setDniLoading(true);
+    try {
+      const response = await axios.post('/check-user-exists', {
+        name: "temp", // Valor temporal ya que el backend lo requiere
+        phone: "987654321", // Valor temporal ya que el backend lo requiere
+        dni: dni.trim()
+      });
+
+      if (response.data.exists) {
+        setExistingUserData(response.data);
+        setShowUserExistsWarning(true);
+        setDniValidated(true);
+      } else {
+        setShowUserExistsWarning(false);
+        setExistingUserData(null);
+        setDniValidated(true);
+      }
+    } catch (error) {
+      console.log('Error verificando DNI:', error);
+      setShowUserExistsWarning(false);
+      setExistingUserData(null);
+      setDniValidated(false);
+    } finally {
+      setDniLoading(false);
+    }
+  };
+
+  // Función para verificar si el usuario ya existe (para otros campos)
+  const checkUserExists = async (name, phone, dni) => {
+    if (!dniValidated) return; // Solo verificar si el DNI ya fue validado
+    
+    if (!name?.trim() || name.trim().length < 3 || !phone?.trim() || phone.trim().length < 9) {
       return;
     }
 
@@ -182,20 +223,16 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
     try {
       const response = await axios.post('/check-user-exists', {
         name: name.trim(),
-        phone: phone.trim()
+        phone: phone.trim(),
+        dni: dni?.trim() || null
       });
 
-      if (response.data.exists) {
+      if (response.data.exists && !showUserExistsWarning) {
         setExistingUserData(response.data);
         setShowUserExistsWarning(true);
-      } else {
-        setShowUserExistsWarning(false);
-        setExistingUserData(null);
       }
     } catch (error) {
       console.log('Error verificando usuario:', error);
-      setShowUserExistsWarning(false);
-      setExistingUserData(null);
     } finally {
       setCheckingUser(false);
     }
@@ -209,6 +246,7 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
         parent_name: existingUserData.user.name,
         parent_email: existingUserData.user.email,
         parent_phone: existingUserData.user.phone,
+        parent_dni: existingUserData.user.dni || "",
         children: existingUserData.children.length > 0 
           ? existingUserData.children.map(child => ({
               ...child,
@@ -223,19 +261,37 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
       });
       setShowUserExistsWarning(false);
       setExistingUserData(null);
+      setDniValidated(true);
     }
   };
 
-  // Efecto para verificar cuando cambian nombre o teléfono
+  // Efecto para validar DNI cuando cambia
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (data.parent_name && data.parent_phone) {
-        checkUserExists(data.parent_name, data.parent_phone);
+      if (data.parent_dni && data.parent_dni.length === 8) {
+        validateDNI(data.parent_dni);
+      } else if (data.parent_dni && data.parent_dni.length < 8) {
+        setDniValidated(false);
+        setShowUserExistsWarning(false);
+        setExistingUserData(null);
       }
-    }, 1000); // Delay de 1 segundo después de escribir
+    }, 800); // Delay más corto para DNI
 
     return () => clearTimeout(timer);
-  }, [data.parent_name, data.parent_phone]);
+  }, [data.parent_dni]);
+
+  // Efecto para verificar cuando cambian nombre o teléfono (solo si DNI está validado)
+  useEffect(() => {
+    if (!dniValidated) return; // No verificar hasta que DNI esté validado
+    
+    const timer = setTimeout(() => {
+      if (data.parent_name && data.parent_phone) {
+        checkUserExists(data.parent_name, data.parent_phone, data.parent_dni);
+      }
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [data.parent_name, data.parent_phone, dniValidated]);
 
   const addChild = () => {
     setData("children", [
@@ -293,6 +349,16 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
       ok = false;
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.parent_email.trim())) {
       errors.parent_email = "El correo electrónico debe tener un formato válido.";
+      ok = false;
+    }
+
+    // Validación del DNI
+    const cleanDni = (data.parent_dni || "").replace(/\D/g, "");
+    if (!cleanDni) {
+      errors.parent_dni = "El DNI es obligatorio.";
+      ok = false;
+    } else if (!/^\d{8}$/.test(cleanDni)) {
+      errors.parent_dni = "El DNI debe tener exactamente 8 dígitos.";
       ok = false;
     }
 
@@ -382,6 +448,7 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
           parent_name: "",
           parent_phone: "",
           parent_email: "",
+          parent_dni: "",
           children: [{ 
             name: "", 
             docType: "DNI", 
@@ -395,6 +462,10 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
             errors: {} 
           }],
         });
+        // Resetear estados de validación
+        setDniValidated(false);
+        setShowUserExistsWarning(false);
+        setExistingUserData(null);
       },
     });
   };
@@ -530,6 +601,88 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
                 error={errors.parent_name}
                 />
 
+                {/* DNI ocupa todo el ancho */}
+                <div className="space-y-1">
+                  <label htmlFor="parent_dni" className={labelStyles}>
+                    DNI
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="parent_dni"
+                      type="text"
+                      value={data.parent_dni}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^0-9]/g, "");
+                        setData("parent_dni", value);
+                        // Reset validación cuando se cambia
+                        if (value.length !== 8) {
+                          setDniValidated(false);
+                        }
+                      }}
+                      placeholder="12345678"
+                      required
+                      inputMode="numeric"
+                      pattern="^\d{8}$"
+                      maxLength="8"
+                      className={classNames(
+                        inputBase,
+                        "bg-white/80 backdrop-blur border-gray-300 focus:ring-red-500 focus:border-red-500 placeholder-gray-400 pr-10",
+                        errors.parent_dni && "border-red-400 focus:ring-red-400 focus:border-red-400",
+                        dniLoading && "opacity-70"
+                      )}
+                      disabled={dniLoading}
+                    />
+                    
+                    {/* Indicadores en el campo */}
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                      {dniLoading && (
+                        <svg className="animate-spin h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      )}
+                      {!dniLoading && dniValidated && data.parent_dni.length === 8 && (
+                        <svg className="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                      {!dniLoading && data.parent_dni.length === 8 && !dniValidated && (
+                        <svg className="h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Mensajes de estado */}
+                  {dniLoading && (
+                    <p className="text-xs text-blue-600 flex items-center gap-1">
+                      <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Verificando DNI...
+                    </p>
+                  )}
+                  {!dniLoading && dniValidated && data.parent_dni.length === 8 && !showUserExistsWarning && (
+                    <p className="text-xs text-green-600">✓ DNI disponible</p>
+                  )}
+                  {errors.parent_dni && (
+                    <p role="alert" className="text-xs text-red-600">
+                      {errors.parent_dni}
+                    </p>
+                  )}
+                </div>
+
+                {/* Mensaje informativo si DNI no está validado */}
+                {!dniValidated && data.parent_dni.length > 0 && data.parent_dni.length < 8 && (
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                    <p className="text-xs text-blue-700">
+                      ℹ️ Complete el DNI de 8 dígitos para habilitar los demás campos
+                    </p>
+                  </div>
+                )}
+
                 {/* Celular + Correo en la misma fila en PC */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <TextField
@@ -539,13 +692,14 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
                     onChange={(e) =>
                     setData("parent_phone", e.target.value.replace(/[^0-9]/g, ""))
                     }
-                    placeholder="9XXXXXXXX"
+                    placeholder={dniValidated ? "9XXXXXXXX" : "Primero complete el DNI"}
                     required
                     inputMode="numeric"
                     pattern="^9\\d{8}$"
                     autoComplete="tel"
                     describedby="phone_help"
                     error={errors.parent_phone}
+                    disabled={!dniValidated}
                 />
 
                 <TextField
@@ -554,10 +708,11 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
                     type="email"
                     value={data.parent_email}
                     onChange={(e) => setData("parent_email", e.target.value)}
-                    placeholder="correo@ejemplo.com"
+                    placeholder={dniValidated ? "correo@ejemplo.com" : "Primero complete el DNI"}
                     required
                     autoComplete="email"
                     error={errors.parent_email}
+                    disabled={!dniValidated}
                 />
                 </div>
             </div>
@@ -586,6 +741,10 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
                             <p className="text-gray-800">{existingUserData.user.name}</p>
                           </div>
                           <div>
+                            <span className="font-medium text-gray-600">DNI:</span>
+                            <p className="text-gray-800">{existingUserData.user.dni || "No registrado"}</p>
+                          </div>
+                          <div>
                             <span className="font-medium text-gray-600">Email:</span>
                             <p className="text-gray-800">{existingUserData.user.email}</p>
                           </div>
@@ -593,7 +752,7 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
                             <span className="font-medium text-gray-600">Teléfono:</span>
                             <p className="text-gray-800">{existingUserData.user.phone}</p>
                           </div>
-                          <div>
+                          <div className="sm:col-span-2">
                             <span className="font-medium text-gray-600">Hijos registrados:</span>
                             <p className="text-gray-800">{existingUserData.children.length}</p>
                           </div>
@@ -655,10 +814,25 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
             )}
 
             {/* Hijos */}
-            <section className="mb-8">
-              <SectionTitle subtitle="Añade tantos menores como necesites. El número del tutor será usado como contacto de emergencia.">
+            <section className={classNames(
+              "mb-8 transition-opacity",
+              !dniValidated && "opacity-50 pointer-events-none"
+            )}>
+              <SectionTitle subtitle={
+                dniValidated 
+                  ? "Añade tantos menores como necesites. El número del tutor será usado como contacto de emergencia."
+                  : "Complete y valide el DNI del tutor para habilitar esta sección."
+              }>
                 Datos de hijo(s)
               </SectionTitle>
+
+              {!dniValidated && (
+                <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-xl">
+                  <p className="text-sm text-gray-600 text-center">
+                    🔒 Esta sección se habilitará después de validar el DNI del tutor
+                  </p>
+                </div>
+              )}
 
               {data.children.map((child, index) => (
                 <ChildCard
@@ -702,11 +876,11 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
             <div className="sticky bottom-0 pt-4 bg-gradient-to-t from-white/80 to-transparent">
               <button
                 type="submit"
-                disabled={processing}
+                disabled={processing || !dniValidated}
                 className={classNames(
                   "w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-semibold text-white",
                   "bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-300",
-                  processing && "opacity-70 cursor-not-allowed"
+                  (processing || !dniValidated) && "opacity-70 cursor-not-allowed"
                 )}
               >
                 {processing ? (
@@ -734,6 +908,8 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
                     </svg>
                     Enviando…
                   </>
+                ) : !dniValidated ? (
+                  <>Complete el DNI para continuar</>
                 ) : (
                   <>Enviar datos</>
                 )}
