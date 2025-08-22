@@ -295,8 +295,11 @@ class InscripcionController extends Controller
         }
 
         DB::transaction(function () use ($validated, $paquete, $grupo) {
-            // Crear o encontrar usuario
-            $user = User::where('email', $validated['parent_email'])->first();
+            // Buscar usuario existente por email, teléfono o nombre similar
+            $user = User::where('email', $validated['parent_email'])
+                        ->orWhere('phone', $validated['parent_phone'])
+                        ->orWhere('name', 'LIKE', trim($validated['parent_name']))
+                        ->first();
             
             if (!$user) {
                 // Crear contraseña con primer nombre + 123
@@ -315,6 +318,7 @@ class InscripcionController extends Controller
                 // Si el usuario ya existe, actualizar datos si es necesario
                 $user->update([
                     'name' => $validated['parent_name'],
+                    'email' => $validated['parent_email'],
                     'phone' => $validated['parent_phone'],
                 ]);
             }
@@ -362,5 +366,50 @@ class InscripcionController extends Controller
 
         return redirect()->route('inscripcion.form', [$paquete->id, $grupo->id])
             ->with('success', 'Inscripción realizada exitosamente. Recibirás un correo con los detalles.');
+    }
+
+    /**
+     * Verificar si existe un usuario por nombre y teléfono
+     */
+    public function checkUserExists(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|min:3',
+            'phone' => 'required|string|regex:/^9\d{8}$/',
+        ]);
+
+        $name = trim($request->name);
+        $phone = $request->phone;
+
+        // Buscar usuario por nombre exacto o teléfono
+        $user = User::where(function($query) use ($name, $phone) {
+            $query->where('name', 'LIKE', $name)
+                  ->orWhere('phone', $phone);
+        })->first();
+
+        if ($user) {
+            // Si encontramos usuario, obtener sus hijos
+            $hijos = $user->hijos()->get(['nombres', 'doc_tipo', 'doc_numero']);
+            
+            return response()->json([
+                'exists' => true,
+                'user' => [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                ],
+                'children' => $hijos->map(function($hijo) {
+                    return [
+                        'name' => $hijo->nombres,
+                        'docType' => $hijo->doc_tipo,
+                        'docNumber' => $hijo->doc_numero,
+                    ];
+                })->toArray()
+            ]);
+        }
+
+        return response()->json([
+            'exists' => false
+        ]);
     }
 }

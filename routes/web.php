@@ -35,6 +35,9 @@ Route::get('/', function () {
 Route::get('/paquete/{paquete}/grupo/{grupo}/form', [InscripcionController::class, 'showForm'])->name('inscripcion.form');
 Route::post('/paquete/{paquete}/grupo/{grupo}/form', [InscripcionController::class, 'storeForm'])->name('inscripcion.store');
 
+// Ruta para verificar si existe un usuario
+Route::post('/check-user-exists', [InscripcionController::class, 'checkUserExists'])->name('check.user.exists');
+
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');

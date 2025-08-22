@@ -1,5 +1,6 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useForm } from "@inertiajs/react";
+import axios from "axios";
 
 function classNames(...c) {
   return c.filter(Boolean).join(" ");
@@ -164,6 +165,77 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
       },
     ],
   });
+
+  const [showUserExistsWarning, setShowUserExistsWarning] = useState(false);
+  const [existingUserData, setExistingUserData] = useState(null);
+  const [checkingUser, setCheckingUser] = useState(false);
+
+  // Función para verificar si el usuario ya existe
+  const checkUserExists = async (name, phone) => {
+    if (!name?.trim() || name.trim().length < 3 || !phone?.trim() || phone.trim().length < 9) {
+      setShowUserExistsWarning(false);
+      setExistingUserData(null);
+      return;
+    }
+
+    setCheckingUser(true);
+    try {
+      const response = await axios.post('/check-user-exists', {
+        name: name.trim(),
+        phone: phone.trim()
+      });
+
+      if (response.data.exists) {
+        setExistingUserData(response.data);
+        setShowUserExistsWarning(true);
+      } else {
+        setShowUserExistsWarning(false);
+        setExistingUserData(null);
+      }
+    } catch (error) {
+      console.log('Error verificando usuario:', error);
+      setShowUserExistsWarning(false);
+      setExistingUserData(null);
+    } finally {
+      setCheckingUser(false);
+    }
+  };
+
+  // Función para usar los datos del usuario existente
+  const useExistingUserData = () => {
+    if (existingUserData) {
+      setData({
+        ...data,
+        parent_name: existingUserData.user.name,
+        parent_email: existingUserData.user.email,
+        parent_phone: existingUserData.user.phone,
+        children: existingUserData.children.length > 0 
+          ? existingUserData.children.map(child => ({
+              ...child,
+              errors: {}
+            }))
+          : [{
+              name: "",
+              docType: "DNI",
+              docNumber: "",
+              errors: {}
+            }]
+      });
+      setShowUserExistsWarning(false);
+      setExistingUserData(null);
+    }
+  };
+
+  // Efecto para verificar cuando cambian nombre o teléfono
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (data.parent_name && data.parent_phone) {
+        checkUserExists(data.parent_name, data.parent_phone);
+      }
+    }, 1000); // Delay de 1 segundo después de escribir
+
+    return () => clearTimeout(timer);
+  }, [data.parent_name, data.parent_phone]);
 
   const addChild = () => {
     setData("children", [
@@ -491,6 +563,96 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
             </div>
             </section>
 
+            {/* Advertencia de usuario existente */}
+            {showUserExistsWarning && existingUserData && (
+              <section className="mb-6">
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.732 15.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-semibold text-amber-800 mb-2">
+                        ¡Usuario encontrado en el sistema!
+                      </h3>
+                      <p className="text-xs text-amber-700 mb-3">
+                        Encontramos una cuenta con datos similares. Puedes usar los datos guardados para evitar duplicados.
+                      </p>
+                      
+                      <div className="bg-white/60 rounded-lg p-3 mb-3 text-xs">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div>
+                            <span className="font-medium text-gray-600">Nombre:</span>
+                            <p className="text-gray-800">{existingUserData.user.name}</p>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-600">Email:</span>
+                            <p className="text-gray-800">{existingUserData.user.email}</p>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-600">Teléfono:</span>
+                            <p className="text-gray-800">{existingUserData.user.phone}</p>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-600">Hijos registrados:</span>
+                            <p className="text-gray-800">{existingUserData.children.length}</p>
+                          </div>
+                        </div>
+                        
+                        {existingUserData.children.length > 0 && (
+                          <div className="mt-2 pt-2 border-t border-gray-200">
+                            <span className="font-medium text-gray-600">Hijos:</span>
+                            <ul className="mt-1 space-y-1">
+                              {existingUserData.children.map((child, index) => (
+                                <li key={index} className="text-gray-700">
+                                  • {child.name} ({child.docType}: {child.docNumber})
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={useExistingUserData}
+                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-600 text-white text-xs font-medium hover:bg-amber-700 focus:ring-2 focus:ring-amber-500"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                          </svg>
+                          Usar datos guardados
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowUserExistsWarning(false);
+                            setExistingUserData(null);
+                          }}
+                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 text-gray-700 text-xs font-medium hover:bg-gray-50 focus:ring-2 focus:ring-gray-500"
+                        >
+                          Continuar sin cambios
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* Indicador de verificación */}
+            {checkingUser && (
+              <section className="mb-4">
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Verificando si ya tienes una cuenta...
+                </div>
+              </section>
+            )}
 
             {/* Hijos */}
             <section className="mb-8">
