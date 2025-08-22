@@ -11,20 +11,17 @@ export default function AuthenticatedLayout({ header, children }) {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-rose-50 via-orange-50 to-amber-50">
-            <nav className="bg-white/95 backdrop-blur border-b border-gray-200 shadow-sm sticky top-0 z-50">
+            <nav className="bg-[#d52e27] backdrop-blur border-b border-gray-200 shadow-sm sticky top-0 z-50">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="flex h-16 justify-between">
                         <div className="flex">
                             <div className="flex shrink-0 items-center">
                                 <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity duration-200">
                                     <img 
-                                        src="/imgs/logo-viajesroxana.png" 
+                                        src="/imgs/logo-roxana-blanco.png"  
                                         alt="Viajes Roxana" 
-                                        className="h-8 w-auto"
+                                        className="h-12 w-auto" 
                                     />
-                                    <span className="text-lg font-bold text-red-600 tracking-wide">
-                                        VIAJES ROXANA
-                                    </span>
                                 </Link>
                             </div>
                         </div>
@@ -65,14 +62,14 @@ export default function AuthenticatedLayout({ header, children }) {
                                         <Dropdown.Link
                                             href={route('profile.edit')}
                                         >
-                                            Profile
+                                            Perfil
                                         </Dropdown.Link>
                                         <Dropdown.Link
                                             href={route('logout')}
                                             method="post"
                                             as="button"
                                         >
-                                            Log Out
+                                            Cerrar sesión
                                         </Dropdown.Link>
                                     </Dropdown.Content>
                                 </Dropdown>
@@ -142,14 +139,14 @@ export default function AuthenticatedLayout({ header, children }) {
 
                         <div className="mt-3 space-y-1">
                             <ResponsiveNavLink href={route('profile.edit')}>
-                                Profile
+                                Perfil
                             </ResponsiveNavLink>
                             <ResponsiveNavLink
                                 method="post"
                                 href={route('logout')}
                                 as="button"
                             >
-                                Log Out
+                                Cerrar sesión
                             </ResponsiveNavLink>
                         </div>
                     </div>
