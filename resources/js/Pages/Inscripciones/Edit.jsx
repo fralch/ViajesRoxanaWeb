@@ -28,7 +28,7 @@ export default function Edit({ inscripcion, paquetes, grupos, hijos }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        put(route('inscripciones.update', inscripcion.id));
+        put(route('inscripciones.update', { inscripcion: inscripcion.id }));
     };
 
     const handleHijoChange = (e) => {
