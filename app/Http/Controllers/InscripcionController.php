@@ -282,25 +282,11 @@ class InscripcionController extends Controller
             ]);
         }
 
-        // Verificar duplicados de documentos antes de la transacción
-        foreach ($validated['children'] as $childData) {
-            $existeDocumento = Hijo::where('doc_tipo', $childData['docType'])
-                                  ->where('doc_numero', $childData['docNumber'])
-                                  ->exists();
-            if ($existeDocumento) {
-                return back()->withErrors([
-                    'children' => "Ya existe un niño registrado con el documento {$childData['docType']} {$childData['docNumber']}."
-                ]);
-            }
-        }
+        // Nota: Solo verificamos por DNI del padre. Los hijos pueden tener documentos duplicados entre diferentes padres.
 
         DB::transaction(function () use ($validated, $paquete, $grupo) {
-            // Buscar usuario existente por DNI (prioridad), email, teléfono o nombre similar
-            $user = User::where('dni', $validated['parent_dni'])
-                        ->orWhere('email', $validated['parent_email'])
-                        ->orWhere('phone', $validated['parent_phone'])
-                        ->orWhere('name', 'LIKE', trim($validated['parent_name']))
-                        ->first();
+            // Buscar usuario existente SOLO por DNI
+            $user = User::where('dni', $validated['parent_dni'])->first();
             
             if (!$user) {
                 // Crear contraseña con primer nombre + 123
@@ -372,35 +358,18 @@ class InscripcionController extends Controller
     }
 
     /**
-     * Verificar si existe un usuario por nombre y teléfono
+     * Verificar si existe un usuario por DNI
      */
     public function checkUserExists(Request $request)
     {
         $request->validate([
-            'name' => 'string|min:1',
-            'phone' => 'string|min:1',
-            'dni' => 'nullable|string|regex:/^\d{8}$/',
+            'dni' => 'required|string|regex:/^\d{8}$/',
         ]);
 
-        $name = trim($request->name);
-        $phone = $request->phone;
         $dni = $request->dni;
 
-        // Buscar usuario primordialmente por DNI
-        $user = null;
-        
-        if ($dni) {
-            // Prioridad 1: Buscar por DNI exacto
-            $user = User::where('dni', $dni)->first();
-        }
-        
-        if (!$user) {
-            // Prioridad 2: Buscar por teléfono o nombre si no se encontró por DNI
-            $user = User::where(function($query) use ($name, $phone) {
-                $query->where('phone', $phone)
-                      ->orWhere('name', 'LIKE', $name);
-            })->first();
-        }
+        // Buscar usuario SOLO por DNI
+        $user = User::where('dni', $dni)->first();
 
         if ($user) {
             // Si encontramos usuario, obtener sus hijos

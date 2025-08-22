@@ -171,11 +171,10 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
 
   const [showUserExistsWarning, setShowUserExistsWarning] = useState(false);
   const [existingUserData, setExistingUserData] = useState(null);
-  const [checkingUser, setCheckingUser] = useState(false);
   const [dniValidated, setDniValidated] = useState(false);
   const [dniLoading, setDniLoading] = useState(false);
 
-  // Función para validar DNI específicamente
+  // Función para validar DNI - ÚNICA verificación
   const validateDNI = async (dni) => {
     if (!dni?.trim() || dni.trim().length !== 8) {
       setDniValidated(false);
@@ -187,8 +186,6 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
     setDniLoading(true);
     try {
       const response = await axios.post('/check-user-exists', {
-        name: "temp", // Valor temporal ya que el backend lo requiere
-        phone: "987654321", // Valor temporal ya que el backend lo requiere
         dni: dni.trim()
       });
 
@@ -208,33 +205,6 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
       setDniValidated(false);
     } finally {
       setDniLoading(false);
-    }
-  };
-
-  // Función para verificar si el usuario ya existe (para otros campos)
-  const checkUserExists = async (name, phone, dni) => {
-    if (!dniValidated) return; // Solo verificar si el DNI ya fue validado
-    
-    if (!name?.trim() || name.trim().length < 3 || !phone?.trim() || phone.trim().length < 9) {
-      return;
-    }
-
-    setCheckingUser(true);
-    try {
-      const response = await axios.post('/check-user-exists', {
-        name: name.trim(),
-        phone: phone.trim(),
-        dni: dni?.trim() || null
-      });
-
-      if (response.data.exists && !showUserExistsWarning) {
-        setExistingUserData(response.data);
-        setShowUserExistsWarning(true);
-      }
-    } catch (error) {
-      console.log('Error verificando usuario:', error);
-    } finally {
-      setCheckingUser(false);
     }
   };
 
@@ -265,7 +235,7 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
     }
   };
 
-  // Efecto para validar DNI cuando cambia
+  // Efecto para validar DNI cuando cambia - ÚNICA verificación
   useEffect(() => {
     const timer = setTimeout(() => {
       if (data.parent_dni && data.parent_dni.length === 8) {
@@ -275,23 +245,10 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
         setShowUserExistsWarning(false);
         setExistingUserData(null);
       }
-    }, 800); // Delay más corto para DNI
+    }, 800);
 
     return () => clearTimeout(timer);
   }, [data.parent_dni]);
-
-  // Efecto para verificar cuando cambian nombre o teléfono (solo si DNI está validado)
-  useEffect(() => {
-    if (!dniValidated) return; // No verificar hasta que DNI esté validado
-    
-    const timer = setTimeout(() => {
-      if (data.parent_name && data.parent_phone) {
-        checkUserExists(data.parent_name, data.parent_phone, data.parent_dni);
-      }
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [data.parent_name, data.parent_phone, dniValidated]);
 
   const addChild = () => {
     setData("children", [
@@ -731,7 +688,7 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
                         ¡Usuario encontrado en el sistema!
                       </h3>
                       <p className="text-xs text-amber-700 mb-3">
-                        Encontramos una cuenta con datos similares. Puedes usar los datos guardados para evitar duplicados.
+                        Ya existe una cuenta con este DNI. Puedes usar los datos guardados.
                       </p>
                       
                       <div className="bg-white/60 rounded-lg p-3 mb-3 text-xs">
@@ -800,18 +757,6 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
               </section>
             )}
 
-            {/* Indicador de verificación */}
-            {checkingUser && (
-              <section className="mb-4">
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Verificando si ya tienes una cuenta...
-                </div>
-              </section>
-            )}
 
             {/* Hijos */}
             <section className={classNames(
