@@ -793,11 +793,7 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
               </SectionTitle>
 
               {!dniValidated && (
-                <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-xl">
-                  <p className="text-sm text-gray-600 text-center">
-                    🔒 Esta sección se habilitará después de validar el DNI del padre
-                  </p>
-                </div>
+                <div className=" bg-gray-50 border border-gray-200 rounded-xl"></div>
               )}
 
               {data.children.map((child, index) => (
