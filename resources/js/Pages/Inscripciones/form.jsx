@@ -191,27 +191,104 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
 
   const validateClient = () => {
     let ok = true;
+    const errors = {};
 
-    // Validación simple de teléfono peruano (9 dígitos iniciando en 9)
-    const phoneOk = /^9\d{8}$/.test((data.parent_phone || "").replace(/\D/g, ""));
-    if (!phoneOk) ok = false;
+    // Validación del nombre del tutor
+    if (!data.parent_name?.trim()) {
+      errors.parent_name = "El nombre del tutor es obligatorio.";
+      ok = false;
+    } else if (data.parent_name.trim().length < 3) {
+      errors.parent_name = "El nombre del tutor debe tener al menos 3 caracteres.";
+      ok = false;
+    } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(data.parent_name.trim())) {
+      errors.parent_name = "El nombre del tutor solo puede contener letras y espacios.";
+      ok = false;
+    }
 
-    // Valida hijos
+    // Validación del teléfono peruano (9 dígitos iniciando en 9)
+    const cleanPhone = (data.parent_phone || "").replace(/\D/g, "");
+    if (!cleanPhone) {
+      errors.parent_phone = "El celular es obligatorio.";
+      ok = false;
+    } else if (!/^9\d{8}$/.test(cleanPhone)) {
+      errors.parent_phone = "El celular debe ser un número peruano válido (9 dígitos empezando en 9).";
+      ok = false;
+    }
+
+    // Validación del email
+    if (!data.parent_email?.trim()) {
+      errors.parent_email = "El correo electrónico es obligatorio.";
+      ok = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.parent_email.trim())) {
+      errors.parent_email = "El correo electrónico debe tener un formato válido.";
+      ok = false;
+    }
+
+    // Validación de hijos
     const children = data.children.map((c) => ({ ...c, errors: {} }));
-    children.forEach((c) => {
+    
+    if (data.children.length === 0) {
+      errors.children = "Debe registrar al menos un hijo.";
+      ok = false;
+    } else if (data.children.length > 5) {
+      errors.children = "No puede registrar más de 5 hijos a la vez.";
+      ok = false;
+    }
+
+    children.forEach((c, index) => {
       const e = {};
+      
+      // Validar nombre del hijo
       if (!c.name?.trim()) {
-        e.name = "Ingresa el nombre";
+        e.name = "El nombre del hijo es obligatorio.";
+        ok = false;
+      } else if (c.name.trim().length < 3) {
+        e.name = "El nombre del hijo debe tener al menos 3 caracteres.";
+        ok = false;
+      } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(c.name.trim())) {
+        e.name = "El nombre del hijo solo puede contener letras y espacios.";
         ok = false;
       }
+
+      // Validar tipo de documento
+      if (!c.docType) {
+        e.docType = "El tipo de documento es obligatorio.";
+        ok = false;
+      } else if (!["DNI", "Pasaporte", "C. E."].includes(c.docType)) {
+        e.docType = "El tipo de documento debe ser DNI, Pasaporte o C. E.";
+        ok = false;
+      }
+
+      // Validar número de documento
       if (!c.docNumber?.trim()) {
-        e.docNumber = "Ingresa el número";
+        e.docNumber = "El número de documento es obligatorio.";
+        ok = false;
+      } else if (c.docNumber.trim().length < 8) {
+        e.docNumber = "El número de documento debe tener al menos 8 caracteres.";
+        ok = false;
+      } else if (c.docNumber.trim().length > 20) {
+        e.docNumber = "El número de documento no puede tener más de 20 caracteres.";
         ok = false;
       }
+
       c.errors = e;
     });
 
+    // Verificar documentos duplicados
+    const documentos = children.map(c => `${c.docType}-${c.docNumber?.trim()}`);
+    const documentosUnicos = new Set(documentos);
+    if (documentos.length !== documentosUnicos.size) {
+      errors.children = "No puede registrar hijos con el mismo tipo y número de documento.";
+      ok = false;
+    }
+
     setData("children", children);
+
+    // Si hay errores generales, añadirlos al estado de errores
+    if (Object.keys(errors).length > 0) {
+      // Aquí podrías manejar los errores generales si tu componente los soporta
+      console.log("Errores de validación:", errors);
+    }
 
     return ok;
   };
@@ -224,7 +301,7 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
     // Determinar la URL según si es inscripción específica o formulario general
     const submitUrl = paquete && grupo 
       ? `/paquete/${paquete.id}/grupo/${grupo.id}/form`
-      : "/users";
+      : "/inscripciones";
 
     post(submitUrl, {
       preserveScroll: true,

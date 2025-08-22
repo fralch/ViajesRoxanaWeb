@@ -7,6 +7,7 @@ use App\Models\Paquete;
 use App\Models\Grupo;
 use App\Models\User;
 use App\Models\Hijo;
+use App\Http\Requests\StoreInscripcionFormRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -254,23 +255,22 @@ class InscripcionController extends Controller
     /**
      * Procesar inscripción desde formulario público
      */
-    public function storeForm(Request $request, Paquete $paquete, Grupo $grupo)
+    public function storeForm(StoreInscripcionFormRequest $request, Paquete $paquete, Grupo $grupo)
     {
         // Verificar que el grupo pertenece al paquete
         if ($grupo->paquete_id !== $paquete->id) {
             abort(404, 'El grupo no pertenece a este paquete');
         }
 
-        // Validar datos
-        $validated = $request->validate([
-            'parent_name' => 'required|string|max:255',
-            'parent_phone' => 'required|string|regex:/^9\d{8}$/',
-            'parent_email' => 'required|email|max:255',
-            'children' => 'required|array|min:1',
-            'children.*.name' => 'required|string|max:255',
-            'children.*.docType' => 'required|string|in:DNI,Pasaporte,C. E.',
-            'children.*.docNumber' => 'required|string|max:20',
-        ]);
+        // Verificar que el paquete y grupo estén activos
+        if (!$paquete->activo || !$grupo->activo) {
+            return back()->withErrors([
+                'capacity' => 'Este paquete o grupo no está disponible para inscripciones.'
+            ]);
+        }
+
+        // Validar datos (ya validados por el FormRequest)
+        $validated = $request->validated();
 
         // Verificar capacidad disponible
         $inscritosCount = Inscripcion::where('grupo_id', $grupo->id)->count();
@@ -282,35 +282,81 @@ class InscripcionController extends Controller
             ]);
         }
 
+        // Verificar duplicados de documentos antes de la transacción
+        foreach ($validated['children'] as $childData) {
+            $existeDocumento = Hijo::where('doc_tipo', $childData['docType'])
+                                  ->where('doc_numero', $childData['docNumber'])
+                                  ->exists();
+            if ($existeDocumento) {
+                return back()->withErrors([
+                    'children' => "Ya existe un niño registrado con el documento {$childData['docType']} {$childData['docNumber']}."
+                ]);
+            }
+        }
+
         DB::transaction(function () use ($validated, $paquete, $grupo) {
             // Crear o encontrar usuario
             $user = User::where('email', $validated['parent_email'])->first();
             
             if (!$user) {
+                // Crear contraseña con primer nombre + 123
+                $primerNombre = explode(' ', trim($validated['parent_name']))[0];
+                $password = $primerNombre . '123';
+                
                 $user = User::create([
                     'name' => $validated['parent_name'],
                     'email' => $validated['parent_email'],
                     'phone' => $validated['parent_phone'],
-                    'password' => Hash::make('password123'), // Password temporal
+                    'password' => Hash::make($password),
                     'email_verified_at' => now(),
+                    'is_admin' => false,
+                ]);
+            } else {
+                // Si el usuario ya existe, actualizar datos si es necesario
+                $user->update([
+                    'name' => $validated['parent_name'],
+                    'phone' => $validated['parent_phone'],
                 ]);
             }
 
             // Crear hijos e inscripciones
             foreach ($validated['children'] as $childData) {
-                $hijo = Hijo::create([
-                    'nombres' => $childData['name'],
-                    'doc_tipo' => $childData['docType'],
-                    'doc_numero' => $childData['docNumber'],
-                    'user_id' => $user->id,
-                ]);
+                // Verificar si ya existe un hijo con el mismo documento para este usuario
+                $hijoExistente = Hijo::where('user_id', $user->id)
+                                    ->where('doc_tipo', $childData['docType'])
+                                    ->where('doc_numero', $childData['docNumber'])
+                                    ->first();
 
-                Inscripcion::create([
-                    'hijo_id' => $hijo->id,
-                    'paquete_id' => $paquete->id,
-                    'grupo_id' => $grupo->id,
-                    'usuario_id' => $user->id,
-                ]);
+                if ($hijoExistente) {
+                    $hijo = $hijoExistente;
+                    // Actualizar datos del hijo si es necesario
+                    $hijo->update([
+                        'nombres' => $childData['name'],
+                        'nums_emergencia' => [$validated['parent_phone']], // Actualizar contacto de emergencia
+                    ]);
+                } else {
+                    $hijo = Hijo::create([
+                        'nombres' => $childData['name'],
+                        'doc_tipo' => $childData['docType'],
+                        'doc_numero' => $childData['docNumber'],
+                        'user_id' => $user->id,
+                        'nums_emergencia' => [$validated['parent_phone']], // Teléfono del padre como contacto de emergencia
+                    ]);
+                }
+
+                // Verificar que no exista inscripción duplicada
+                $existeInscripcion = Inscripcion::where('hijo_id', $hijo->id)
+                                              ->where('grupo_id', $grupo->id)
+                                              ->exists();
+                
+                if (!$existeInscripcion) {
+                    Inscripcion::create([
+                        'hijo_id' => $hijo->id,
+                        'paquete_id' => $paquete->id,
+                        'grupo_id' => $grupo->id,
+                        'usuario_id' => $user->id,
+                    ]);
+                }
             }
         });
 
