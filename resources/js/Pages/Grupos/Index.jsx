@@ -78,7 +78,7 @@ export default function Index({ grupos, filters }) {
 
             {/* Encabezado integrado con el contenido */}
             <div className="px-4 py-6">
-                <div className="w-full max-w-7xl mx-auto">
+                <div className="w-full max-w-[75vw] mx-auto">
                     {/* Encabezado con título y botón */}
                     <div className="flex justify-between items-center mb-6">
                         <h2 className="text-2xl font-bold text-red-600">
