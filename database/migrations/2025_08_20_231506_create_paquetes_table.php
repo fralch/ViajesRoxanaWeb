@@ -16,8 +16,6 @@ return new class extends Migration
             $table->string('nombre');
             $table->string('destino');
             $table->text('descripcion')->nullable();
-            $table->date('fecha_inicio');
-            $table->date('fecha_fin');
             $table->boolean('activo');
             $table->timestamps();
         });
