@@ -143,8 +143,21 @@ class InscripcionController extends Controller
      */
     public function edit(Inscripcion $inscripcion)
     {
+        $paquetes = Paquete::where('activo', true)->get();
+        $grupos = Grupo::where('activo', true)->with('paquete')->get();
+        
+        // Si no es admin, solo mostrar sus hijos
+        if (Auth::user()->is_admin) {
+            $hijos = Hijo::with('user')->get();
+        } else {
+            $hijos = Hijo::where('user_id', Auth::id())->get();
+        }
+
         return Inertia::render('Inscripciones/Edit', [
-            'inscripcion' => $inscripcion
+            'inscripcion' => $inscripcion->load(['hijo', 'paquete', 'grupo', 'usuario']),
+            'paquetes' => $paquetes,
+            'grupos' => $grupos,
+            'hijos' => $hijos
         ]);
     }
 
