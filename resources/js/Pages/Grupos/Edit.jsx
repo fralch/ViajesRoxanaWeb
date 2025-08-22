@@ -55,22 +55,22 @@ export default function Edit({ grupo, paquetes }) {
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex justify-between items-center bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-4 rounded-lg shadow-sm">
+                <div className="flex justify-between items-center bg-white px-6 py-4 ">
                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                            <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                         </div>
                         <div>
-                            <h2 className="text-xl font-semibold">
+                            <h2 className="text-xl font-semibold text-gray-900">
                                 Editar Grupo
                             </h2>
-                            <p className="text-sm text-white/80">{grupo.nombre}</p>
+                            <p className="text-sm text-gray-500">{grupo.nombre}</p>
                         </div>
                     </div>
                     <Link href={route('grupos.index')}>
-                        <SecondaryButton className="bg-white/10 hover:bg-white/20 text-white border-white/30 hover:border-white/50">
+                        <SecondaryButton className="bg-gray-50 hover:bg-gray-100 text-gray-700 border-gray-200 hover:border-gray-300">
                             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                             </svg>
