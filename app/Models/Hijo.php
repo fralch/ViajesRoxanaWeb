@@ -28,7 +28,7 @@ class Hijo extends Model
         'fecha_nacimiento' => 'date'
     ];
 
-    public function usuario()
+    public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
     }

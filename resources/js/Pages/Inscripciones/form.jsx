@@ -1,5 +1,7 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useForm } from "@inertiajs/react";
+import axios from "axios";
+import { showSuccess, showError, showWarning, showToast } from "../../utils/swal";
 
 function classNames(...c) {
   return c.filter(Boolean).join(" ");
@@ -25,6 +27,7 @@ const TextField = ({
   pattern,
   max,
   min,
+  disabled = false,
 }) => (
   <div className="space-y-1">
     <label htmlFor={id} className={labelStyles}>
@@ -37,6 +40,7 @@ const TextField = ({
       onChange={onChange}
       placeholder={placeholder}
       required={required}
+      disabled={disabled}
       aria-invalid={!!error}
       aria-describedby={describedby}
       autoComplete={autoComplete}
@@ -148,6 +152,7 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
     parent_name: "",
     parent_phone: "",
     parent_email: "",
+    parent_dni: "",
     children: [
       {
         name: "",
@@ -164,6 +169,101 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
       },
     ],
   });
+
+  const [showUserExistsWarning, setShowUserExistsWarning] = useState(false);
+  const [existingUserData, setExistingUserData] = useState(null);
+  const [dniValidated, setDniValidated] = useState(false);
+  const [dniLoading, setDniLoading] = useState(false);
+
+  // Función para validar DNI - ÚNICA verificación
+  const validateDNI = async (dni) => {
+    if (!dni?.trim() || dni.trim().length !== 8) {
+      setDniValidated(false);
+      setShowUserExistsWarning(false);
+      setExistingUserData(null);
+      return;
+    }
+
+    setDniLoading(true);
+    try {
+      const response = await axios.post('/check-user-exists', {
+        dni: dni.trim()
+      });
+
+      if (response.data.exists) {
+        setExistingUserData(response.data);
+        setShowUserExistsWarning(true);
+        setDniValidated(true);
+        showToast('Usuario encontrado en el sistema', 'info');
+      } else {
+        setShowUserExistsWarning(false);
+        setExistingUserData(null);
+        setDniValidated(true);
+        showToast('DNI disponible para registro', 'success');
+      }
+    } catch (error) {
+      console.log('Error verificando DNI:', error);
+      setShowUserExistsWarning(false);
+      setExistingUserData(null);
+      setDniValidated(false);
+      showError('Error de verificación', 'No se pudo verificar el DNI. Intenta nuevamente.');
+    } finally {
+      setDniLoading(false);
+    }
+  };
+
+  // Función para usar los datos del usuario existente
+  const useExistingUserData = () => {
+    if (existingUserData) {
+      setData({
+        ...data,
+        parent_name: existingUserData.user.name,
+        parent_email: existingUserData.user.email,
+        parent_phone: existingUserData.user.phone,
+        parent_dni: existingUserData.user.dni || "",
+        children: existingUserData.children.length > 0 
+          ? existingUserData.children.map(child => ({
+              ...child,
+              errors: {}
+            }))
+          : [{
+              name: "",
+              docType: "DNI",
+              docNumber: "",
+              errors: {}
+            }]
+      });
+      setShowUserExistsWarning(false);
+      setExistingUserData(null);
+      setDniValidated(true);
+      showToast('Datos cargados correctamente', 'success');
+    }
+  };
+
+  // Efecto para mostrar mensajes flash y errores al cargar
+  useEffect(() => {
+    if (flash?.success) {
+      showSuccess('¡Éxito!', flash.success);
+    }
+    if (error) {
+      showError('Error', error);
+    }
+  }, [flash, error]);
+
+  // Efecto para validar DNI cuando cambia - ÚNICA verificación
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (data.parent_dni && data.parent_dni.length === 8) {
+        validateDNI(data.parent_dni);
+      } else if (data.parent_dni && data.parent_dni.length < 8) {
+        setDniValidated(false);
+        setShowUserExistsWarning(false);
+        setExistingUserData(null);
+      }
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, [data.parent_dni]);
 
   const addChild = () => {
     setData("children", [
@@ -191,27 +291,114 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
 
   const validateClient = () => {
     let ok = true;
+    const errors = {};
 
-    // Validación simple de teléfono peruano (9 dígitos iniciando en 9)
-    const phoneOk = /^9\d{8}$/.test((data.parent_phone || "").replace(/\D/g, ""));
-    if (!phoneOk) ok = false;
+    // Validación del nombre del tutor
+    if (!data.parent_name?.trim()) {
+      errors.parent_name = "El nombre del tutor es obligatorio.";
+      ok = false;
+    } else if (data.parent_name.trim().length < 3) {
+      errors.parent_name = "El nombre del tutor debe tener al menos 3 caracteres.";
+      ok = false;
+    } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(data.parent_name.trim())) {
+      errors.parent_name = "El nombre del tutor solo puede contener letras y espacios.";
+      ok = false;
+    }
 
-    // Valida hijos
+    // Validación del teléfono peruano (9 dígitos iniciando en 9)
+    const cleanPhone = (data.parent_phone || "").replace(/\D/g, "");
+    if (!cleanPhone) {
+      errors.parent_phone = "El celular es obligatorio.";
+      ok = false;
+    } else if (!/^9\d{8}$/.test(cleanPhone)) {
+      errors.parent_phone = "El celular debe ser un número peruano válido (9 dígitos empezando en 9).";
+      ok = false;
+    }
+
+    // Validación del email
+    if (!data.parent_email?.trim()) {
+      errors.parent_email = "El correo electrónico es obligatorio.";
+      ok = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.parent_email.trim())) {
+      errors.parent_email = "El correo electrónico debe tener un formato válido.";
+      ok = false;
+    }
+
+    // Validación del DNI
+    const cleanDni = (data.parent_dni || "").replace(/\D/g, "");
+    if (!cleanDni) {
+      errors.parent_dni = "El DNI es obligatorio.";
+      ok = false;
+    } else if (!/^\d{8}$/.test(cleanDni)) {
+      errors.parent_dni = "El DNI debe tener exactamente 8 dígitos.";
+      ok = false;
+    }
+
+    // Validación de hijos
     const children = data.children.map((c) => ({ ...c, errors: {} }));
-    children.forEach((c) => {
+    
+    if (data.children.length === 0) {
+      errors.children = "Debe registrar al menos un hijo.";
+      ok = false;
+    } else if (data.children.length > 5) {
+      errors.children = "No puede registrar más de 5 hijos a la vez.";
+      ok = false;
+    }
+
+    children.forEach((c, index) => {
       const e = {};
+      
+      // Validar nombre del hijo
       if (!c.name?.trim()) {
-        e.name = "Ingresa el nombre";
+        e.name = "El nombre del hijo es obligatorio.";
+        ok = false;
+      } else if (c.name.trim().length < 3) {
+        e.name = "El nombre del hijo debe tener al menos 3 caracteres.";
+        ok = false;
+      } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(c.name.trim())) {
+        e.name = "El nombre del hijo solo puede contener letras y espacios.";
         ok = false;
       }
+
+      // Validar tipo de documento
+      if (!c.docType) {
+        e.docType = "El tipo de documento es obligatorio.";
+        ok = false;
+      } else if (!["DNI", "Pasaporte", "C. E."].includes(c.docType)) {
+        e.docType = "El tipo de documento debe ser DNI, Pasaporte o C. E.";
+        ok = false;
+      }
+
+      // Validar número de documento
       if (!c.docNumber?.trim()) {
-        e.docNumber = "Ingresa el número";
+        e.docNumber = "El número de documento es obligatorio.";
+        ok = false;
+      } else if (c.docNumber.trim().length < 8) {
+        e.docNumber = "El número de documento debe tener al menos 8 caracteres.";
+        ok = false;
+      } else if (c.docNumber.trim().length > 20) {
+        e.docNumber = "El número de documento no puede tener más de 20 caracteres.";
         ok = false;
       }
+
       c.errors = e;
     });
 
+    // Verificar documentos duplicados
+    const documentos = children.map(c => `${c.docType}-${c.docNumber?.trim()}`);
+    const documentosUnicos = new Set(documentos);
+    if (documentos.length !== documentosUnicos.size) {
+      errors.children = "No puede registrar hijos con el mismo tipo y número de documento.";
+      ok = false;
+    }
+
     setData("children", children);
+
+    // Si hay errores generales, añadirlos al estado de errores
+    if (Object.keys(errors).length > 0) {
+      // Aquí podrías manejar los errores generales si tu componente los soporta
+      console.log("Errores de validación:", errors);
+    }
 
     return ok;
   };
@@ -219,20 +406,37 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
   const handleSubmit = (e) => {
     e.preventDefault();
     clearErrors();
-    if (!validateClient()) return;
+    
+    if (!validateClient()) {
+      showWarning('Formulario incompleto', 'Por favor completa todos los campos requeridos correctamente.');
+      return;
+    }
+
+    if (!dniValidated) {
+      showWarning('DNI no validado', 'Debes completar y validar el DNI antes de enviar el formulario.');
+      return;
+    }
 
     // Determinar la URL según si es inscripción específica o formulario general
     const submitUrl = paquete && grupo 
       ? `/paquete/${paquete.id}/grupo/${grupo.id}/form`
-      : "/users";
+      : "/inscripciones";
 
     post(submitUrl, {
       preserveScroll: true,
       onSuccess: () => {
+        // Mostrar alerta de éxito
+        showSuccess(
+          '¡Inscripción exitosa!', 
+          'Los datos se han guardado correctamente. Recibirás un correo con los detalles.'
+        );
+        
+        // Resetear formulario
         setData({
           parent_name: "",
           parent_phone: "",
           parent_email: "",
+          parent_dni: "",
           children: [{ 
             name: "", 
             docType: "DNI", 
@@ -246,7 +450,23 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
             errors: {} 
           }],
         });
+        // Resetear estados de validación
+        setDniValidated(false);
+        setShowUserExistsWarning(false);
+        setExistingUserData(null);
       },
+      onError: (errors) => {
+        // Mostrar errores específicos
+        if (errors.capacity) {
+          showError('Sin cupos disponibles', errors.capacity);
+        } else if (errors.children) {
+          showError('Error en datos de hijos', errors.children);
+        } else if (Object.keys(errors).length > 0) {
+          showError('Error en el formulario', 'Por favor revisa los datos ingresados.');
+        } else {
+          showError('Error inesperado', 'No se pudo procesar la inscripción. Intenta nuevamente.');
+        }
+      }
     });
   };
 
@@ -338,34 +558,12 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
               </div>
             )}
 
-            {/* Mostrar mensajes */}
-            {error && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
-            )}
-            
-            {flash?.success && (
-              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl">
-                <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <p className="text-sm text-green-700">{flash.success}</p>
-                </div>
-              </div>
-            )}
-            
-            {errors.capacity && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-                <p className="text-sm text-red-700">{errors.capacity}</p>
-              </div>
-            )}
+            {/* Mensajes flash ahora manejados por SweetAlert */}
 
            {/* Datos del padre/madre/tutor */}
             <section className="mb-8">
             <SectionTitle subtitle="Usaremos estos datos para crear tu cuenta.">
-                Datos del tutor
+                Datos del padre
             </SectionTitle>
 
             <div className="grid grid-cols-1 gap-4">
@@ -381,6 +579,88 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
                 error={errors.parent_name}
                 />
 
+                {/* DNI ocupa todo el ancho */}
+                <div className="space-y-1">
+                  <label htmlFor="parent_dni" className={labelStyles}>
+                    DNI
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="parent_dni"
+                      type="text"
+                      value={data.parent_dni}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^0-9]/g, "");
+                        setData("parent_dni", value);
+                        // Reset validación cuando se cambia
+                        if (value.length !== 8) {
+                          setDniValidated(false);
+                        }
+                      }}
+                      placeholder="12345678"
+                      required
+                      inputMode="numeric"
+                      pattern="^\d{8}$"
+                      maxLength="8"
+                      className={classNames(
+                        inputBase,
+                        "bg-white/80 backdrop-blur border-gray-300 focus:ring-red-500 focus:border-red-500 placeholder-gray-400 pr-10",
+                        errors.parent_dni && "border-red-400 focus:ring-red-400 focus:border-red-400",
+                        dniLoading && "opacity-70"
+                      )}
+                      disabled={dniLoading}
+                    />
+                    
+                    {/* Indicadores en el campo */}
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                      {dniLoading && (
+                        <svg className="animate-spin h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      )}
+                      {!dniLoading && dniValidated && data.parent_dni.length === 8 && (
+                        <svg className="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                      {!dniLoading && data.parent_dni.length === 8 && !dniValidated && (
+                        <svg className="h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Mensajes de estado */}
+                  {dniLoading && (
+                    <p className="text-xs text-blue-600 flex items-center gap-1">
+                      <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Verificando DNI...
+                    </p>
+                  )}
+                  {!dniLoading && dniValidated && data.parent_dni.length === 8 && !showUserExistsWarning && (
+                    <p className="text-xs text-green-600">✓ DNI disponible</p>
+                  )}
+                  {errors.parent_dni && (
+                    <p role="alert" className="text-xs text-red-600">
+                      {errors.parent_dni}
+                    </p>
+                  )}
+                </div>
+
+                {/* Mensaje informativo si DNI no está validado */}
+                {!dniValidated && data.parent_dni.length > 0 && data.parent_dni.length < 8 && (
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                    <p className="text-xs text-blue-700">
+                      ℹ️ Complete el DNI de 8 dígitos para habilitar los demás campos
+                    </p>
+                  </div>
+                )}
+
                 {/* Celular + Correo en la misma fila en PC */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <TextField
@@ -390,13 +670,14 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
                     onChange={(e) =>
                     setData("parent_phone", e.target.value.replace(/[^0-9]/g, ""))
                     }
-                    placeholder="9XXXXXXXX"
+                    placeholder={dniValidated ? "9XXXXXXXX" : "Primero complete el DNI"}
                     required
                     inputMode="numeric"
                     pattern="^9\\d{8}$"
                     autoComplete="tel"
                     describedby="phone_help"
                     error={errors.parent_phone}
+                    disabled={!dniValidated}
                 />
 
                 <TextField
@@ -405,21 +686,115 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
                     type="email"
                     value={data.parent_email}
                     onChange={(e) => setData("parent_email", e.target.value)}
-                    placeholder="correo@ejemplo.com"
+                    placeholder={dniValidated ? "correo@ejemplo.com" : "Primero complete el DNI"}
                     required
                     autoComplete="email"
                     error={errors.parent_email}
+                    disabled={!dniValidated}
                 />
                 </div>
             </div>
             </section>
 
+            {/* Advertencia de usuario existente */}
+            {showUserExistsWarning && existingUserData && (
+              <section className="mb-6">
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.732 15.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-semibold text-amber-800 mb-2">
+                        ¡Usuario encontrado en el sistema!
+                      </h3>
+                      <p className="text-xs text-amber-700 mb-3">
+                        Ya existe una cuenta con este DNI. Puedes usar los datos guardados.
+                      </p>
+                      
+                      <div className="bg-white/60 rounded-lg p-3 mb-3 text-xs">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div>
+                            <span className="font-medium text-gray-600">Nombre:</span>
+                            <p className="text-gray-800">{existingUserData.user.name}</p>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-600">DNI:</span>
+                            <p className="text-gray-800">{existingUserData.user.dni || "No registrado"}</p>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-600">Email:</span>
+                            <p className="text-gray-800">{existingUserData.user.email}</p>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-600">Teléfono:</span>
+                            <p className="text-gray-800">{existingUserData.user.phone}</p>
+                          </div>
+                          <div className="sm:col-span-2">
+                            <span className="font-medium text-gray-600">Hijos registrados:</span>
+                            <p className="text-gray-800">{existingUserData.children.length}</p>
+                          </div>
+                        </div>
+                        
+                        {existingUserData.children.length > 0 && (
+                          <div className="mt-2 pt-2 border-t border-gray-200">
+                            <span className="font-medium text-gray-600">Hijos:</span>
+                            <ul className="mt-1 space-y-1">
+                              {existingUserData.children.map((child, index) => (
+                                <li key={index} className="text-gray-700">
+                                  • {child.name} ({child.docType}: {child.docNumber})
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={useExistingUserData}
+                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-600 text-white text-xs font-medium hover:bg-amber-700 focus:ring-2 focus:ring-amber-500"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                          </svg>
+                          Usar datos guardados
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowUserExistsWarning(false);
+                            setExistingUserData(null);
+                          }}
+                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 text-gray-700 text-xs font-medium hover:bg-gray-50 focus:ring-2 focus:ring-gray-500"
+                        >
+                          Continuar sin cambios
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
+
 
             {/* Hijos */}
-            <section className="mb-8">
-              <SectionTitle subtitle="Añade tantos menores como necesites. El número del tutor será usado como contacto de emergencia.">
+            <section className={classNames(
+              "mb-8 transition-opacity",
+              !dniValidated && "opacity-50 pointer-events-none"
+            )}>
+              <SectionTitle subtitle={
+                dniValidated 
+                  ? "Añade tantos menores como necesites. El número del tutor será usado como contacto de emergencia."
+                  : "Complete y valide el DNI del tutor para habilitar esta sección."
+              }>
                 Datos de hijo(s)
               </SectionTitle>
+
+              {!dniValidated && (
+                <div className=" bg-gray-50 border border-gray-200 rounded-xl"></div>
+              )}
 
               {data.children.map((child, index) => (
                 <ChildCard
@@ -463,11 +838,11 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
             <div className="sticky bottom-0 pt-4 bg-gradient-to-t from-white/80 to-transparent">
               <button
                 type="submit"
-                disabled={processing}
+                disabled={processing || !dniValidated}
                 className={classNames(
                   "w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-semibold text-white",
                   "bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-300",
-                  processing && "opacity-70 cursor-not-allowed"
+                  (processing || !dniValidated) && "opacity-70 cursor-not-allowed"
                 )}
               >
                 {processing ? (
@@ -495,6 +870,8 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
                     </svg>
                     Enviando…
                   </>
+                ) : !dniValidated ? (
+                  <>Complete el DNI para continuar</>
                 ) : (
                   <>Enviar datos</>
                 )}

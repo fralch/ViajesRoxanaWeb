@@ -35,6 +35,9 @@ Route::get('/', function () {
 Route::get('/paquete/{paquete}/grupo/{grupo}/form', [InscripcionController::class, 'showForm'])->name('inscripcion.form');
 Route::post('/paquete/{paquete}/grupo/{grupo}/form', [InscripcionController::class, 'storeForm'])->name('inscripcion.store');
 
+// Ruta para verificar si existe un usuario
+Route::post('/check-user-exists', [InscripcionController::class, 'checkUserExists'])->name('check.user.exists');
+
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
@@ -72,11 +75,11 @@ Route::middleware('auth')->group(function () {
     Route::resource('hijos', HijoController::class);
     Route::resource('paquetes', PaqueteController::class);
     Route::resource('grupos', GrupoController::class);
-    Route::resource('inscripciones', InscripcionController::class);
+    Route::resource('inscripciones', InscripcionController::class)->parameters(['inscripciones' => 'inscripcion']);
     Route::resource('recorrido-paquetes', RecorridoPaqueteController::class);
     Route::resource('geolocalizacion', GeolocalizacionController::class);
     Route::resource('trazabilidad', TrazabilidadController::class);
-    Route::resource('notificaciones', NotificacionController::class);
+    Route::resource('notificaciones', NotificacionController::class)->parameters(['notificaciones' => 'notificacion']);
 
     Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');

@@ -6,6 +6,7 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import InputLabel from '@/Components/InputLabel';
 import InputError from '@/Components/InputError';
+import { showSuccess, showError } from '../../utils/swal';
 
 export default function Create() {
   const { data, setData, post, processing, errors, reset } = useForm({
@@ -19,8 +20,12 @@ export default function Create() {
     e.preventDefault();
     post(route('paquetes.store'), {
       onSuccess: () => {
+        showSuccess('¡Paquete creado!', 'El paquete ha sido creado exitosamente.');
         reset();
       },
+      onError: () => {
+        showError('Error', 'No se pudo crear el paquete. Revisa los datos ingresados.');
+      }
     });
   };
 
