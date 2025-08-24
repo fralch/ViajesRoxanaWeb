@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'whatsapp' => [
+        'api_url' => env('WHATSAPP_API_URL', 'https://api.factiliza.com/v1/whatsapp/send'),
+        'token' => env('WHATSAPP_TOKEN'),
+    ],
+
 ];
