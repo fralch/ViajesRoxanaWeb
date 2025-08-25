@@ -434,8 +434,8 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
                                     {/* Stats rápidas */}
                                     <div className="flex flex-wrap gap-6 justify-center lg:justify-start pt-4">
                                         <div className="bg-white/80 backdrop-blur-sm rounded-2xl px-4 py-3 shadow-lg">
-                                            <div className="text-2xl font-bold text-red-600">15</div>
-                                            <div className="text-sm text-gray-600">Viajes realizados</div>
+                                            <div className="text-2xl font-bold text-red-600">20</div>
+                                            <div className="text-sm text-gray-600">Años viajando</div>
                                         </div>
                                         <div className="bg-white/80 backdrop-blur-sm rounded-2xl px-4 py-3 shadow-lg">
                                             <div className="text-2xl font-bold text-green-600">100%</div>
@@ -486,15 +486,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
                                     </div>
                                 </div>
                                 
-                                {/* Información de Roxana */}
-                                <div className="text-center mt-8 space-y-2">
-                                    <h3 className="text-2xl font-bold text-gray-900">Roxana</h3>
-                                    <p className="text-gray-600">Tu asistente personal de viajes</p>
-                                    <div className="flex items-center justify-center gap-2 text-sm text-green-600">
-                                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                                        Disponible ahora
-                                    </div>
-                                </div>
+                               
                             </div>
                         </div>
                     </div>
