@@ -318,7 +318,7 @@ class InscripcionController extends Controller
             
                 // Enviar WhatsApp si el usuario fue creado exitosamente
                 if ($user) {
-                    // $this->enviarWhatsApp($validated['parent_phone'], $validated['parent_name'], $password);
+                    $this->enviarWhatsApp($validated['parent_phone'], $validated['parent_name'], $password);
                 }
             } else {
                 // Si el usuario ya existe, actualizar datos si es necesario
@@ -396,23 +396,28 @@ class InscripcionController extends Controller
             $curl = curl_init();
             $phoneWithCode = '51' . $phone;
             
+            // Usar la URL que funciona (necesitarás obtener tu ID único)
+            $instanceId = config('services.whatsapp.instance_id', 'NTE5NjExMTQ0MDQ='); // Tu ID único
+            $apiUrl = "https://apiwsp.factiliza.com/v1/message/sendtext/{$instanceId}";
+            
             \Log::info("Preparando request de WhatsApp", [
                 'phone_formatted' => $phoneWithCode,
                 'message_length' => strlen($mensaje),
-                'api_url' => config('services.whatsapp.api_url', 'https://api.factiliza.com/v1/whatsapp/send')
+                'api_url' => $apiUrl
             ]);
             
             curl_setopt_array($curl, [
-                CURLOPT_URL => config('services.whatsapp.api_url', 'https://api.factiliza.com/v1/whatsapp/send'),
+                CURLOPT_URL => $apiUrl,
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_ENCODING => "",
                 CURLOPT_MAXREDIRS => 10,
                 CURLOPT_TIMEOUT => 30,
                 CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
                 CURLOPT_CUSTOMREQUEST => "POST",
+                // Cambiar la estructura del JSON
                 CURLOPT_POSTFIELDS => json_encode([
-                    'phone' => $phoneWithCode,
-                    'message' => $mensaje
+                    'number' => $phoneWithCode,  // Cambio de 'phone' a 'number'
+                    'text' => $mensaje           // Cambio de 'message' a 'text'
                 ]),
                 CURLOPT_HTTPHEADER => [
                     "Authorization: Bearer " . config('services.whatsapp.token', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzOTM1NCIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6ImNvbnN1bHRvciJ9.MrhLuClAq-NTpvXx_72Zw9kTOIEqMiSRWVzPfeF64Xg'),
@@ -473,6 +478,7 @@ class InscripcionController extends Controller
             return false;
         }
     }
+
 
     /**
      * Verificar si existe un usuario por DNI
