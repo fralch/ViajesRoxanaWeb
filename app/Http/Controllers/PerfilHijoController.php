@@ -3,9 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Hijo;
-use App\Models\SaludFicha;
-use App\Models\NutricionFicha;
-use App\Models\Paquete;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -15,26 +12,11 @@ class PerfilHijoController extends Controller
     {
         // Verificar que el hijo pertenece al usuario autenticado
         if ($hijo->user_id !== auth()->id()) {
-            abort(403);
+            abort(403, 'No tienes permisos para ver este perfil.');
         }
 
-        // Obtener fichas existentes (generales, sin paquete específico)
-        $saludFicha = SaludFicha::where('hijo_id', $hijo->id)
-            ->whereNull('package_id')
-            ->first();
-            
-        $nutricionFicha = NutricionFicha::where('hijo_id', $hijo->id)
-            ->whereNull('package_id')
-            ->first();
-
-        // Obtener paquetes activos para las fichas específicas
-        $paquetes = Paquete::where('activo', true)->get();
-
         return Inertia::render('PerfilHijo', [
-            'hijo' => $hijo,
-            'saludFicha' => $saludFicha,
-            'nutricionFicha' => $nutricionFicha,
-            'paquetes' => $paquetes
+            'hijo' => $hijo
         ]);
     }
 
@@ -42,94 +24,53 @@ class PerfilHijoController extends Controller
     {
         // Verificar que el hijo pertenece al usuario autenticado
         if ($hijo->user_id !== auth()->id()) {
-            abort(403);
+            abort(403, 'No tienes permisos para actualizar este perfil.');
         }
 
         $request->validate([
             'nombres' => 'required|string|max:255',
-            'doc_tipo' => 'required|string|in:CC,TI,RC,CE',
+            'doc_tipo' => 'required|string|in:CC,TI,RC,CE,PP',
             'doc_numero' => 'required|string|max:20',
-            'fecha_nacimiento' => 'nullable|date',
+            'fecha_nacimiento' => 'nullable|date|before_or_equal:today',
             'foto' => 'nullable|string',
-            'pasatiempos' => 'nullable|string',
-            'deportes' => 'nullable|string',
-            'plato_favorito' => 'nullable|string',
-            'color_favorito' => 'nullable|string',
-            'informacion_adicional' => 'nullable|string',
-            'nums_emergencia' => 'nullable|array',
-            'nums_emergencia.*' => 'string|max:20'
+            'pasatiempos' => 'nullable|string|max:500',
+            'deportes' => 'nullable|string|max:500',
+            'plato_favorito' => 'nullable|string|max:200',
+            'color_favorito' => 'nullable|string|max:100',
+            'informacion_adicional' => 'nullable|string|max:1000',
+            'nums_emergencia' => 'nullable|array|max:5',
+            'nums_emergencia.*' => 'required|string|regex:/^[\d\s\+\-\(\)]+$/|max:20'
+        ], [
+            'nombres.required' => 'El nombre es obligatorio',
+            'doc_tipo.required' => 'Debe seleccionar un tipo de documento',
+            'doc_tipo.in' => 'El tipo de documento seleccionado no es válido',
+            'doc_numero.required' => 'El número de documento es obligatorio',
+            'fecha_nacimiento.before_or_equal' => 'La fecha de nacimiento no puede ser futura',
+            'nums_emergencia.max' => 'Máximo 5 números de emergencia permitidos',
+            'nums_emergencia.*.regex' => 'Los números de teléfono solo pueden contener dígitos, espacios y símbolos +, -, (, )',
+            'pasatiempos.max' => 'Los pasatiempos no pueden exceder 500 caracteres',
+            'deportes.max' => 'Los deportes no pueden exceder 500 caracteres',
+            'informacion_adicional.max' => 'La información adicional no puede exceder 1000 caracteres'
         ]);
 
         $data = $request->all();
         
         // Convertir array de números de emergencia a JSON si existe
         if (isset($data['nums_emergencia'])) {
-            // Filtrar números vacíos
+            // Filtrar números vacíos y limpiar espacios
             $data['nums_emergencia'] = array_filter($data['nums_emergencia'], function($num) {
                 return !empty(trim($num));
             });
+            
+            // Reindexar array y convertir a JSON
             $data['nums_emergencia'] = json_encode(array_values($data['nums_emergencia']));
+        } else {
+            // Si no hay números, guardar array vacío
+            $data['nums_emergencia'] = json_encode([]);
         }
 
         $hijo->update($data);
 
-        return redirect()->back()->with('message', 'Perfil actualizado correctamente');
-    }
-
-    public function storeSalud(Request $request, Hijo $hijo)
-    {
-        // Verificar que el hijo pertenece al usuario autenticado
-        if ($hijo->user_id !== auth()->id()) {
-            abort(403);
-        }
-
-        $request->validate([
-            'package_id' => 'nullable|exists:paquetes,id',
-            'alergias' => 'nullable|string',
-            'medicamentos' => 'nullable|string',
-            'seguros' => 'nullable|string',
-            'emergencia_contacto' => 'nullable|string|max:255',
-            'emergencia_telefono' => 'nullable|string|max:20',
-            'observaciones' => 'nullable|string'
-        ]);
-
-        // Crear o actualizar la ficha de salud
-        SaludFicha::updateOrCreate(
-            [
-                'hijo_id' => $hijo->id,
-                'package_id' => $request->package_id
-            ],
-            $request->all()
-        );
-
-        return redirect()->back()->with('message', 'Ficha de salud guardada correctamente');
-    }
-
-    public function storeNutricion(Request $request, Hijo $hijo)
-    {
-        // Verificar que el hijo pertenece al usuario autenticado
-        if ($hijo->user_id !== auth()->id()) {
-            abort(403);
-        }
-
-        $request->validate([
-            'package_id' => 'nullable|exists:paquetes,id',
-            'restricciones' => 'nullable|string',
-            'preferencias' => 'nullable|string',
-            'alergias_alimentarias' => 'nullable|string',
-            'intolerancias' => 'nullable|string',
-            'otras_notas' => 'nullable|string'
-        ]);
-
-        // Crear o actualizar la ficha nutricional
-        NutricionFicha::updateOrCreate(
-            [
-                'hijo_id' => $hijo->id,
-                'package_id' => $request->package_id
-            ],
-            $request->all()
-        );
-
-        return redirect()->back()->with('message', 'Ficha nutricional guardada correctamente');
+        return redirect()->back()->with('message', '✅ Perfil actualizado correctamente');
     }
 }

@@ -93,8 +93,6 @@ Route::middleware('auth')->group(function () {
     // Rutas para perfil del hijo
     Route::get('/perfil/hijo/{hijo}', [PerfilHijoController::class, 'show'])->name('perfil.hijo');
     Route::post('/perfil/hijo/{hijo}/update', [PerfilHijoController::class, 'update'])->name('perfil.hijo.update');
-    Route::post('/perfil/hijo/{hijo}/salud', [PerfilHijoController::class, 'storeSalud'])->name('perfil.hijo.salud.store');
-    Route::post('/perfil/hijo/{hijo}/nutricion', [PerfilHijoController::class, 'storeNutricion'])->name('perfil.hijo.nutricion.store');
 
     Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');
