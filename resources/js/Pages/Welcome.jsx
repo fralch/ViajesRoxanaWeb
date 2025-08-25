@@ -437,11 +437,31 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                         <div className="flex flex-col lg:flex-row items-center gap-16">
                             <div className="flex-1 space-y-8 text-center lg:text-left">
                                 <div className="space-y-6">
-                                    {/* Saludo personalizado con animación */}
-                                    <div className="inline-flex items-center gap-3 bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg">
-                                        <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                                        <span className="text-green-700 font-semibold text-sm">Estado: Conectado</span>
-                                    </div>
+                                    {/* Selector de hijo con animación */}
+                                    {userWithChildren && userWithChildren.hijos && userWithChildren.hijos.length > 1 ? (
+                                        <div className="inline-flex items-center gap-3 bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg">
+                                            <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse"></div>
+                                            <select 
+                                                value={selectedChild?.id || ''} 
+                                                onChange={(e) => {
+                                                    const child = userWithChildren.hijos.find(hijo => hijo.id == e.target.value);
+                                                    setSelectedChild(child);
+                                                }}
+                                                className="text-blue-700 font-semibold text-sm bg-transparent border-none focus:outline-none cursor-pointer"
+                                            >
+                                                {userWithChildren.hijos.map(hijo => (
+                                                    <option key={hijo.id} value={hijo.id}>
+                                                        Seleccionar hijo: {hijo.nombres}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    ) : (
+                                        <div className="inline-flex items-center gap-3 bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg">
+                                            <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                                            <span className="text-green-700 font-semibold text-sm">Estado: Conectado</span>
+                                        </div>
+                                    )}
                                     
                                     <h1 className="text-5xl lg:text-6xl font-bold bg-gradient-to-r from-gray-900 via-red-800 to-red-600 bg-clip-text text-transparent leading-tight">
                                         ¡Hola {user?.name || 'Usuario'}!
@@ -521,37 +541,14 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                     </div>
 
                     <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                        <div className="space-y-4">
-                            {userWithChildren && userWithChildren.hijos && userWithChildren.hijos.length > 1 && (
-                                <div className="bg-white rounded-2xl p-4 shadow-lg">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Seleccionar hijo:
-                                    </label>
-                                    <select 
-                                        value={selectedChild?.id || ''} 
-                                        onChange={(e) => {
-                                            const child = userWithChildren.hijos.find(hijo => hijo.id == e.target.value);
-                                            setSelectedChild(child);
-                                        }}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                                    >
-                                        {userWithChildren.hijos.map(hijo => (
-                                            <option key={hijo.id} value={hijo.id}>
-                                                {hijo.nombres}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            )}
-                            <ServiceCard
-                                icon="/imgs/perfilvr.png"
-                                title={selectedChild ? `Perfil ${selectedChild.nombres}` : "Perfil hijo"}
-                                description="Gestiona tus datos personales, ficha médica y nutricional de forma segura."
-                                link="/perfil"
-                                color="red"
-                                status="active"
-                            />
-                        </div>
+                        <ServiceCard
+                            icon="/imgs/perfilvr.png"
+                            title={selectedChild ? `Perfil ${selectedChild.nombres}` : "Perfil hijo"}
+                            description="Gestiona tus datos personales, ficha médica y nutricional de forma segura."
+                            link="/perfil"
+                            color="red"
+                            status="active"
+                        />
 
                         <ServiceCard
                             icon={
