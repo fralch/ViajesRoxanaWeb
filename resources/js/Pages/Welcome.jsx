@@ -26,8 +26,8 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
                                     </Link>
                                 </div>
 
-                                {/* Navegación solo si el usuario está autenticado */}
-                                {auth.user && (
+                                {/* Navegación solo si el usuario está autenticado y es admin */}
+                                {auth.user && auth.user.is_admin && (
                                     <>
                                         {/* Desktop XL - Todos con texto */}
                                         <div className="hidden 2xl:ms-6 2xl:flex 2xl:space-x-1">
