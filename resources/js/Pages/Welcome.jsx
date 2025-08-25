@@ -9,6 +9,18 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
     const [showLocationModal, setShowLocationModal] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
+    // Redirección a login si no está autenticado
+    useEffect(() => {
+        if (!user) {
+            window.location.href = route('login');
+        }
+    }, [user]);
+
+    // Si no hay usuario, no renderizar nada mientras se redirige
+    if (!user) {
+        return null;
+    }
+
     // Efecto para animaciones de carga
     useEffect(() => {
         const timer = setTimeout(() => setIsLoading(false), 1000);
