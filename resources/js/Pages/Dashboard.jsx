@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import PrimaryButton from '@/Components/PrimaryButton';
+import { useEffect } from 'react';
 
 const StatCard = ({ title, value, icon, color = 'red' }) => (
     <div className="bg-white/80 backdrop-blur rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
@@ -36,6 +37,20 @@ const QuickActionCard = ({ title, description, href, icon, color = 'red' }) => (
 );
 
 export default function Dashboard() {
+    const { auth } = usePage().props;
+    
+    useEffect(() => {
+        // Si el usuario no es admin, redirigir a welcome
+        if (!auth.user.is_admin) {
+            window.location.href = '/';
+        }
+    }, [auth.user.is_admin]);
+    
+    // Si no es admin, no renderizar nada mientras se redirige
+    if (!auth.user.is_admin) {
+        return null;
+    }
+    
     return (
         <AuthenticatedLayout
             header="Panel de Control"
