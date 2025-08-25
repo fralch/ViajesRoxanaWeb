@@ -3,11 +3,13 @@ import { useState, useEffect } from 'react';
 import Dropdown from '@/Components/Dropdown';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 
-export default function Welcome({ auth, laravelVersion, phpVersion }) {
+export default function Welcome({ auth, laravelVersion, phpVersion, user_with_children }) {
     const user = usePage().props.auth.user;
+    const userWithChildren = user_with_children || user;
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
     const [showLocationModal, setShowLocationModal] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [selectedChild, setSelectedChild] = useState(null);
 
     // Redirección a login si no está autenticado
     useEffect(() => {
@@ -15,6 +17,13 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
             window.location.href = route('login');
         }
     }, [user]);
+
+    // Inicializar hijo seleccionado
+    useEffect(() => {
+        if (userWithChildren && userWithChildren.hijos && userWithChildren.hijos.length > 0) {
+            setSelectedChild(userWithChildren.hijos[0]);
+        }
+    }, [userWithChildren]);
 
     // Si no hay usuario, no renderizar nada mientras se redirige
     if (!user) {
@@ -435,7 +444,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
                                     </div>
                                     
                                     <h1 className="text-5xl lg:text-6xl font-bold bg-gradient-to-r from-gray-900 via-red-800 to-red-600 bg-clip-text text-transparent leading-tight">
-                                        ¡Hola Leonardo!
+                                        ¡Hola {user?.name || 'Usuario'}!
                                     </h1>
                                     
                                     <p className="text-xl lg:text-2xl text-gray-700 leading-relaxed max-w-2xl">
@@ -512,14 +521,37 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
                     </div>
 
                     <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                        <ServiceCard
-                            icon="/imgs/perfilvr.png"
-                            title="Mi Perfil"
-                            description="Gestiona tus datos personales, ficha médica y nutricional de forma segura."
-                            link="/perfil"
-                            color="red"
-                            status="active"
-                        />
+                        <div className="space-y-4">
+                            {userWithChildren && userWithChildren.hijos && userWithChildren.hijos.length > 1 && (
+                                <div className="bg-white rounded-2xl p-4 shadow-lg">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Seleccionar hijo:
+                                    </label>
+                                    <select 
+                                        value={selectedChild?.id || ''} 
+                                        onChange={(e) => {
+                                            const child = userWithChildren.hijos.find(hijo => hijo.id == e.target.value);
+                                            setSelectedChild(child);
+                                        }}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                                    >
+                                        {userWithChildren.hijos.map(hijo => (
+                                            <option key={hijo.id} value={hijo.id}>
+                                                {hijo.nombres}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+                            <ServiceCard
+                                icon="/imgs/perfilvr.png"
+                                title={selectedChild ? `Perfil ${selectedChild.nombres}` : "Perfil hijo"}
+                                description="Gestiona tus datos personales, ficha médica y nutricional de forma segura."
+                                link="/perfil"
+                                color="red"
+                                status="active"
+                            />
+                        </div>
 
                         <ServiceCard
                             icon={

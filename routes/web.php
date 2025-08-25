@@ -23,11 +23,19 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 
 Route::get('/', function () {
+    $user = auth()->user();
+    $userData = null;
+    
+    if ($user) {
+        $userData = $user->load('hijos');
+    }
+    
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
         'laravelVersion' => Application::VERSION,
         'phpVersion' => PHP_VERSION,
+        'user_with_children' => $userData,
     ]);
 });
 
