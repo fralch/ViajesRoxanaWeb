@@ -37,4 +37,14 @@ class Hijo extends Model
     {
         return $this->hasMany(Inscripcion::class);
     }
+
+    public function saludFichas()
+    {
+        return $this->hasMany(SaludFicha::class);
+    }
+
+    public function nutricionFichas()
+    {
+        return $this->hasMany(NutricionFicha::class);
+    }
 }

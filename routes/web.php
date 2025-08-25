@@ -12,6 +12,7 @@ use App\Http\Controllers\RecorridoPaqueteController;
 use App\Http\Controllers\GeolocalizacionController;
 use App\Http\Controllers\TrazabilidadController;
 use App\Http\Controllers\NotificacionController;
+use App\Http\Controllers\PerfilHijoController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
@@ -88,6 +89,12 @@ Route::middleware('auth')->group(function () {
     Route::resource('geolocalizacion', GeolocalizacionController::class);
     Route::resource('trazabilidad', TrazabilidadController::class);
     Route::resource('notificaciones', NotificacionController::class)->parameters(['notificaciones' => 'notificacion']);
+
+    // Rutas para perfil del hijo
+    Route::get('/perfil/hijo/{hijo}', [PerfilHijoController::class, 'show'])->name('perfil.hijo');
+    Route::post('/perfil/hijo/{hijo}/update', [PerfilHijoController::class, 'update'])->name('perfil.hijo.update');
+    Route::post('/perfil/hijo/{hijo}/salud', [PerfilHijoController::class, 'storeSalud'])->name('perfil.hijo.salud.store');
+    Route::post('/perfil/hijo/{hijo}/nutricion', [PerfilHijoController::class, 'storeNutricion'])->name('perfil.hijo.nutricion.store');
 
     Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');

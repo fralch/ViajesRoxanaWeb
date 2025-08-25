@@ -545,7 +545,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                             icon="/imgs/perfilvr.png"
                             title={selectedChild ? `Perfil ${selectedChild.nombres}` : "Perfil hijo"}
                             description="Gestiona tus datos personales, ficha médica y nutricional de forma segura."
-                            link="/perfil"
+                            link={selectedChild ? route('perfil.hijo', selectedChild.id) : "#"}
                             color="red"
                             status="active"
                         />
