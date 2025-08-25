@@ -557,7 +557,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                 </svg>
                             }
-                            title="Ubicación"
+                            title={selectedChild ? `Ubicación ${selectedChild.nombres}` : "Ubicación"}
                             description="Rastrea la ubicación de tu hijo en tiempo real durante el viaje con GPS de precisión."
                             onClick={() => setShowLocationModal(true)}
                             color="orange"
