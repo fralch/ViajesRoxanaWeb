@@ -1,5 +1,5 @@
 import { Link, Head, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Dropdown from '@/Components/Dropdown';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 
@@ -7,50 +7,256 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
     const user = usePage().props.auth.user;
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
     const [showLocationModal, setShowLocationModal] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
-    // Componente Modal para Ubicación
+    // Efecto para animaciones de carga
+    useEffect(() => {
+        const timer = setTimeout(() => setIsLoading(false), 1000);
+        return () => clearTimeout(timer);
+    }, []);
+
+    // Componente Modal mejorado
     const LocationModal = () => (
-        <div className={`fixed inset-0 z-50 ${showLocationModal ? 'block' : 'hidden'}`}>
-            <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setShowLocationModal(false)}></div>
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl p-6 w-11/12 max-w-4xl max-h-[80vh] overflow-auto">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-2xl font-bold text-gray-900">Ubicación en Tiempo Real</h2>
-                    <button 
-                        onClick={() => setShowLocationModal(false)}
-                        className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
-                    >
-                        ×
-                    </button>
-                </div>
-                <div className="bg-gray-100 rounded-xl h-96 flex items-center justify-center">
-                    <div className="text-center">
-                        <div className="w-16 h-16 bg-red-500 rounded-full mx-auto mb-4 flex items-center justify-center">
-                            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className={`fixed inset-0 z-50 ${showLocationModal ? 'flex' : 'hidden'} items-center justify-center p-4`}>
+            <div 
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300" 
+                onClick={() => setShowLocationModal(false)}
+            ></div>
+            <div className="relative bg-white rounded-3xl p-8 w-full max-w-5xl max-h-[85vh] overflow-auto shadow-2xl transform transition-all duration-300 scale-100">
+                {/* Header del modal */}
+                <div className="flex justify-between items-center mb-6">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                            <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
                         </div>
-                        <p className="text-gray-600">Mapa de ubicación en tiempo real</p>
-                        <p className="text-sm text-gray-500 mt-2">(Aquí se integrará el mapa con la ubicación del hijo)</p>
+                        <div>
+                            <h2 className="text-3xl font-bold text-gray-900">Ubicación en Tiempo Real</h2>
+                            <p className="text-gray-600">Leonardo Calderon</p>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={() => setShowLocationModal(false)}
+                        className="w-12 h-12 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200"
+                    >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                {/* Mapa simulado mejorado */}
+                <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl h-96 mb-6 relative overflow-hidden shadow-inner">
+                    <div className="absolute inset-0 opacity-30">
+                        <div className="w-full h-full bg-repeat" style={{
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.1'%3E%3Cpath d='m36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+                        }}></div>
+                    </div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="text-center">
+                            <div className="relative">
+                                <div className="w-20 h-20 bg-red-500 rounded-full mx-auto mb-4 flex items-center justify-center shadow-lg animate-pulse">
+                                    <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                </div>
+                                <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
+                                    <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
+                                </div>
+                            </div>
+                            <p className="text-lg font-semibold text-gray-700">Ubicación Actual</p>
+                            <p className="text-sm text-gray-500 mt-1">Carrera 15 #85-23, Bogotá</p>
+                        </div>
                     </div>
                 </div>
-                <div className="mt-4 p-4 bg-blue-50 rounded-xl">
-                    <h3 className="font-semibold text-blue-900 mb-2">Información de Ubicación:</h3>
-                    <ul className="text-sm text-blue-800 space-y-1">
-                        <li>• Última actualización: Hace 2 minutos</li>
-                        <li>• Coordenadas: 4.6097° N, 74.0817° W</li>
-                        <li>• Estado: En tránsito</li>
-                    </ul>
+
+                {/* Grid de información mejorada */}
+                <div className="grid gap-4 md:grid-cols-3 mb-6">
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <h3 className="font-semibold text-blue-900">Última Actualización</h3>
+                        </div>
+                        <p className="text-blue-800">Hace 30 segundos</p>
+                        <p className="text-xs text-blue-600 mt-1">Actualización automática cada 30s</p>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <h3 className="font-semibold text-green-900">Estado</h3>
+                        </div>
+                        <p className="text-green-800">Seguro y en ruta</p>
+                        <p className="text-xs text-green-600 mt-1">Velocidad: 45 km/h</p>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                </svg>
+                            </div>
+                            <h3 className="font-semibold text-purple-900">Coordenadas</h3>
+                        </div>
+                        <p className="text-purple-800 text-sm">4.6097° N, 74.0817° W</p>
+                        <p className="text-xs text-purple-600 mt-1">Precisión: ±3 metros</p>
+                    </div>
+                </div>
+
+                {/* Botones de acción */}
+                <div className="flex gap-3 justify-end">
+                    <button className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors duration-200">
+                        Compartir ubicación
+                    </button>
+                    <button className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors duration-200 shadow-lg hover:shadow-xl">
+                        Contactar al conductor
+                    </button>
                 </div>
             </div>
         </div>
     );
 
+    // Componente de tarjeta mejorado
+    const ServiceCard = ({ icon, title, description, status, link, color = "red", badge = null, onClick = null }) => {
+        const colorClasses = {
+            red: "from-red-500 to-red-600 hover:from-red-600 hover:to-red-700",
+            orange: "from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700",
+            blue: "from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700",
+            green: "from-green-500 to-green-600 hover:from-green-600 hover:to-green-700",
+            purple: "from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700"
+        };
+
+        const bgColorClasses = {
+            red: "from-red-100 to-red-200",
+            orange: "from-orange-100 to-orange-200",
+            blue: "from-blue-100 to-blue-200",
+            green: "from-green-100 to-green-200",
+            purple: "from-purple-100 to-purple-200"
+        };
+
+        if (status === 'disabled') {
+            return (
+                <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-gray-50 to-gray-100 p-8 shadow-lg border border-gray-200 cursor-not-allowed">
+                    <div className="absolute inset-0 bg-gray-200/30"></div>
+                    <div className="absolute top-4 right-4 transform rotate-12">
+                        <div className="bg-red-500 text-white px-3 py-1 text-xs font-bold rounded-full shadow-lg">
+                            PRÓXIMAMENTE
+                        </div>
+                    </div>
+                    <div className="relative z-10 opacity-40">
+                        <div className="flex flex-col items-center text-center space-y-4">
+                            <div className="w-20 h-20 bg-gradient-to-br from-gray-300 to-gray-400 rounded-2xl flex items-center justify-center shadow-lg">
+                                {typeof icon === 'string' ? 
+                                    <img src={icon} alt={title} className="w-12 h-12 object-contain" /> : 
+                                    icon
+                                }
+                            </div>
+                            <h2 className="text-2xl font-bold text-gray-600">{title}</h2>
+                            <p className="text-gray-500 text-sm leading-relaxed">{description}</p>
+                            <div className="px-6 py-3 bg-gray-300 rounded-2xl text-gray-600 font-semibold text-sm">
+                                No Disponible
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const handleClick = () => {
+            if (onClick) {
+                onClick();
+            }
+        };
+
+        return (
+            <div className={`group relative overflow-hidden rounded-3xl bg-white p-8 shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 hover:scale-105 cursor-pointer ${badge ? 'ring-4 ring-opacity-50 ring-' + color + '-200' : ''}`}>
+                {/* Fondo decorativo animado */}
+                <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${bgColorClasses[color]} rounded-full -translate-y-16 translate-x-16 opacity-50 group-hover:opacity-70 transition-opacity duration-500`}></div>
+                
+                {/* Badge si existe */}
+                {badge && (
+                    <div className="absolute top-4 right-4">
+                        <div className={`bg-${color}-500 text-white px-3 py-1 text-xs font-bold rounded-full shadow-lg animate-pulse`}>
+                            {badge}
+                        </div>
+                    </div>
+                )}
+                
+                <div className="relative z-10">
+                    <div className="flex flex-col items-center text-center space-y-6">
+                        <div className={`w-20 h-20 bg-gradient-to-br ${colorClasses[color]} rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110`}>
+                            {typeof icon === 'string' ? 
+                                <img src={icon} alt={title} className="w-12 h-12 object-contain filter brightness-0 invert" /> : 
+                                icon
+                            }
+                        </div>
+                        <div className="space-y-2">
+                            <h2 className="text-2xl font-bold text-gray-900 group-hover:text-gray-800 transition-colors duration-300">{title}</h2>
+                            <p className="text-gray-600 text-sm leading-relaxed px-2">{description}</p>
+                        </div>
+                        
+                        {link ? (
+                            <Link
+                                href={link}
+                                className={`inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r ${colorClasses[color]} px-8 py-3 text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105`}
+                            >
+                                Entrar
+                                <svg viewBox="0 0 24 24" className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M5 12h14M12 5l7 7-7 7" />
+                                </svg>
+                            </Link>
+                        ) : (
+                            <button
+                                onClick={handleClick}
+                                className={`inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r ${colorClasses[color]} px-8 py-3 text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105`}
+                            >
+                                {title === 'Ubicación' ? 'Ver Mapa' : 'Entrar'}
+                                <svg viewBox="0 0 24 24" className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" strokeWidth="2">
+                                    {title === 'Ubicación' ? 
+                                        <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /> :
+                                        <path d="M5 12h14M12 5l7 7-7 7" />
+                                    }
+                                </svg>
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Efecto hover adicional */}
+                <div className="absolute inset-0 bg-gradient-to-t from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl"></div>
+            </div>
+        );
+    };
+
     return (
         <>
-            <Head title="Welcome" />
+            <Head title="Bienvenido - Viajes Roxana" />
+            
+            {/* Loading overlay */}
+            {isLoading && (
+                <div className="fixed inset-0 z-50 bg-white flex items-center justify-center">
+                    <div className="text-center space-y-4">
+                        <div className="w-16 h-16 border-4 border-red-200 border-t-red-600 rounded-full animate-spin"></div>
+                        <p className="text-gray-600 font-medium">Cargando tu experiencia...</p>
+                    </div>
+                </div>
+            )}
+
             <div className="min-h-screen bg-gradient-to-br from-rose-50 via-orange-50 to-amber-50">
-                {/* Header con navegación completa del AuthenticatedLayout */}
+                
+                {/* Header original simple (SIN banda azul) */}
                 <nav className="bg-[#d52e27] backdrop-blur border-b border-gray-200 shadow-sm sticky top-0 z-50">
                     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                         <div className="flex h-16 items-center justify-between">
@@ -198,201 +404,95 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
                     </div>
                 </nav>
 
-                {/* Hero Section mejorado con imagen más grande */}
-                <section className="mx-auto max-w-7xl px-6">
-                    <div className="flex flex-col lg:flex-row items-center gap-12 py-16">
-                        <div className="flex-1 space-y-8">
-                            <div className="space-y-6">
-                                <h1 className="text-5xl font-bold text-gray-900 leading-tight">
-                                    ¡Hola Leonardo Calderon!
-                                </h1>
-                                <p className="text-xl text-gray-600 leading-relaxed">
-                                    Bienvenido a Viajes Roxana. Gestiona tu perfil, consulta tus viajes, registra tu equipaje y realiza tus pagos en un solo lugar.
-                                </p>
-                                <div className="inline-flex items-center gap-2 bg-amber-100 text-amber-800 px-4 py-2 rounded-full text-sm font-medium">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    Disponible 24 horas antes del viaje
-                                </div>
-                            </div>
-                        </div>
-                        
-                        {/* Imagen de Roxana más grande y prominente */}
-                        <div className="flex-shrink-0 lg:w-80">
-                            <div className="relative">
-                                <div className="absolute -inset-4 bg-gradient-to-r from-red-200 to-pink-200 rounded-full opacity-20 blur-xl"></div>
-                                <img 
-                                    src="/imgs/rox.png" 
-                                    alt="Roxana - Tu asistente de viajes" 
-                                    className="relative h-64 w-64 lg:h-80 lg:w-80 rounded-full border-8 border-white shadow-2xl object-cover mx-auto"
-                                />
-                                <div className="absolute -bottom-2 -right-2 bg-green-500 w-12 h-12 rounded-full border-4 border-white flex items-center justify-center shadow-lg">
-                                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                    </svg>
-                                </div>
-                            </div>
-                            <div className="text-center mt-6">
-                                <h3 className="text-xl font-semibold text-gray-900">Roxana</h3>
-                                <p className="text-gray-600">Tu asistente personal de viajes</p>
-                            </div>
-                        </div>
+                {/* Hero Section completamente rediseñado */}
+                <section className="relative overflow-hidden">
+                    {/* Elementos decorativos animados */}
+                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-red-200/30 to-pink-200/30 rounded-full blur-3xl animate-pulse"></div>
+                        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-orange-200/30 to-yellow-200/30 rounded-full blur-3xl animate-pulse delay-1000"></div>
                     </div>
 
-                    {/* Tarjetas principales con mejores espaciados y nueva sección de Ubicación */}
-                    <div className="grid gap-8 pb-20 sm:grid-cols-2 lg:grid-cols-5">
-                        {/* Mi Perfil - ACTIVA */}
-                        <div className="group relative overflow-hidden rounded-3xl bg-white p-8 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-red-100 to-red-200 rounded-full -translate-y-16 translate-x-16 opacity-50"></div>
-                            <div className="relative z-10">
-                                <div className="flex flex-col items-center text-center space-y-4">
-                                    <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg">
-                                        <img 
-                                            src="/imgs/perfilvr.png" 
-                                            alt="Mi Perfil" 
-                                            className="w-12 h-12 object-contain"
-                                        />
+                    <div className="relative mx-auto max-w-7xl px-6 py-20">
+                        <div className="flex flex-col lg:flex-row items-center gap-16">
+                            <div className="flex-1 space-y-8 text-center lg:text-left">
+                                <div className="space-y-6">
+                                    {/* Saludo personalizado con animación */}
+                                    <div className="inline-flex items-center gap-3 bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg">
+                                        <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                                        <span className="text-green-700 font-semibold text-sm">Estado: Conectado</span>
                                     </div>
-                                    <h2 className="text-2xl font-bold text-gray-900">Mi Perfil</h2>
-                                    <p className="text-gray-600 text-sm leading-relaxed">
-                                        Gestiona y accede a tus datos, ficha médica y ficha nutricional.
+                                    
+                                    <h1 className="text-5xl lg:text-6xl font-bold bg-gradient-to-r from-gray-900 via-red-800 to-red-600 bg-clip-text text-transparent leading-tight">
+                                        ¡Hola Leonardo!
+                                    </h1>
+                                    
+                                    <p className="text-xl lg:text-2xl text-gray-700 leading-relaxed max-w-2xl">
+                                        Bienvenido a tu <span className="font-semibold text-red-600">portal personal</span> de Viajes Roxana. 
+                                        Gestiona tu perfil, rastrea ubicaciones y mantente conectado con nosotros.
                                     </p>
-                                    <Link
-                                        href="/perfil"
-                                        className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-red-600 to-red-700 px-6 py-3 text-white font-semibold hover:from-red-700 hover:to-red-800 transition-all duration-200 shadow-lg hover:shadow-xl"
-                                    >
-                                        Entrar
-                                        <svg
-                                            viewBox="0 0 24 24"
-                                            className="h-5 w-5"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth="2"
-                                        >
-                                            <path d="M5 12h14M12 5l7 7-7 7" />
-                                        </svg>
-                                    </Link>
-                                </div>
-                            </div>
-                        </div>
 
-                        {/* UBICACIÓN - NUEVA SECCIÓN */}
-                        <div className="group relative overflow-hidden rounded-3xl bg-white p-8 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border-4 border-orange-200">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-100 to-orange-200 rounded-full -translate-y-16 translate-x-16 opacity-50"></div>
-                            <div className="relative z-10">
-                                <div className="flex flex-col items-center text-center space-y-4">
-                                    <div className="w-20 h-20 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg">
-                                        <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        </svg>
+                                    {/* Stats rápidas */}
+                                    <div className="flex flex-wrap gap-6 justify-center lg:justify-start pt-4">
+                                        <div className="bg-white/80 backdrop-blur-sm rounded-2xl px-4 py-3 shadow-lg">
+                                            <div className="text-2xl font-bold text-red-600">15</div>
+                                            <div className="text-sm text-gray-600">Viajes realizados</div>
+                                        </div>
+                                        <div className="bg-white/80 backdrop-blur-sm rounded-2xl px-4 py-3 shadow-lg">
+                                            <div className="text-2xl font-bold text-green-600">100%</div>
+                                            <div className="text-sm text-gray-600">Satisfacción</div>
+                                        </div>
+                                        <div className="bg-white/80 backdrop-blur-sm rounded-2xl px-4 py-3 shadow-lg">
+                                            <div className="text-2xl font-bold text-blue-600">24/7</div>
+                                            <div className="text-sm text-gray-600">Soporte</div>
+                                        </div>
                                     </div>
-                                    <h2 className="text-2xl font-bold text-gray-900">Ubicación</h2>
-                                    <p className="text-gray-600 text-sm leading-relaxed">
-                                        Localiza a tu hijo en tiempo real durante el viaje.
-                                    </p>
-                                    <button
-                                        onClick={() => setShowLocationModal(true)}
-                                        className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-orange-600 to-orange-700 px-6 py-3 text-white font-semibold hover:from-orange-700 hover:to-orange-800 transition-all duration-200 shadow-lg hover:shadow-xl"
-                                    >
-                                        Ver Mapa
-                                        <svg
-                                            viewBox="0 0 24 24"
-                                            className="h-5 w-5"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth="2"
-                                        >
-                                            <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                                        </svg>
-                                    </button>
                                 </div>
                             </div>
-                            <div className="absolute top-2 right-2 bg-green-500 w-6 h-6 rounded-full flex items-center justify-center">
-                                <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                            </div>
-                        </div>
-
-                        {/* Mis Viajes - DESHABILITADA/COMENTADA */}
-                        <div className="group relative overflow-hidden rounded-3xl bg-gray-100 p-8 shadow-lg opacity-50 cursor-not-allowed">
-                            <div className="absolute inset-0 bg-gray-200 opacity-70"></div>
-                            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rotate-12">
-                                <div className="bg-red-500 text-white px-4 py-1 text-sm font-bold transform -rotate-12 shadow-lg">
-                                    PRÓXIMAMENTE
-                                </div>
-                            </div>
-                            <div className="relative z-10 filter blur-sm">
-                                <div className="flex flex-col items-center text-center space-y-4">
-                                    <div className="w-20 h-20 bg-gradient-to-br from-gray-400 to-gray-500 rounded-2xl flex items-center justify-center">
+                            
+                            {/* Roxana con mejor presentación */}
+                            <div className="flex-shrink-0 lg:w-96">
+                                <div className="relative">
+                                    {/* Anillos decorativos animados */}
+                                    <div className="absolute inset-0 rounded-full border-4 border-red-200/50 animate-ping"></div>
+                                    <div className="absolute inset-4 rounded-full border-2 border-orange-200/50 animate-pulse delay-500"></div>
+                                    
+                                    {/* Imagen principal */}
+                                    <div className="relative z-10">
                                         <img 
-                                            src="/imgs/avion.png" 
-                                            alt="Mis Viajes" 
-                                            className="w-12 h-12 object-contain opacity-50"
+                                            src="/imgs/rox.png" 
+                                            alt="Roxana - Tu asistente de viajes" 
+                                            className="h-72 w-72 lg:h-96 lg:w-96 rounded-full border-8 border-white shadow-2xl object-cover mx-auto hover:scale-105 transition-transform duration-500"
                                         />
-                                    </div>
-                                    <h2 className="text-2xl font-bold text-gray-500">Mis Viajes</h2>
-                                    <p className="text-gray-500 text-sm leading-relaxed">
-                                        Accede a la información de tus viajes, horarios, destinos y más.
-                                    </p>
-                                    <div className="px-6 py-3 bg-gray-300 rounded-2xl text-gray-500 font-semibold">
-                                        No Disponible
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                                        
+                                        {/* Badge de estado */}
+                                        <div className="absolute -bottom-4 -right-4 bg-gradient-to-r from-green-400 to-green-500 w-16 h-16 rounded-full border-4 border-white flex items-center justify-center shadow-lg">
+                                            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        </div>
 
-                        {/* Equipaje - DESHABILITADA/COMENTADA */}
-                        <div className="group relative overflow-hidden rounded-3xl bg-gray-100 p-8 shadow-lg opacity-50 cursor-not-allowed">
-                            <div className="absolute inset-0 bg-gray-200 opacity-70"></div>
-                            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rotate-12">
-                                <div className="bg-red-500 text-white px-4 py-1 text-sm font-bold transform -rotate-12 shadow-lg">
-                                    PRÓXIMAMENTE
-                                </div>
-                            </div>
-                            <div className="relative z-10 filter blur-sm">
-                                <div className="flex flex-col items-center text-center space-y-4">
-                                    <div className="w-20 h-20 bg-gradient-to-br from-gray-400 to-gray-500 rounded-2xl flex items-center justify-center">
-                                        <img 
-                                            src="/imgs/maletavr.png" 
-                                            alt="Equipaje" 
-                                            className="w-12 h-12 object-contain opacity-50"
-                                        />
-                                    </div>
-                                    <h2 className="text-2xl font-bold text-gray-500">Equipaje</h2>
-                                    <p className="text-gray-500 text-sm leading-relaxed">
-                                        Consulta y registra los equipajes para tus próximos viajes.
-                                    </p>
-                                    <div className="px-6 py-3 bg-gray-300 rounded-2xl text-gray-500 font-semibold">
-                                        No Disponible
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                                        {/* Floating elements */}
+                                        <div className="absolute -top-6 -left-6 bg-blue-500 w-12 h-12 rounded-full flex items-center justify-center shadow-lg animate-bounce">
+                                            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                            </svg>
+                                        </div>
 
-                        {/* Mis Pagos - DESHABILITADA/COMENTADA */}
-                        <div className="group relative overflow-hidden rounded-3xl bg-gray-100 p-8 shadow-lg opacity-50 cursor-not-allowed">
-                            <div className="absolute inset-0 bg-gray-200 opacity-70"></div>
-                            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rotate-12">
-                                <div className="bg-red-500 text-white px-4 py-1 text-sm font-bold transform -rotate-12 shadow-lg">
-                                    PRÓXIMAMENTE
-                                </div>
-                            </div>
-                            <div className="relative z-10 filter blur-sm">
-                                <div className="flex flex-col items-center text-center space-y-4">
-                                    <div className="w-20 h-20 bg-gradient-to-br from-gray-400 to-gray-500 rounded-2xl flex items-center justify-center">
-                                        <img 
-                                            src="/imgs/pagovr.png" 
-                                            alt="Mis Pagos" 
-                                            className="w-12 h-12 object-contain opacity-50"
-                                        />
+                                        <div className="absolute -top-2 -right-8 bg-yellow-400 w-10 h-10 rounded-full flex items-center justify-center shadow-lg animate-bounce delay-300">
+                                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        </div>
                                     </div>
-                                    <h2 className="text-2xl font-bold text-gray-500">Mis Pagos</h2>
-                                    <p className="text-gray-500 text-sm leading-relaxed">
-                                        Registra tus pagos, consulta estados, comprobantes y facturas.
-                                    </p>
-                                    <div className="px-6 py-3 bg-gray-300 rounded-2xl text-gray-500 font-semibold">
-                                        No Disponible
+                                </div>
+                                
+                                {/* Información de Roxana */}
+                                <div className="text-center mt-8 space-y-2">
+                                    <h3 className="text-2xl font-bold text-gray-900">Roxana</h3>
+                                    <p className="text-gray-600">Tu asistente personal de viajes</p>
+                                    <div className="flex items-center justify-center gap-2 text-sm text-green-600">
+                                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                                        Disponible ahora
                                     </div>
                                 </div>
                             </div>
@@ -400,105 +500,244 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
                     </div>
                 </section>
 
-                {/* Modal de Ubicación */}
+                {/* Services Grid mejorada */}
+                <section className="mx-auto max-w-7xl px-6 pb-20">
+                    <div className="text-center mb-16">
+                        <h2 className="text-4xl font-bold text-gray-900 mb-4">Tus Servicios</h2>
+                        <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                            Accede rápidamente a todas las funciones disponibles para hacer tu experiencia más cómoda
+                        </p>
+                    </div>
+
+                    <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                        <ServiceCard
+                            icon="/imgs/perfilvr.png"
+                            title="Mi Perfil"
+                            description="Gestiona tus datos personales, ficha médica y nutricional de forma segura."
+                            link="/perfil"
+                            color="red"
+                            status="active"
+                        />
+
+                        <ServiceCard
+                            icon={
+                                <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                            }
+                            title="Ubicación"
+                            description="Rastrea la ubicación de tu hijo en tiempo real durante el viaje con GPS de precisión."
+                            onClick={() => setShowLocationModal(true)}
+                            color="orange"
+                            status="active"
+                            badge="LIVE"
+                        />
+
+                        <ServiceCard
+                            icon="/imgs/avion.png"
+                            title="Mis Viajes"
+                            description="Consulta itinerarios, horarios, destinos y toda la información de tus viajes."
+                            color="blue"
+                            status="disabled"
+                        />
+
+                        <ServiceCard
+                            icon="/imgs/maletavr.png"
+                            title="Equipaje"
+                            description="Registra y consulta el equipaje para tus próximos destinos de manera digital."
+                            color="green"
+                            status="disabled"
+                        />
+
+                        <ServiceCard
+                            icon="/imgs/pagovr.png"
+                            title="Mis Pagos"
+                            description="Gestiona pagos, consulta estados, descarga comprobantes y facturas."
+                            color="purple"
+                            status="disabled"
+                        />
+                    </div>
+
+                    {/* CTA Section */}
+                    <div className="mt-20 text-center">
+                        <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-3xl p-12 text-white relative overflow-hidden">
+                            <div className="absolute inset-0 opacity-20">
+                                <div className="w-full h-full bg-repeat" style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='m36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+                                }}></div>
+                            </div>
+                            <div className="relative z-10 max-w-2xl mx-auto">
+                                <h3 className="text-3xl font-bold mb-4">¿Necesitas ayuda?</h3>
+                                <p className="text-xl text-red-100 mb-8">
+                                    Nuestro equipo está disponible 24/7 para asistirte en todo lo que necesites
+                                </p>
+                                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                                    <button className="bg-white text-red-600 px-8 py-3 rounded-2xl font-semibold hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
+                                        Chat en vivo
+                                    </button>
+                                    <button className="border-2 border-white text-white px-8 py-3 rounded-2xl font-semibold hover:bg-white hover:text-red-600 transition-all duration-200">
+                                        Llamar ahora
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Location Modal */}
                 <LocationModal />
 
-                {/* Footer mejorado */}
-                <footer className="bg-gradient-to-r from-gray-800 to-gray-900 text-white py-16">
-                    <div className="mx-auto max-w-7xl px-6">
-                        <div className="grid gap-12 md:grid-cols-4">
-                            <div className="space-y-6 md:col-span-2">
+                {/* Footer completamente rediseñado */}
+                <footer className="bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white relative overflow-hidden">
+                    {/* Elementos decorativos */}
+                    <div className="absolute inset-0 opacity-20">
+                        <div className="w-full h-full bg-repeat" style={{
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.02'%3E%3Cpath d='m36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+                        }}></div>
+                    </div>
+                    
+                    <div className="relative z-10 mx-auto max-w-7xl px-6 py-20">
+                        <div className="grid gap-12 lg:grid-cols-4">
+                            {/* Brand section mejorada */}
+                            <div className="space-y-8 lg:col-span-2">
                                 <div className="flex items-center gap-4">
-                                    <img 
-                                        src="/imgs/logo-roxana-blanco.png" 
-                                        alt="Viajes Roxana" 
-                                        className="h-12 w-auto"
-                                    />
-                                    <span className="text-2xl font-bold">VIAJES ROXANA</span>
+                                    <div className="relative">
+                                        <img 
+                                            src="/imgs/logo-roxana-blanco.png" 
+                                            alt="Viajes Roxana" 
+                                            className="h-16 w-auto filter drop-shadow-lg"
+                                        />
+                                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-gray-900"></div>
+                                    </div>
+                                    <div>
+                                        <span className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                                            VIAJES ROXANA
+                                        </span>
+                                        <p className="text-gray-400 text-sm">Conectando destinos desde 2004</p>
+                                    </div>
                                 </div>
-                                <p className="text-gray-300 leading-relaxed max-w-md">
-                                    Tu compañía de confianza para viajes seguros y cómodos. Más de 20 años de experiencia nos respaldan en cada aventura.
+                                
+                                <p className="text-gray-300 leading-relaxed max-w-md text-lg">
+                                    Más de <span className="text-yellow-400 font-semibold">20 años</span> conectando familias 
+                                    con experiencias únicas. Tu seguridad y comodidad son nuestra prioridad.
                                 </p>
+
+                                {/* Social media mejorada */}
                                 <div className="flex space-x-4">
-                                    <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors cursor-pointer">
-                                        <span className="text-white font-bold">f</span>
-                                    </div>
-                                    <div className="w-10 h-10 bg-blue-400 rounded-full flex items-center justify-center hover:bg-blue-500 transition-colors cursor-pointer">
-                                        <span className="text-white font-bold">T</span>
-                                    </div>
-                                    <div className="w-10 h-10 bg-pink-600 rounded-full flex items-center justify-center hover:bg-pink-700 transition-colors cursor-pointer">
-                                        <span className="text-white font-bold">I</span>
-                                    </div>
+                                    {[
+                                        { name: 'Facebook', color: 'bg-blue-600 hover:bg-blue-700', icon: 'f' },
+                                        { name: 'Twitter', color: 'bg-blue-400 hover:bg-blue-500', icon: 'T' },
+                                        { name: 'Instagram', color: 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700', icon: 'I' },
+                                        { name: 'WhatsApp', color: 'bg-green-600 hover:bg-green-700', icon: 'W' }
+                                    ].map((social, index) => (
+                                        <button
+                                            key={index}
+                                            className={`w-12 h-12 ${social.color} rounded-xl flex items-center justify-center transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-110 hover:-translate-y-1`}
+                                        >
+                                            <span className="text-white font-bold text-lg">{social.icon}</span>
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
                             
-                            <div className="space-y-6">
-                                <h3 className="text-xl font-semibold">Contacto</h3>
-                                <div className="space-y-3 text-gray-300">
-                                    <div className="flex items-center gap-3">
-                                        <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                                        </svg>
-                                        <p>+57 300 123 4567</p>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                        </svg>
-                                        <p>info@viajesroxana.com</p>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        </svg>
-                                        <p>Calle 123 #45-67, Bogotá</p>
-                                    </div>
+                            {/* Contact info mejorada */}
+                            <div className="space-y-8">
+                                <h3 className="text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                                    Contáctanos
+                                </h3>
+                                <div className="space-y-6">
+                                    {[
+                                        { 
+                                            icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />, 
+                                            color: 'text-green-400', 
+                                            text: '+57 300 123 4567',
+                                            subtext: 'Línea directa 24/7'
+                                        },
+                                        { 
+                                            icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />, 
+                                            color: 'text-blue-400', 
+                                            text: 'info@viajesroxana.com',
+                                            subtext: 'Respuesta en 2 horas'
+                                        },
+                                        { 
+                                            icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z" />, 
+                                            color: 'text-red-400', 
+                                            text: 'Calle 123 #45-67, Bogotá',
+                                            subtext: 'Oficina principal'
+                                        }
+                                    ].map((item, index) => (
+                                        <div key={index} className="flex items-start gap-4 p-3 rounded-xl hover:bg-white/5 transition-colors duration-200">
+                                            <div className={`w-12 h-12 ${item.color} bg-white/10 rounded-xl flex items-center justify-center flex-shrink-0`}>
+                                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    {item.icon}
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <p className="text-white font-medium">{item.text}</p>
+                                                <p className="text-gray-400 text-sm">{item.subtext}</p>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                             
-                            <div className="space-y-6">
-                                <h3 className="text-xl font-semibold">Horarios</h3>
-                                <div className="space-y-3 text-gray-300">
-                                    <div className="flex items-center gap-3">
-                                        <svg className="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        <div>
-                                            <p className="font-medium">Lun - Vie</p>
-                                            <p className="text-sm">7:00 AM - 7:00 PM</p>
+                            {/* Hours mejorada */}
+                            <div className="space-y-8">
+                                <h3 className="text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                                    Horarios
+                                </h3>
+                                <div className="space-y-4">
+                                    {[
+                                        { day: 'Lunes - Viernes', time: '7:00 AM - 7:00 PM', status: 'Horario extendido' },
+                                        { day: 'Sábados', time: '8:00 AM - 5:00 PM', status: 'Disponible' },
+                                        { day: 'Domingos', time: '9:00 AM - 3:00 PM', status: 'Horario reducido' }
+                                    ].map((schedule, index) => (
+                                        <div key={index} className="bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-colors duration-200">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <p className="text-white font-semibold">{schedule.day}</p>
+                                                <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full">
+                                                    {schedule.status}
+                                                </span>
+                                            </div>
+                                            <p className="text-gray-300">{schedule.time}</p>
                                         </div>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <svg className="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        <div>
-                                            <p className="font-medium">Sábados</p>
-                                            <p className="text-sm">8:00 AM - 5:00 PM</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <svg className="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        <div>
-                                            <p className="font-medium">Domingos</p>
-                                            <p className="text-sm">9:00 AM - 3:00 PM</p>
-                                        </div>
-                                    </div>
+                                    ))}
                                 </div>
                             </div>
                         </div>
                         
-                        <div className="border-t border-gray-700 mt-12 pt-8 text-center">
-                            <p className="text-gray-400">
-                                © 2024 Viajes Roxana. Todos los derechos reservados. | Desarrollado con ❤️ para familias viajeras
-                            </p>
+                        {/* Bottom section mejorada */}
+                        <div className="border-t border-gray-700 mt-16 pt-8">
+                            <div className="flex flex-col lg:flex-row justify-between items-center gap-4">
+                                <div className="text-center lg:text-left">
+                                    <p className="text-gray-400 text-sm">
+                                        © 2024 Viajes Roxana. Todos los derechos reservados.
+                                    </p>
+                                    <p className="text-gray-500 text-xs mt-1">
+                                        Desarrollado con ❤️ para familias viajeras | RNT: 12345 | NIT: 900.123.456-7
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-4 text-xs text-gray-500">
+                                    <a href="#" className="hover:text-gray-300 transition-colors">Términos</a>
+                                    <a href="#" className="hover:text-gray-300 transition-colors">Privacidad</a>
+                                    <a href="#" className="hover:text-gray-300 transition-colors">Cookies</a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </footer>
             </div>
+
+            <style jsx>{`
+                @keyframes marquee {
+                    0% { transform: translate3d(100%, 0, 0); }
+                    100% { transform: translate3d(-100%, 0, 0); }
+                }
+                .animate-marquee {
+                    animation: marquee 30s linear infinite;
+                }
+            `}</style>
         </>
     );
 }
