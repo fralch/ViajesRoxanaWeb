@@ -459,39 +459,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                                         Gestiona tu perfil, rastrea ubicaciones y mantente conectado con nosotros.
                                     </p>
 
-                                    {/* Información detallada del grupo para múltiples grupos */}
-                                    {selectedChild && selectedChild.inscripciones && selectedChild.inscripciones.length > 1 && selectedGroup && (
-                                        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 shadow-lg border border-blue-200">
-                                            <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-                                                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 919.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                                </svg>
-                                                Información del Grupo Seleccionado
-                                            </h3>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-semibold text-gray-700">Paquete:</span>
-                                                    <span className="text-gray-600">{selectedGroup.paquete?.nombre}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-semibold text-gray-700">Fechas:</span>
-                                                    <span className="text-gray-600">
-                                                        {formatDateSafe(selectedGroup.fecha_inicio)} - {formatDateSafe(selectedGroup.fecha_fin)}
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-semibold text-gray-700">Capacidad:</span>
-                                                    <span className="text-gray-600">{selectedGroup.capacidad} personas</span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-semibold text-gray-700">Estado:</span>
-                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${selectedGroup.activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                                        {selectedGroup.activo ? 'Activo' : 'Inactivo'}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
+                                   
 
                                     {/* Stats rápidas */}
                                     <div className="flex flex-wrap gap-6 justify-center lg:justify-start pt-4">
@@ -542,6 +510,30 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                                         </div>
                                         
                                     </div>
+                                     {/* Información detallada del grupo para múltiples grupos */}
+                                    {selectedChild && selectedChild.inscripciones && selectedChild.inscripciones.length > 1 && selectedGroup && (
+                                        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 shadow-lg border border-blue-200">
+                                            <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                                                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 7a3 3 0 11-6 0 3 3 0 016 0zM6 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                </svg>
+                                                Información del Grupo Seleccionado
+                                            </h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-semibold text-gray-700">Paquete:</span>
+                                                    <span className="text-gray-600">{selectedGroup.paquete?.nombre}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-semibold text-gray-700">Fechas:</span>
+                                                    <span className="text-gray-600">
+                                                        {formatDateSafe(selectedGroup.fecha_inicio)} - {formatDateSafe(selectedGroup.fecha_fin)}
+                                                    </span>
+                                                </div>
+                                              
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             
