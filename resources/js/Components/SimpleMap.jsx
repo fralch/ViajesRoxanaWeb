@@ -43,7 +43,7 @@ const SimpleMap = ({
                 const color = (marker.color || '#FF0000').replace('#', '');
                 return `pin-s+${color}(${marker.longitude},${marker.latitude})`;
             });
-            markersParam = markersStrings.join(',') + '/';
+            markersParam = markerStrings.join(',') + '/';
         }
 
         // Si hay marcadores, centrar en el primer marcador, si no usar coordenadas por defecto

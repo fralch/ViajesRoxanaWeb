@@ -102,6 +102,14 @@ Route::middleware('auth')->group(function () {
         Route::post('/calculate-distance', [App\Http\Controllers\MapboxController::class, 'calculateDistance'])->name('mapbox.calculate-distance');
         Route::post('/get-route', [App\Http\Controllers\MapboxController::class, 'getRoute'])->name('mapbox.get-route');
     });
+    
+    // Rutas API para ubicación de hijos
+    Route::prefix('api/hijo-location')->group(function () {
+        Route::get('/{hijo}/last', [App\Http\Controllers\HijoLocationController::class, 'getLastLocation'])->name('hijo.location.last');
+        Route::get('/{hijo}/history', [App\Http\Controllers\HijoLocationController::class, 'getLocationHistory'])->name('hijo.location.history');
+        Route::get('/{hijo}/stats', [App\Http\Controllers\HijoLocationController::class, 'getLocationStats'])->name('hijo.location.stats');
+        Route::post('/{hijo}/simulate', [App\Http\Controllers\HijoLocationController::class, 'simulateLocationUpdate'])->name('hijo.location.simulate');
+    });
 
     Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');

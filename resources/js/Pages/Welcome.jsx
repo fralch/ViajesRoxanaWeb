@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Dropdown from '@/Components/Dropdown';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import SimpleMap from '@/Components/SimpleMap';
+import ErrorBoundary from '@/Components/ErrorBoundary';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import mapboxService from '@/services/mapboxService';
 
@@ -18,6 +19,9 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
     const [currentAddress, setCurrentAddress] = useState('Obteniendo ubicación...');
     const [lastUpdate, setLastUpdate] = useState(null);
     const [locationAccuracy, setLocationAccuracy] = useState(null);
+    const [lastLocation, setLastLocation] = useState(null);
+    const [locationLoading, setLocationLoading] = useState(false);
+    const [locationError, setLocationError] = useState(null);
     
     // Hook de geolocalización
     const { 
@@ -54,29 +58,62 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
         return () => clearTimeout(timer);
     }, []);
 
-    // Geocodificación inversa cuando cambia la ubicación
+    // Cargar última ubicación del hijo seleccionado desde BD
     useEffect(() => {
-        if (location) {
-            const performReverseGeocode = async () => {
+        if (selectedChild && selectedChild.id) {
+            const fetchLastLocation = async () => {
+                setLocationLoading(true);
+                setLocationError(null);
+                
                 try {
-                    const addressData = await mapboxService.reverseGeocode(
-                        location.longitude, 
-                        location.latitude
-                    );
-                    setCurrentAddress(addressData.address);
-                    setLastUpdate(new Date());
+                    const response = await fetch(`/api/hijo-location/${selectedChild.id}/last`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                        },
+                        credentials: 'same-origin'
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    const data = await response.json();
                     
-                    const accuracy = getAccuracyInfo();
-                    setLocationAccuracy(accuracy);
+                    if (data.success && data.location) {
+                        setLastLocation(data.location);
+                        setLastUpdate(new Date(data.location.timestamp));
+                        
+                        // Geocodificación inversa con las coordenadas de la BD
+                        try {
+                            const addressData = await mapboxService.reverseGeocode(
+                                data.location.longitude, 
+                                data.location.latitude
+                            );
+                            setCurrentAddress(addressData.address);
+                        } catch (geoError) {
+                            console.error('Error en geocodificación inversa:', geoError);
+                            setCurrentAddress('Dirección no disponible');
+                        }
+                    } else {
+                        setLocationError(data.message || 'No se encontró ubicación');
+                        setCurrentAddress('Sin datos de ubicación');
+                        setLastLocation(null);
+                    }
                 } catch (error) {
-                    console.error('Error en geocodificación inversa:', error);
-                    setCurrentAddress('Dirección no disponible');
+                    console.error('Error cargando ubicación del hijo:', error);
+                    setLocationError(error.message || 'Error al cargar ubicación');
+                    setCurrentAddress('Error al obtener ubicación');
+                    setLastLocation(null);
+                } finally {
+                    setLocationLoading(false);
                 }
             };
 
-            performReverseGeocode();
+            fetchLastLocation();
         }
-    }, [location, getAccuracyInfo]);
+    }, [selectedChild]);
 
     // Asignar token globalmente para SimpleMap
     useEffect(() => {
@@ -86,24 +123,59 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
     // Componente Modal con mapa simple
     const LocationModal = () => {
         const childName = selectedChild?.nombres || 'Tu hijo';
-        const coords = formatCoordinates();
         
-        const handleLocationFound = (locationData) => {
-            setLastUpdate(new Date());
-        };
+        const handleRefreshLocation = async () => {
+            if (selectedChild && selectedChild.id) {
+                setLocationLoading(true);
+                setLocationError(null);
+                
+                try {
+                    const response = await fetch(`/api/hijo-location/${selectedChild.id}/last`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                        },
+                        credentials: 'same-origin'
+                    });
 
-        const handleGetLocation = async () => {
-            try {
-                await getCurrentPosition();
-            } catch (error) {
-                console.error('Error obteniendo ubicación:', error);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    const data = await response.json();
+                    
+                    if (data.success && data.location) {
+                        setLastLocation(data.location);
+                        setLastUpdate(new Date(data.location.timestamp));
+                        
+                        // Geocodificación inversa
+                        try {
+                            const addressData = await mapboxService.reverseGeocode(
+                                data.location.longitude, 
+                                data.location.latitude
+                            );
+                            setCurrentAddress(addressData.address);
+                        } catch (geoError) {
+                            console.error('Error en geocodificación inversa:', geoError);
+                            setCurrentAddress('Dirección no disponible');
+                        }
+                    } else {
+                        setLocationError(data.message || 'No se encontró ubicación');
+                    }
+                } catch (error) {
+                    console.error('Error refrescando ubicación:', error);
+                    setLocationError(error.message || 'Error al refrescar ubicación');
+                } finally {
+                    setLocationLoading(false);
+                }
             }
         };
 
-        // Marcadores para el mapa
-        const markers = location ? [{
-            longitude: location.longitude,
-            latitude: location.latitude,
+        // Marcadores para el mapa usando datos de BD
+        const markers = lastLocation ? [{
+            longitude: lastLocation.longitude,
+            latitude: lastLocation.latitude,
             title: `Ubicación de ${childName}`,
             description: currentAddress,
             color: '#EF4444',
@@ -141,22 +213,23 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                         </button>
                     </div>
 
-                    {/* Error de geolocalización */}
-                    {geoError && (
+                    {/* Error de ubicación */}
+                    {locationError && (
                         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
                             <div className="flex items-center gap-3">
                                 <svg className="w-6 h-6 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                                 <div>
-                                    <p className="text-red-800 font-semibold">Error de Geolocalización</p>
-                                    <p className="text-red-700 text-sm">{geoError.message}</p>
+                                    <p className="text-red-800 font-semibold">Error de Ubicación</p>
+                                    <p className="text-red-700 text-sm">{locationError}</p>
                                 </div>
                                 <button
-                                    onClick={handleGetLocation}
+                                    onClick={handleRefreshLocation}
                                     className="ml-auto px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                                    disabled={locationLoading}
                                 >
-                                    Reintentar
+                                    {locationLoading ? 'Cargando...' : 'Reintentar'}
                                 </button>
                             </div>
                         </div>
@@ -164,15 +237,17 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
 
                     {/* Mapa Simple 2D */}
                     <div className="mb-6">
-                        <SimpleMap
-                            latitude={location ? location.latitude : 4.6097}
-                            longitude={location ? location.longitude : -74.0817}
-                            zoom={location ? 15 : 12}
-                            height="450px"
-                            markers={markers}
-                            showControls={true}
-                            className="rounded-2xl shadow-lg"
-                        />
+                        <ErrorBoundary>
+                            <SimpleMap
+                                latitude={lastLocation ? lastLocation.latitude : 4.6097}
+                                longitude={lastLocation ? lastLocation.longitude : -74.0817}
+                                zoom={lastLocation ? 15 : 12}
+                                height="450px"
+                                markers={markers}
+                                showControls={true}
+                                className="rounded-2xl shadow-lg"
+                            />
+                        </ErrorBoundary>
                     </div>
 
                     {/* Grid de información en tiempo real */}
@@ -190,11 +265,11 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                                 {lastUpdate ? (
                                     `Hace ${Math.round((new Date() - lastUpdate) / 1000)} segundos`
                                 ) : (
-                                    geoLoading ? 'Obteniendo ubicación...' : 'Sin datos'
+                                    locationLoading ? 'Obteniendo ubicación...' : 'Sin datos'
                                 )}
                             </p>
                             <p className="text-xs text-blue-600 mt-1">
-                                {location ? 'Ubicación activa' : 'Esperando GPS...'}
+                                {lastLocation ? 'Ubicación desde BD' : (locationLoading ? 'Cargando...' : 'Sin ubicación')}
                             </p>
                         </div>
 
@@ -222,11 +297,11 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                                 <h3 className="font-semibold text-purple-900">Coordenadas</h3>
                             </div>
                             <p className="text-purple-800 text-sm">
-                                {coords ? coords.formatted : 'No disponible'}
+                                {lastLocation ? `${lastLocation.latitude.toFixed(6)}, ${lastLocation.longitude.toFixed(6)}` : 'No disponible'}
                             </p>
-                            {locationAccuracy && (
+                            {lastLocation && (
                                 <p className="text-xs text-purple-600 mt-1">
-                                    {locationAccuracy.description}
+                                    {lastLocation.human_time}
                                 </p>
                             )}
                         </div>
@@ -236,32 +311,32 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                     <div className="flex flex-col sm:flex-row gap-3 justify-between items-center">
                         <div className="flex gap-3">
                             <button 
-                                onClick={handleGetLocation}
-                                disabled={geoLoading}
+                                onClick={handleRefreshLocation}
+                                disabled={locationLoading}
                                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl transition-colors duration-200 flex items-center gap-2"
                             >
-                                {geoLoading ? (
+                                {locationLoading ? (
                                     <>
                                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                        Localizando...
+                                        Actualizando...
                                     </>
                                 ) : (
                                     <>
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                         </svg>
                                         Actualizar Ubicación
                                     </>
                                 )}
                             </button>
 
-                            {location && navigator.share && (
+                            {lastLocation && navigator.share && (
                                 <button 
                                     onClick={() => {
                                         navigator.share({
                                             title: `Ubicación de ${childName}`,
                                             text: currentAddress,
-                                            url: `https://maps.google.com/?q=${location.latitude},${location.longitude}`
+                                            url: `https://maps.google.com/?q=${lastLocation.latitude},${lastLocation.longitude}`
                                         });
                                     }}
                                     className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-colors duration-200"
@@ -753,7 +828,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
              
             </div>
 
-            <style jsx>{`
+            <style>{`
                 @keyframes marquee {
                     0% { transform: translate3d(100%, 0, 0); }
                     100% { transform: translate3d(-100%, 0, 0); }
