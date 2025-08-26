@@ -258,7 +258,7 @@ export default function PerfilHijo({ hijo }) {
                                 </div>
 
                                 {/* Gustos e Intereses */}
-                                <div>
+                                {/* <div>
                                     <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                                         <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
                                             <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -321,7 +321,7 @@ export default function PerfilHijo({ hijo }) {
                                             <InputError message={erroresPerfil.color_favorito} className="mt-2" />
                                         </div>
                                     </div>
-                                </div>
+                                </div> */}
 
                                 {/* Contactos de Emergencia */}
                                 <div>
