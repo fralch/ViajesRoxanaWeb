@@ -265,8 +265,6 @@ const InteractiveMap = ({
     const handleToggleStyle = () => {
         const styles = [
             'mapbox://styles/mapbox/streets-v12',
-            'mapbox://styles/mapbox/satellite-v9',
-            'mapbox://styles/mapbox/outdoors-v12',
             'mapbox://styles/mapbox/light-v11'
         ];
         
