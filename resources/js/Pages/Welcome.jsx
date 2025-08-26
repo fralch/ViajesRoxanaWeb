@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Dropdown from '@/Components/Dropdown';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import SimpleMap from '@/Components/SimpleMap';
+import InteractiveMap from '@/Components/InteractiveMap';
 import ErrorBoundary from '@/Components/ErrorBoundary';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import mapboxService from '@/services/mapboxService';
@@ -235,10 +236,10 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                         </div>
                     )}
 
-                    {/* Mapa Simple 2D */}
+                    {/* Mapa Interactivo */}
                     <div className="mb-6">
                         <ErrorBoundary>
-                            <SimpleMap
+                            <InteractiveMap
                                 latitude={lastLocation ? lastLocation.latitude : 4.6097}
                                 longitude={lastLocation ? lastLocation.longitude : -74.0817}
                                 zoom={lastLocation ? 15 : 12}
@@ -246,6 +247,9 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                                 markers={markers}
                                 showControls={true}
                                 className="rounded-2xl shadow-lg"
+                                onMarkerClick={(marker) => {
+                                    console.log('Marcador clickeado:', marker);
+                                }}
                             />
                         </ErrorBoundary>
                     </div>

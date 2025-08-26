@@ -23,6 +23,7 @@
         "vite": "^7.0.4"
     },
     "dependencies": {
+        "mapbox-gl": "^3.14.0",
         "sweetalert2": "^11.22.4"
     }
 }
