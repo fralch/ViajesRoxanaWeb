@@ -2,6 +2,9 @@ import { Link, Head, usePage } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import Dropdown from '@/Components/Dropdown';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
+import SimpleMap from '@/Components/SimpleMap';
+import { useGeolocation } from '@/hooks/useGeolocation';
+import mapboxService from '@/services/mapboxService';
 
 export default function Welcome({ auth, laravelVersion, phpVersion, user_with_children }) {
     const user = usePage().props.auth.user;
@@ -10,6 +13,21 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
     const [showLocationModal, setShowLocationModal] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [selectedChild, setSelectedChild] = useState(null);
+    
+    // Estados para geolocalización
+    const [currentAddress, setCurrentAddress] = useState('Obteniendo ubicación...');
+    const [lastUpdate, setLastUpdate] = useState(null);
+    const [locationAccuracy, setLocationAccuracy] = useState(null);
+    
+    // Hook de geolocalización
+    const { 
+        location, 
+        loading: geoLoading, 
+        error: geoError, 
+        getCurrentPosition,
+        getAccuracyInfo,
+        formatCoordinates 
+    } = useGeolocation();
 
     // Redirección a login si no está autenticado
     useEffect(() => {
@@ -36,118 +54,231 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
         return () => clearTimeout(timer);
     }, []);
 
-    // Componente Modal mejorado
-    const LocationModal = () => (
-        <div className={`fixed inset-0 z-50 ${showLocationModal ? 'flex' : 'hidden'} items-center justify-center p-4`}>
-            <div 
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300" 
-                onClick={() => setShowLocationModal(false)}
-            ></div>
-            <div className="relative bg-white rounded-3xl p-8 w-full max-w-5xl max-h-[85vh] overflow-auto shadow-2xl transform transition-all duration-300 scale-100">
-                {/* Header del modal */}
-                <div className="flex justify-between items-center mb-6">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                            <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <h2 className="text-3xl font-bold text-gray-900">Ubicación en Tiempo Real</h2>
-                            <p className="text-gray-600">Leonardo Calderon</p>
-                        </div>
-                    </div>
-                    <button 
-                        onClick={() => setShowLocationModal(false)}
-                        className="w-12 h-12 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200"
-                    >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
+    // Geocodificación inversa cuando cambia la ubicación
+    useEffect(() => {
+        if (location) {
+            const performReverseGeocode = async () => {
+                try {
+                    const addressData = await mapboxService.reverseGeocode(
+                        location.longitude, 
+                        location.latitude
+                    );
+                    setCurrentAddress(addressData.address);
+                    setLastUpdate(new Date());
+                    
+                    const accuracy = getAccuracyInfo();
+                    setLocationAccuracy(accuracy);
+                } catch (error) {
+                    console.error('Error en geocodificación inversa:', error);
+                    setCurrentAddress('Dirección no disponible');
+                }
+            };
 
-                {/* Mapa simulado mejorado */}
-                <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl h-96 mb-6 relative overflow-hidden shadow-inner">
-                    <div className="absolute inset-0 opacity-30">
-                        <div className="w-full h-full bg-repeat" style={{
-                            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.1'%3E%3Cpath d='m36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-                        }}></div>
+            performReverseGeocode();
+        }
+    }, [location, getAccuracyInfo]);
+
+    // Asignar token globalmente para SimpleMap
+    useEffect(() => {
+        window.mapboxToken = 'pk.eyJ1IjoiZnJhbGNoIiwiYSI6ImNtZXJ0ZGk1bzBhcDcyaXBxOGpvY3F5bjcifQ.jBkOkpE1eJoYVs-g5BifWA';
+    }, []);
+
+    // Componente Modal con mapa simple
+    const LocationModal = () => {
+        const childName = selectedChild?.nombres || 'Tu hijo';
+        const coords = formatCoordinates();
+        
+        const handleLocationFound = (locationData) => {
+            setLastUpdate(new Date());
+        };
+
+        const handleGetLocation = async () => {
+            try {
+                await getCurrentPosition();
+            } catch (error) {
+                console.error('Error obteniendo ubicación:', error);
+            }
+        };
+
+        // Marcadores para el mapa
+        const markers = location ? [{
+            longitude: location.longitude,
+            latitude: location.latitude,
+            title: `Ubicación de ${childName}`,
+            description: currentAddress,
+            color: '#EF4444',
+            icon: '📍'
+        }] : [];
+
+        return (
+            <div className={`fixed inset-0 z-50 ${showLocationModal ? 'flex' : 'hidden'} items-center justify-center p-4`}>
+                <div 
+                    className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300" 
+                    onClick={() => setShowLocationModal(false)}
+                ></div>
+                <div className="relative bg-white rounded-3xl p-8 w-full max-w-6xl max-h-[90vh] overflow-auto shadow-2xl transform transition-all duration-300 scale-100">
+                    {/* Header del modal */}
+                    <div className="flex justify-between items-center mb-6">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h2 className="text-3xl font-bold text-gray-900">Ubicación en Tiempo Real</h2>
+                                <p className="text-gray-600">{childName}</p>
+                            </div>
+                        </div>
+                        <button 
+                            onClick={() => setShowLocationModal(false)}
+                            className="w-12 h-12 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200"
+                        >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
                     </div>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="text-center">
-                            <div className="relative">
-                                <div className="w-20 h-20 bg-red-500 rounded-full mx-auto mb-4 flex items-center justify-center shadow-lg animate-pulse">
-                                    <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+
+                    {/* Error de geolocalización */}
+                    {geoError && (
+                        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+                            <div className="flex items-center gap-3">
+                                <svg className="w-6 h-6 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <div>
+                                    <p className="text-red-800 font-semibold">Error de Geolocalización</p>
+                                    <p className="text-red-700 text-sm">{geoError.message}</p>
+                                </div>
+                                <button
+                                    onClick={handleGetLocation}
+                                    className="ml-auto px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                                >
+                                    Reintentar
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Mapa Simple 2D */}
+                    <div className="mb-6">
+                        <SimpleMap
+                            latitude={location ? location.latitude : 4.6097}
+                            longitude={location ? location.longitude : -74.0817}
+                            zoom={location ? 15 : 12}
+                            height="450px"
+                            markers={markers}
+                            showControls={true}
+                            className="rounded-2xl shadow-lg"
+                        />
+                    </div>
+
+                    {/* Grid de información en tiempo real */}
+                    <div className="grid gap-4 md:grid-cols-3 mb-6">
+                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                 </div>
-                                <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
-                                    <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
+                                <h3 className="font-semibold text-blue-900">Última Actualización</h3>
+                            </div>
+                            <p className="text-blue-800">
+                                {lastUpdate ? (
+                                    `Hace ${Math.round((new Date() - lastUpdate) / 1000)} segundos`
+                                ) : (
+                                    geoLoading ? 'Obteniendo ubicación...' : 'Sin datos'
+                                )}
+                            </p>
+                            <p className="text-xs text-blue-600 mt-1">
+                                {location ? 'Ubicación activa' : 'Esperando GPS...'}
+                            </p>
+                        </div>
+
+                        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                    </svg>
                                 </div>
+                                <h3 className="font-semibold text-green-900">Dirección</h3>
                             </div>
-                            <p className="text-lg font-semibold text-gray-700">Ubicación Actual</p>
-                            <p className="text-sm text-gray-500 mt-1">Carrera 15 #85-23, Bogotá</p>
+                            <p className="text-green-800 text-sm leading-relaxed">
+                                {currentAddress}
+                            </p>
+                        </div>
+
+                        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                                    </svg>
+                                </div>
+                                <h3 className="font-semibold text-purple-900">Coordenadas</h3>
+                            </div>
+                            <p className="text-purple-800 text-sm">
+                                {coords ? coords.formatted : 'No disponible'}
+                            </p>
+                            {locationAccuracy && (
+                                <p className="text-xs text-purple-600 mt-1">
+                                    {locationAccuracy.description}
+                                </p>
+                            )}
                         </div>
                     </div>
-                </div>
 
-                {/* Grid de información mejorada */}
-                <div className="grid gap-4 md:grid-cols-3 mb-6">
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                            <h3 className="font-semibold text-blue-900">Última Actualización</h3>
+                    {/* Controles y botones de acción */}
+                    <div className="flex flex-col sm:flex-row gap-3 justify-between items-center">
+                        <div className="flex gap-3">
+                            <button 
+                                onClick={handleGetLocation}
+                                disabled={geoLoading}
+                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl transition-colors duration-200 flex items-center gap-2"
+                            >
+                                {geoLoading ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                        Localizando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                        </svg>
+                                        Actualizar Ubicación
+                                    </>
+                                )}
+                            </button>
+
+                            {location && navigator.share && (
+                                <button 
+                                    onClick={() => {
+                                        navigator.share({
+                                            title: `Ubicación de ${childName}`,
+                                            text: currentAddress,
+                                            url: `https://maps.google.com/?q=${location.latitude},${location.longitude}`
+                                        });
+                                    }}
+                                    className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-colors duration-200"
+                                >
+                                    Compartir
+                                </button>
+                            )}
                         </div>
-                        <p className="text-blue-800">Hace 30 segundos</p>
-                        <p className="text-xs text-blue-600 mt-1">Actualización automática cada 30s</p>
-                    </div>
 
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                            <h3 className="font-semibold text-green-900">Estado</h3>
-                        </div>
-                        <p className="text-green-800">Seguro y en ruta</p>
-                        <p className="text-xs text-green-600 mt-1">Velocidad: 45 km/h</p>
+                        <button className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors duration-200 shadow-lg hover:shadow-xl">
+                            Contactar al conductor
+                        </button>
                     </div>
-
-                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                </svg>
-                            </div>
-                            <h3 className="font-semibold text-purple-900">Coordenadas</h3>
-                        </div>
-                        <p className="text-purple-800 text-sm">4.6097° N, 74.0817° W</p>
-                        <p className="text-xs text-purple-600 mt-1">Precisión: ±3 metros</p>
-                    </div>
-                </div>
-
-                {/* Botones de acción */}
-                <div className="flex gap-3 justify-end">
-                    <button className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors duration-200">
-                        Compartir ubicación
-                    </button>
-                    <button className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors duration-200 shadow-lg hover:shadow-xl">
-                        Contactar al conductor
-                    </button>
                 </div>
             </div>
-        </div>
-    );
+        );
+    };
 
     // Componente de tarjeta mejorado
     const ServiceCard = ({ icon, title, description, status, link, color = "red", badge = null, onClick = null }) => {
