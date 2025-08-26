@@ -447,43 +447,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                                             </div>
                                         ) : null}
 
-                                        {/* Selector/Información de grupo */}
-                                        {selectedChild && selectedChild.inscripciones && selectedChild.inscripciones.length > 0 && (
-                                            selectedChild.inscripciones.length > 1 ? (
-                                                <div className="inline-flex items-center gap-3 bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg">
-                                                    <div className="w-3 h-3 bg-purple-400 rounded-full animate-pulse"></div>
-                                                    <select 
-                                                        value={selectedGroup?.id || ''} 
-                                                        onChange={(e) => {
-                                                            const group = selectedChild.inscripciones.find(insc => insc.grupo.id == e.target.value)?.grupo;
-                                                            setSelectedGroup(group);
-                                                        }}
-                                                        className="text-purple-700 font-semibold text-sm bg-transparent border-none focus:outline-none cursor-pointer"
-                                                    >
-                                                        {selectedChild.inscripciones.map(inscripcion => (
-                                                            <option key={inscripcion.grupo.id} value={inscripcion.grupo.id}>
-                                                                Grupo: {inscripcion.grupo.nombre}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                            ) : (
-                                                <div className="inline-flex flex-col items-start gap-1 bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                                                        <span className="text-green-700 font-semibold text-sm">
-                                                            Grupo: {selectedChild.inscripciones[0].grupo.nombre}
-                                                        </span>
-                                                    </div>
-                                                    <div className="text-xs text-gray-600 ml-6">
-                                                        Paquete: {selectedChild.inscripciones[0].grupo.paquete?.nombre}
-                                                    </div>
-                                                    <div className="text-xs text-gray-600 ml-6">
-                                                        Fecha: {formatDateSafe(selectedChild.inscripciones[0].grupo.fecha_inicio)} - {formatDateSafe(selectedChild.inscripciones[0].grupo.fecha_fin)}
-                                                    </div>
-                                                </div>
-                                            )
-                                        )}
+                                        
                                     </div>
                                     
                                     <h1 className="text-5xl lg:text-6xl font-bold bg-gradient-to-r from-gray-900 via-red-800 to-red-600 bg-clip-text text-transparent leading-tight">
@@ -531,10 +495,43 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
 
                                     {/* Stats rápidas */}
                                     <div className="flex flex-wrap gap-6 justify-center lg:justify-start pt-4">
-                                        <div className="bg-white/80 backdrop-blur-sm rounded-2xl px-4 py-3 shadow-lg">
-                                            <div className="text-2xl font-bold text-red-600">20</div>
-                                            <div className="text-sm text-gray-600">Años viajando</div>
-                                        </div>
+                                        {/* Selector/Información de grupo */}
+                                        {selectedChild && selectedChild.inscripciones && selectedChild.inscripciones.length > 0 && (
+                                            selectedChild.inscripciones.length > 1 ? (
+                                                <div className="inline-flex items-center gap-3 bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg">
+                                                    <div className="w-3 h-3 bg-purple-400 rounded-full animate-pulse"></div>
+                                                    <select 
+                                                        value={selectedGroup?.id || ''} 
+                                                        onChange={(e) => {
+                                                            const group = selectedChild.inscripciones.find(insc => insc.grupo.id == e.target.value)?.grupo;
+                                                            setSelectedGroup(group);
+                                                        }}
+                                                        className="text-purple-700 font-semibold text-sm bg-transparent border-none focus:outline-none cursor-pointer"
+                                                    >
+                                                        {selectedChild.inscripciones.map(inscripcion => (
+                                                            <option key={inscripcion.grupo.id} value={inscripcion.grupo.id}>
+                                                                Grupo: {inscripcion.grupo.nombre}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            ) : (
+                                                <div className="inline-flex flex-col items-start gap-1 bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                                                        <span className="text-red-500 font-semibold text-sm">
+                                                            Grupo: {selectedChild.inscripciones[0].grupo.nombre}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-xs text-gray-600 ml-6">
+                                                        Paquete: {selectedChild.inscripciones[0].grupo.paquete?.nombre}
+                                                    </div>
+                                                    <div className="text-xs text-gray-600 ml-6">
+                                                        Fecha: {formatDateSafe(selectedChild.inscripciones[0].grupo.fecha_inicio)} - {formatDateSafe(selectedChild.inscripciones[0].grupo.fecha_fin)}
+                                                    </div>
+                                                </div>
+                                            )
+                                        )}
                                         <div className="bg-white/80 backdrop-blur-sm rounded-2xl px-4 py-3 shadow-lg">
                                             <div className="text-2xl font-bold text-green-600">100%</div>
                                             <div className="text-sm text-gray-600">Satisfacción</div>
@@ -543,6 +540,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                                             <div className="text-2xl font-bold text-blue-600">24/7</div>
                                             <div className="text-sm text-gray-600">Soporte</div>
                                         </div>
+                                        
                                     </div>
                                 </div>
                             </div>
