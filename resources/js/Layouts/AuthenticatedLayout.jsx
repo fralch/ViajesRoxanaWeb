@@ -25,8 +25,9 @@ export default function AuthenticatedLayout({ header, children }) {
                                 </Link>
                             </div>
 
-                            {/* Navegación adaptativa por tamaño de pantalla */}
-                            
+                            {/* Navegación adaptativa por tamaño de pantalla - Solo para administradores */}
+                            {user.is_admin && (
+                            <>
                             {/* Desktop XL - Todos con texto */}
                             <div className="hidden 2xl:ms-6 2xl:flex 2xl:space-x-1">
                                 <Link
@@ -363,6 +364,8 @@ export default function AuthenticatedLayout({ header, children }) {
                                     </Dropdown.Content>
                                 </Dropdown>
                             </div>
+                            </>
+                            )}
                         </div>
 
                         <div className="hidden sm:ms-6 sm:flex sm:items-center">
@@ -458,13 +461,14 @@ export default function AuthenticatedLayout({ header, children }) {
                     </div>
                 </div>
 
+                {user.is_admin && (
                 <div
                     className={
                         (showingNavigationDropdown ? 'block' : 'hidden') +
                         ' sm:hidden'
                     }
                 >
-                    {/* Navegación móvil */}
+                    {/* Navegación móvil - Solo para administradores */}
                     <div className="px-2 pt-2 pb-3 space-y-1 bg-white/95 border-b border-gray-200">
                         <Link
                             href={route('dashboard')}
@@ -565,7 +569,12 @@ export default function AuthenticatedLayout({ header, children }) {
                             🔔 Notificaciones
                         </Link>
                     </div>
+                </div>
+                )}
 
+                {/* Información del usuario - siempre visible */}
+                {showingNavigationDropdown && (
+                <div className="sm:hidden">
                     <div className="border-t border-gray-200 pb-1 pt-4 bg-white/95">
                         <div className="px-4">
                             <div className="text-base font-medium text-red-600">
@@ -590,6 +599,7 @@ export default function AuthenticatedLayout({ header, children }) {
                         </div>
                     </div>
                 </div>
+                )}
             </nav>
 
             {header && (
