@@ -6,6 +6,7 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import InputLabel from '@/Components/InputLabel';
 import InputError from '@/Components/InputError';
+import { formatDateSafe } from '@/utils/dateUtils';
 
 export default function Edit({ grupo, paquetes }) {
 
@@ -487,10 +488,10 @@ export default function Edit({ grupo, paquetes }) {
                     <strong>ID:</strong> {grupo.id}
                   </p>
                   <p>
-                    <strong>Creado:</strong> {new Date(grupo.created_at).toLocaleDateString('es-ES')}
+                    <strong>Creado:</strong> {formatDateSafe(grupo.created_at)}
                   </p>
                   <p>
-                    <strong>Última actualización:</strong> {new Date(grupo.updated_at).toLocaleDateString('es-ES')}
+                    <strong>Última actualización:</strong> {formatDateSafe(grupo.updated_at)}
                   </p>
                   {grupo.inscripciones_count !== undefined && (
                     <p>

@@ -6,6 +6,7 @@ import SimpleMap from '@/Components/SimpleMap';
 import LocationModal from '@/Components/LocationModal';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import mapboxService from '@/services/mapboxService';
+import { formatDateSafe, formatDateRange } from '@/utils/dateUtils';
 
 export default function Welcome({ auth, laravelVersion, phpVersion, user_with_children }) {
     const user = usePage().props.auth.user;
@@ -478,7 +479,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                                                         Paquete: {selectedChild.inscripciones[0].grupo.paquete?.nombre}
                                                     </div>
                                                     <div className="text-xs text-gray-600 ml-6">
-                                                        Fecha: {new Date(selectedChild.inscripciones[0].grupo.fecha_inicio).toLocaleDateString()} - {new Date(selectedChild.inscripciones[0].grupo.fecha_fin).toLocaleDateString()}
+                                                        Fecha: {formatDateSafe(selectedChild.inscripciones[0].grupo.fecha_inicio)} - {formatDateSafe(selectedChild.inscripciones[0].grupo.fecha_fin)}
                                                     </div>
                                                 </div>
                                             )
@@ -511,7 +512,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                                                 <div className="flex items-center gap-2">
                                                     <span className="font-semibold text-gray-700">Fechas:</span>
                                                     <span className="text-gray-600">
-                                                        {new Date(selectedGroup.fecha_inicio).toLocaleDateString()} - {new Date(selectedGroup.fecha_fin).toLocaleDateString()}
+                                                        {formatDateSafe(selectedGroup.fecha_inicio)} - {formatDateSafe(selectedGroup.fecha_fin)}
                                                     </span>
                                                 </div>
                                                 <div className="flex items-center gap-2">

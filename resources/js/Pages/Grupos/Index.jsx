@@ -7,6 +7,7 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import Modal from '@/Components/Modal';
 import Card from '@/Components/Card';
+import { formatDateSafe, formatDateRange } from '@/utils/dateUtils';
 
 export default function Index({ grupos, filters }) {
   const [search, setSearch] = useState(filters.search || '');
@@ -196,11 +197,7 @@ export default function Index({ grupos, filters }) {
                             <div className="text-sm">
                               <span className="block text-[11px] uppercase tracking-wide text-gray-500">Fechas</span>
                               <span className="font-medium text-gray-900">
-                                {grupo.fecha_inicio ? new Date(grupo.fecha_inicio).toLocaleDateString('es-ES') : 'No definida'}
-                              </span>
-                              <span className="mx-1 text-gray-400">→</span>
-                              <span className="font-medium text-gray-900">
-                                {grupo.fecha_fin ? new Date(grupo.fecha_fin).toLocaleDateString('es-ES') : 'No definida'}
+                                {formatDateRange(grupo.fecha_inicio, grupo.fecha_fin)}
                               </span>
                             </div>
                             <div className="text-sm">
@@ -319,10 +316,10 @@ export default function Index({ grupos, filters }) {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div>
                               <div className="text-sm font-medium text-gray-900">
-                                {grupo.fecha_inicio ? new Date(grupo.fecha_inicio).toLocaleDateString('es-ES') : 'No definida'}
+                                {formatDateSafe(grupo.fecha_inicio)}
                               </div>
                               <div className="text-sm text-gray-500">
-                                {grupo.fecha_fin ? new Date(grupo.fecha_fin).toLocaleDateString('es-ES') : 'No definida'}
+                                {formatDateSafe(grupo.fecha_fin)}
                               </div>
                             </div>
                           </td>

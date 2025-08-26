@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from "react";
 import { useForm } from "@inertiajs/react";
 import axios from "axios";
 import { showSuccess, showError, showWarning, showToast } from "../../utils/swal";
+import { formatDateSafe } from "@/utils/dateUtils";
 
 function classNames(...c) {
   return c.filter(Boolean).join(" ");
@@ -517,27 +518,53 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
                           <>
                             <p className="text-xs text-blue-600 font-medium">Fecha del viaje (Full Day)</p>
                             <p className="text-sm text-blue-800 font-semibold">
-                              {new Date(paquete.fecha_inicio).toLocaleDateString('es-PE', {
-                                weekday: 'long',
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric'
-                              })}
+                              {(() => {
+                                let date;
+                                if (paquete.fecha_inicio.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                                  const [year, month, day] = paquete.fecha_inicio.split('-');
+                                  date = new Date(year, month - 1, day);
+                                } else {
+                                  date = new Date(paquete.fecha_inicio);
+                                }
+                                return date.toLocaleDateString('es-PE', {
+                                  weekday: 'long',
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric'
+                                });
+                              })()
+                              }
                             </p>
                           </>
                         ) : (
                           <>
                             <p className="text-xs text-blue-600 font-medium">Duración del viaje</p>
                             <p className="text-sm text-blue-800 font-semibold">
-                              {new Date(paquete.fecha_inicio).toLocaleDateString('es-PE', {
-                                day: 'numeric',
-                                month: 'short'
-                              })} - {new Date(paquete.fecha_fin).toLocaleDateString('es-PE', {
-                                weekday: 'long',
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric'
-                              })}
+                              {(() => {
+                                let startDate, endDate;
+                                if (paquete.fecha_inicio.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                                  const [year, month, day] = paquete.fecha_inicio.split('-');
+                                  startDate = new Date(year, month - 1, day);
+                                } else {
+                                  startDate = new Date(paquete.fecha_inicio);
+                                }
+                                if (paquete.fecha_fin.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                                  const [year, month, day] = paquete.fecha_fin.split('-');
+                                  endDate = new Date(year, month - 1, day);
+                                } else {
+                                  endDate = new Date(paquete.fecha_fin);
+                                }
+                                return startDate.toLocaleDateString('es-PE', {
+                                  day: 'numeric',
+                                  month: 'short'
+                                }) + ' - ' + endDate.toLocaleDateString('es-PE', {
+                                  weekday: 'long',
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric'
+                                });
+                              })()
+                              }
                             </p>
                           </>
                         )}
