@@ -371,27 +371,11 @@ const InteractiveMap = ({
                 </div>
             )}
 
-            {/* Overlay con información de ubicación */}
-            {markers.length > 0 && mapLoaded && (
-                <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-3 max-w-xs z-10">
-                    <div className="flex items-center gap-2 mb-2">
-                        <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                        <span className="font-semibold text-gray-800">Ubicación en Tiempo Real</span>
-                    </div>
-                    {markers[0].description && (
-                        <p className="text-sm text-gray-600 leading-tight">
-                            {markers[0].description}
-                        </p>
-                    )}
-                    <div className="text-xs text-gray-500 mt-1">
-                        {markers[0].latitude.toFixed(6)}, {markers[0].longitude.toFixed(6)}
-                    </div>
-                </div>
-            )}
+           
 
             {/* Botón para abrir en Google Maps */}
             {markers.length > 0 && mapLoaded && (
-                <div className="absolute bottom-4 left-4 z-10">
+                <div className="absolute bottom-4 right-4 z-10">
                     <a
                         href={`https://www.google.com/maps?q=${markers[0].latitude},${markers[0].longitude}`}
                         target="_blank"
