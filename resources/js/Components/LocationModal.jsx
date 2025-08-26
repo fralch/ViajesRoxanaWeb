@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import InteractiveMap from '@/Components/InteractiveMap';
 import ErrorBoundary from '@/Components/ErrorBoundary';
 import mapboxService from '@/services/mapboxService';
+import { formatDateSafe } from '@/utils/dateUtils';
 
 export default function LocationModal({ 
   isOpen, 
@@ -20,6 +21,46 @@ export default function LocationModal({
 }) {
   const childName = selectedChild?.nombres || 'Tu hijo';
   const [mapCenterOverride, setMapCenterOverride] = useState(null);
+
+  // Función para crear fecha local sin problemas de zona horaria
+  const createLocalDate = (dateString) => {
+    if (!dateString) return null;
+    if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [year, month, day] = dateString.split('-');
+      return new Date(year, month - 1, day); // month - 1 porque los meses en JS van de 0-11
+    }
+    return new Date(dateString);
+  };
+
+  // Función para verificar si estamos dentro del rango de fechas del grupo
+  const isWithinGroupDates = useMemo(() => {
+    if (!selectedChild?.inscripciones || selectedChild.inscripciones.length === 0) {
+      return false;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Normalizar a medianoche para comparación de fechas
+
+    // Verificar si alguna inscripción tiene fechas válidas
+    return selectedChild.inscripciones.some(inscripcion => {
+      const grupo = inscripcion.grupo;
+      if (!grupo?.fecha_inicio || !grupo?.fecha_fin) {
+        return false;
+      }
+
+      const fechaInicio = createLocalDate(grupo.fecha_inicio);
+      const fechaFin = createLocalDate(grupo.fecha_fin);
+      
+      if (!fechaInicio || !fechaFin) {
+        return false;
+      }
+      
+      fechaInicio.setHours(0, 0, 0, 0);
+      fechaFin.setHours(23, 59, 59, 999); // Incluir todo el día final
+
+      return today >= fechaInicio && today <= fechaFin;
+    });
+  }, [selectedChild]);
 
   const handleRefreshLocation = async () => {
     if (!selectedChild?.id) return;
@@ -74,7 +115,76 @@ export default function LocationModal({
     }] : []
   ), [lastLocation, childName, currentAddress]);
 
+  // No mostrar el modal si no está abierto o si no estamos dentro del rango de fechas del grupo
   if (!isOpen) return null;
+  
+  // Si estamos fuera del rango de fechas, mostrar mensaje informativo
+  if (!isWithinGroupDates) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6">
+        <div 
+          className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
+          onClick={onClose}
+        />
+        
+        <div className="relative bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">Ubicación no disponible</h2>
+            </div>
+            <button 
+              onClick={onClose}
+              className="inline-flex items-center justify-center h-10 w-10 rounded-xl text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+              title="Cerrar"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          
+          <div className="text-center py-6">
+            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M3 7h18l-1 13a2 2 0 01-2 2H6a2 2 0 01-2-2L3 7z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Fuera del período de viaje</h3>
+            <p className="text-gray-600 mb-4">
+              La ubicación de <strong>{childName}</strong> solo está disponible durante las fechas del viaje del grupo.
+            </p>
+            
+            {selectedChild?.inscripciones && selectedChild.inscripciones.length > 0 && (
+              <div className="bg-gray-50 rounded-lg p-4 text-left">
+                <h4 className="font-medium text-gray-900 mb-2">Fechas de viaje:</h4>
+                {selectedChild.inscripciones.map((inscripcion, index) => (
+                  <div key={index} className="text-sm text-gray-600 mb-1">
+                    <strong>{inscripcion.grupo.nombre}:</strong> {' '}
+                    {formatDateSafe(inscripcion.grupo.fecha_inicio)} - {' '}
+                    {formatDateSafe(inscripcion.grupo.fecha_fin)}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          <div className="flex justify-center">
+            <button
+              onClick={onClose}
+              className="px-6 py-2 bg-amber-600 text-white rounded-xl hover:bg-amber-700 transition-colors font-medium"
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Configuración optimizada para que el mapa ocupe ~90%
   const modalClasses = 'relative bg-white rounded-3xl w-full max-w-7xl h-[90vh] overflow-hidden shadow-2xl flex flex-col';
