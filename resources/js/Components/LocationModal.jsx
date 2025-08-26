@@ -208,49 +208,7 @@ export default function LocationModal({
                     </div>
                 </div>
 
-                {/* Controles y botones de acción */}
-                <div className="flex flex-col sm:flex-row gap-3 justify-between items-center">
-                    <div className="flex gap-3">
-                        <button 
-                            onClick={handleRefreshLocation}
-                            disabled={locationLoading}
-                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl transition-colors duration-200 flex items-center gap-2"
-                        >
-                            {locationLoading ? (
-                                <>
-                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                    Actualizando...
-                                </>
-                            ) : (
-                                <>
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                    </svg>
-                                    Actualizar Ubicación
-                                </>
-                            )}
-                        </button>
-
-                        {lastLocation && navigator.share && (
-                            <button 
-                                onClick={() => {
-                                    navigator.share({
-                                        title: `Ubicación de ${childName}`,
-                                        text: currentAddress,
-                                        url: `https://maps.google.com/?q=${lastLocation.latitude},${lastLocation.longitude}`
-                                    });
-                                }}
-                                className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-colors duration-200"
-                            >
-                                Compartir
-                            </button>
-                        )}
-                    </div>
-
-                    <button className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors duration-200 shadow-lg hover:shadow-xl">
-                        Contactar al conductor
-                    </button>
-                </div>
+             
             </div>
         </div>
     );
