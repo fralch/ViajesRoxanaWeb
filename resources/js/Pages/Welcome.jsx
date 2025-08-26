@@ -14,6 +14,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
     const [showLocationModal, setShowLocationModal] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [selectedChild, setSelectedChild] = useState(null);
+    const [selectedGroup, setSelectedGroup] = useState(null);
     
     // Estados para geolocalización
     const [currentAddress, setCurrentAddress] = useState('Obteniendo ubicación...');
@@ -46,6 +47,15 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
             setSelectedChild(userWithChildren.hijos[0]);
         }
     }, [userWithChildren]);
+
+    // Inicializar grupo seleccionado cuando cambia el hijo
+    useEffect(() => {
+        if (selectedChild && selectedChild.inscripciones && selectedChild.inscripciones.length > 0) {
+            setSelectedGroup(selectedChild.inscripciones[0].grupo);
+        } else {
+            setSelectedGroup(null);
+        }
+    }, [selectedChild]);
 
     // Si no hay usuario, no renderizar nada mientras se redirige
     if (!user) {
@@ -409,31 +419,71 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                         <div className="flex flex-col lg:flex-row items-center gap-16">
                             <div className="flex-1 space-y-8 text-center lg:text-left">
                                 <div className="space-y-6">
-                                    {/* Selector de hijo con animación */}
-                                    {userWithChildren && userWithChildren.hijos && userWithChildren.hijos.length > 1 ? (
-                                        <div className="inline-flex items-center gap-3 bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg">
-                                            <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse"></div>
-                                            <select 
-                                                value={selectedChild?.id || ''} 
-                                                onChange={(e) => {
-                                                    const child = userWithChildren.hijos.find(hijo => hijo.id == e.target.value);
-                                                    setSelectedChild(child);
-                                                }}
-                                                className="text-blue-700 font-semibold text-sm bg-transparent border-none focus:outline-none cursor-pointer"
-                                            >
-                                                {userWithChildren.hijos.map(hijo => (
-                                                    <option key={hijo.id} value={hijo.id}>
-                                                        Seleccionar hijo: {hijo.nombres}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    ) : (
-                                        <div className="inline-flex items-center gap-3 bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg">
-                                            <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                                            <span className="text-green-700 font-semibold text-sm">Estado: Conectado</span>
-                                        </div>
-                                    )}
+                                    <div className="space-y-3">
+                                        {/* Selector de hijo con animación */}
+                                        {userWithChildren && userWithChildren.hijos && userWithChildren.hijos.length > 1 ? (
+                                            <div className="inline-flex items-center gap-3 bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg">
+                                                <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse"></div>
+                                                <select 
+                                                    value={selectedChild?.id || ''} 
+                                                    onChange={(e) => {
+                                                        const child = userWithChildren.hijos.find(hijo => hijo.id == e.target.value);
+                                                        setSelectedChild(child);
+                                                    }}
+                                                    className="text-blue-700 font-semibold text-sm bg-transparent border-none focus:outline-none cursor-pointer"
+                                                >
+                                                    {userWithChildren.hijos.map(hijo => (
+                                                        <option key={hijo.id} value={hijo.id}>
+                                                            Seleccionar hijo: {hijo.nombres}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        ) : userWithChildren && userWithChildren.hijos && userWithChildren.hijos.length === 1 ? (
+                                            <div className="inline-flex items-center gap-3 bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg">
+                                                <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                                                <span className="text-green-700 font-semibold text-sm">Hijo: {selectedChild?.nombres}</span>
+                                            </div>
+                                        ) : null}
+
+                                        {/* Selector/Información de grupo */}
+                                        {selectedChild && selectedChild.inscripciones && selectedChild.inscripciones.length > 0 && (
+                                            selectedChild.inscripciones.length > 1 ? (
+                                                <div className="inline-flex items-center gap-3 bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg">
+                                                    <div className="w-3 h-3 bg-purple-400 rounded-full animate-pulse"></div>
+                                                    <select 
+                                                        value={selectedGroup?.id || ''} 
+                                                        onChange={(e) => {
+                                                            const group = selectedChild.inscripciones.find(insc => insc.grupo.id == e.target.value)?.grupo;
+                                                            setSelectedGroup(group);
+                                                        }}
+                                                        className="text-purple-700 font-semibold text-sm bg-transparent border-none focus:outline-none cursor-pointer"
+                                                    >
+                                                        {selectedChild.inscripciones.map(inscripcion => (
+                                                            <option key={inscripcion.grupo.id} value={inscripcion.grupo.id}>
+                                                                Grupo: {inscripcion.grupo.nombre}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            ) : (
+                                                <div className="inline-flex flex-col items-start gap-1 bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                                                        <span className="text-green-700 font-semibold text-sm">
+                                                            Grupo: {selectedChild.inscripciones[0].grupo.nombre}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-xs text-gray-600 ml-6">
+                                                        Paquete: {selectedChild.inscripciones[0].grupo.paquete?.nombre}
+                                                    </div>
+                                                    <div className="text-xs text-gray-600 ml-6">
+                                                        Fecha: {new Date(selectedChild.inscripciones[0].grupo.fecha_inicio).toLocaleDateString()} - {new Date(selectedChild.inscripciones[0].grupo.fecha_fin).toLocaleDateString()}
+                                                    </div>
+                                                </div>
+                                            )
+                                        )}
+                                    </div>
                                     
                                     <h1 className="text-5xl lg:text-6xl font-bold bg-gradient-to-r from-gray-900 via-red-800 to-red-600 bg-clip-text text-transparent leading-tight">
                                         ¡Hola {user?.name || 'Usuario'}!
@@ -443,6 +493,40 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                                         Bienvenido a tu <span className="font-semibold text-red-600">portal personal</span> de Viajes Roxana. 
                                         Gestiona tu perfil, rastrea ubicaciones y mantente conectado con nosotros.
                                     </p>
+
+                                    {/* Información detallada del grupo para múltiples grupos */}
+                                    {selectedChild && selectedChild.inscripciones && selectedChild.inscripciones.length > 1 && selectedGroup && (
+                                        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 shadow-lg border border-blue-200">
+                                            <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                                                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 919.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                                </svg>
+                                                Información del Grupo Seleccionado
+                                            </h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-semibold text-gray-700">Paquete:</span>
+                                                    <span className="text-gray-600">{selectedGroup.paquete?.nombre}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-semibold text-gray-700">Fechas:</span>
+                                                    <span className="text-gray-600">
+                                                        {new Date(selectedGroup.fecha_inicio).toLocaleDateString()} - {new Date(selectedGroup.fecha_fin).toLocaleDateString()}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-semibold text-gray-700">Capacidad:</span>
+                                                    <span className="text-gray-600">{selectedGroup.capacidad} personas</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-semibold text-gray-700">Estado:</span>
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${selectedGroup.activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                                        {selectedGroup.activo ? 'Activo' : 'Inactivo'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* Stats rápidas */}
                                     <div className="flex flex-wrap gap-6 justify-center lg:justify-start pt-4">

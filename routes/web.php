@@ -28,7 +28,7 @@ Route::get('/', function () {
     $userData = null;
     
     if ($user) {
-        $userData = $user->load('hijos');
+        $userData = $user->load(['hijos.inscripciones.grupo.paquete']);
     }
     
     return Inertia::render('Welcome', [
