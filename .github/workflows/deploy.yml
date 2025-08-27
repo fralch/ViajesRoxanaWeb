@@ -1,0 +1,112 @@
+name: Deploy (pull) Laravel + React/Vite
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy por SSH (pull en servidor)
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}          # ej: 167.71.170.142
+          username: ${{ secrets.SSH_USER }}      # ej: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}    # tu id_rsa
+          port: ${{ secrets.SSH_PORT || '22' }}
+          script_stop: true
+          script: |
+            set -e
+            cd ${{ secrets.PROJECT_PATH }}
+
+            echo "🚀 Iniciando deploy..."
+            echo "📍 Directorio actual: $(pwd)"
+
+            echo "🔍 Verificando herramientas..."
+            node --version || echo "❌ Node.js no encontrado"
+            npm --version || echo "❌ npm no encontrado"
+            composer --version || echo "❌ Composer no encontrado"
+
+            # Stash si hay cambios locales
+            STASHED=0
+            if [ -n "$(git status --porcelain)" ]; then
+              echo "⚠️ Cambios sin commitear, haciendo stash..."
+              git stash push --include-untracked || true
+              STASHED=1
+            fi
+
+            # Guardar HEAD previo y traer cambios limpios
+            PREV_HEAD=$(git rev-parse HEAD || echo "")
+            git fetch origin main
+            git checkout main
+            echo "🔄 Haciendo git pull..."
+            git pull --ff-only origin main
+
+            # Cambios del pull
+            if [ -n "$PREV_HEAD" ]; then
+              CHANGED="$(git diff --name-only "$PREV_HEAD"...HEAD || true)"
+            else
+              CHANGED="$(git diff --name-only HEAD~1 HEAD || true)"
+            fi
+
+            # Restaurar cambios del stash (si hubo)
+            CHANGED_LOCAL=""
+            if [ "$STASHED" = "1" ]; then
+              echo "↩️ Restaurando cambios del stash..."
+              if git stash pop; then
+                CHANGED_LOCAL="$(git diff --name-only HEAD || true)"
+              else
+                echo "❗ Conflictos al aplicar el stash. Revisa 'git status' y resuélvelos."
+                exit 1
+              fi
+            fi
+
+            # Composer si cambió composer.json/lock (por pull o por stash)
+            if echo "$CHANGED" | grep -E -q '(^|/)composer\.json|(^|/)composer\.lock' \
+               || echo "$CHANGED_LOCAL" | grep -E -q '(^|/)composer\.json|(^|/)composer\.lock'; then
+              echo "📦 Instalando dependencias de Composer..."
+              composer install --no-dev --optimize-autoloader --no-interaction
+            fi
+
+            # npm si cambió package.* / lockfiles (por pull o por stash)
+            if echo "$CHANGED" | grep -E -q '(^|/)package\.json|(^|/)package-lock\.json|(^|/)pnpm-lock\.yaml|(^|/)yarn\.lock' \
+               || echo "$CHANGED_LOCAL" | grep -E -q '(^|/)package\.json|(^|/)package-lock\.json|(^|/)pnpm-lock\.yaml|(^|/)yarn\.lock'; then
+              echo "📦 Instalando dependencias de npm..."
+              if [ -f package-lock.json ]; then npm ci; else npm install; fi
+            fi
+
+            # Migraciones sólo si hay pendientes
+            echo "🗄️ Verificando migraciones..."
+            if php artisan migrate:status --no-interaction | awk -F'|' 'NR>2 && $0 ~ /No/ {p=1} END{exit(!p)}'; then
+              echo "🗄️ Ejecutando migraciones..."
+              php artisan migrate --force --no-interaction
+            else
+              echo "✅ No hay migraciones pendientes"
+            fi
+
+            # Build Vite
+            echo "🏗️ Construyendo assets con Vite..."
+            npm run build || echo "⚠️ Build omitido (sin Node/npm)"
+
+            # Limpiar y optimizar cache
+            echo "🧹 Limpiando cache..."
+            php artisan config:clear || true
+            php artisan route:clear || true
+            php artisan view:clear || true
+
+            echo "⚡ Optimizando..."
+            php artisan config:cache || true
+            php artisan route:cache || true
+            php artisan view:cache || true
+            php artisan storage:link || true
+
+            # Permisos
+            echo "🔐 Estableciendo permisos..."
+            mkdir -p storage/framework/{cache,sessions,views} bootstrap/cache
+            chmod -R 775 storage bootstrap/cache || true
+
+            # Recargar PHP-FPM
+            systemctl reload php8.3-fpm || systemctl reload php8.2-fpm || systemctl reload php-fpm || true
+
+            echo "✅ Deploy completado exitosamente!"
