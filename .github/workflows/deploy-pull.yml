@@ -1,4 +1,4 @@
-name: Deploy (pull) Laravel + React/Vite
+name: Deploy Laravel + React/Vite
 on:
   push:
     branches: [ "main" ]
@@ -8,7 +8,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy por SSH (pull en servidor)
+      - name: Deploy por SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -19,98 +19,106 @@ jobs:
           script: |
             set -e  # Detener si hay errores
             
-            # Cargar variables de entorno (para npm/node)
-            source ~/.bashrc || true
-            source ~/.nvm/nvm.sh || true
+            # Cargar variables de entorno
+            source ~/.bashrc 2>/dev/null || true
+            source ~/.nvm/nvm.sh 2>/dev/null || true
             
             # Ir al directorio del proyecto
-            cd /var/www/ViajesRoxanaWeb
+            cd ${{ secrets.PROJECT_PATH }}
             
             echo "🚀 Iniciando deploy..."
             echo "📍 Directorio actual: $(pwd)"
             
-            # Verificar versiones
+            # Verificar herramientas
             echo "🔍 Verificando herramientas..."
             node --version || echo "❌ Node.js no encontrado"
             npm --version || echo "❌ npm no encontrado"
-            php --version | head -1 || echo "❌ PHP no encontrado"
-            composer --version | head -1 || echo "❌ Composer no encontrado"
+            composer --version || echo "❌ Composer no encontrado"
             
-            # Verificar que estamos en una rama limpia
-            if [ -n "$(git status --porcelain)" ]; then
+            # Manejar cambios locales de forma más robusta
+            echo "🔍 Verificando estado del repositorio..."
+            if git status --porcelain 2>/dev/null | grep -q .; then
               echo "⚠️ Hay cambios sin commitear, haciendo stash..."
-              git stash push --include-untracked
-              STASHED=1
+              git stash push --include-untracked -m "Auto-stash before deploy $(date)"
             else
-              STASHED=0
+              echo "✅ Repositorio limpio"
             fi
             
-            # Hacer git pull
-            echo "🔄 Haciendo git pull..."
+            # Git pull con manejo de errores
+            echo "🔄 Actualizando código..."
             git fetch origin main
             git checkout main
             git pull origin main
             
-            # Restaurar stash si es necesario
-            if [ "$STASHED" = "1" ]; then
-              echo "↩️ Restaurando cambios del stash..."
-              git stash pop || echo "⚠️ No se pudo restaurar stash"
+            # Obtener archivos cambiados (con fallback)
+            CHANGED_FILES=""
+            if git rev-parse HEAD~1 >/dev/null 2>&1; then
+              CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
             fi
             
-            # Verificar si composer.json cambió
-            if git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -q "composer.json\|composer.lock" || [ ! -d "vendor" ]; then
-              echo "📦 Instalando dependencias de Composer..."
+            echo "📝 Archivos cambiados: ${CHANGED_FILES:-"(primer deploy o error detectando cambios)"}"
+            
+            # Composer - verificar cambios o forzar si no se puede detectar
+            if echo "$CHANGED_FILES" | grep -q "composer\.\(json\|lock\)" || [ -z "$CHANGED_FILES" ]; then
+              echo "📦 Actualizando dependencias de Composer..."
               export COMPOSER_ALLOW_SUPERUSER=1
               composer install --no-dev --optimize-autoloader --no-interaction
             else
-              echo "✅ Composer sin cambios"
+              echo "✅ Sin cambios en composer.json/lock"
             fi
             
-            # Verificar si package.json cambió
-            if git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -q "package.json\|package-lock.json" || [ ! -d "node_modules" ]; then
-              echo "📦 Instalando dependencias de npm..."
-              if [ -f package-lock.json ]; then 
+            # NPM - verificar cambios o forzar si no se puede detectar
+            if echo "$CHANGED_FILES" | grep -q "package\(-lock\)\?\.json" || [ -z "$CHANGED_FILES" ]; then
+              echo "📦 Actualizando dependencias de npm..."
+              if [ -f package-lock.json ]; then
                 npm ci
-              else 
+              else
                 npm install
               fi
             else
-              echo "✅ npm sin cambios"
+              echo "✅ Sin cambios en package.json/lock"
             fi
             
-            # Ejecutar migraciones (solo si hay migraciones pendientes)
+            # Migraciones - con mejor manejo de errores
             echo "🗄️ Verificando migraciones..."
-            if php artisan migrate:status --no-interaction 2>/dev/null | grep -q "Ran?.*No"; then
-              echo "🗄️ Ejecutando migraciones..."
+            MIGRATE_STATUS=$(php artisan migrate:status --no-interaction 2>/dev/null || echo "ERROR")
+            
+            if [ "$MIGRATE_STATUS" != "ERROR" ] && echo "$MIGRATE_STATUS" | grep -q "No"; then
+              echo "🗄️ Ejecutando migraciones pendientes..."
               php artisan migrate --force --no-interaction
             else
               echo "✅ No hay migraciones pendientes"
             fi
             
-            # Construir assets con Vite
-            echo "🏗️ Construyendo assets con Vite..."
+            # Build assets
+            echo "🏗️ Construyendo assets..."
             npm run build
             
-            # Limpiar y optimizar cache
+            # Limpieza de cache
             echo "🧹 Limpiando cache..."
-            php artisan config:clear || true
-            php artisan route:clear || true
-            php artisan view:clear || true
+            php artisan config:clear || echo "⚠️ Warning: config:clear falló"
+            php artisan route:clear || echo "⚠️ Warning: route:clear falló"
+            php artisan view:clear || echo "⚠️ Warning: view:clear falló"
             
+            # Optimización
             echo "⚡ Optimizando para producción..."
-            php artisan config:cache || true
-            php artisan route:cache || true
-            php artisan view:cache || true
-            php artisan storage:link || true
+            php artisan config:cache || echo "⚠️ Warning: config:cache falló"
+            php artisan route:cache || echo "⚠️ Warning: route:cache falló"
+            php artisan view:cache || echo "⚠️ Warning: view:cache falló"
             
-            # Establecer permisos correctos
+            # Storage link
+            php artisan storage:link 2>/dev/null || echo "⚠️ storage:link ya existe o falló"
+            
+            # Permisos
             echo "🔐 Estableciendo permisos..."
-            mkdir -p storage/framework/{cache,sessions,views} bootstrap/cache || true
-            chmod -R 775 storage bootstrap/cache || true
-            chown -R www-data:www-data storage bootstrap/cache || echo "⚠️ chown falló (normal si no eres root)"
+            mkdir -p storage/framework/{cache,sessions,views} bootstrap/cache 2>/dev/null || true
+            chmod -R 775 storage bootstrap/cache 2>/dev/null || echo "⚠️ Warning: chmod falló"
             
-            # Recargar PHP-FPM
-            echo "🔁 Recargando PHP-FPM..."
-            systemctl reload php8.3-fpm || systemctl reload php8.2-fpm || systemctl reload php-fpm || echo "⚠️ No se pudo recargar PHP-FPM"
+            # Opcional: Recargar PHP-FPM (solo si tienes permisos)
+            echo "🔁 Intentando recargar PHP-FPM..."
+            sudo systemctl reload php8.3-fpm 2>/dev/null || \
+            sudo systemctl reload php8.2-fpm 2>/dev/null || \
+            sudo systemctl reload php-fpm 2>/dev/null || \
+            echo "⚠️ No se pudo recargar PHP-FPM (normal si no tienes permisos sudo)"
             
             echo "✅ Deploy completado exitosamente!"
