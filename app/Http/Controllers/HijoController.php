@@ -36,7 +36,7 @@ class HijoController extends Controller
             ]);
         }
         
-        // Para admin, mostrar todos los usuarios con hijos
+        // Para admin, mostrar todos los usuarios con hijos y sus datos
         $query = User::whereHas('hijos')->with(['hijos' => function($hijoQuery) use ($request) {
             if ($request->has('search') && $request->search) {
                 $search = $request->search;

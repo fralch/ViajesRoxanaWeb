@@ -456,7 +456,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                                     
                                     <p className="text-xl lg:text-2xl text-gray-700 leading-relaxed max-w-2xl">
                                         Bienvenido a tu <span className="font-semibold text-red-600">portal personal</span> de Viajes Roxana. 
-                                        Gestiona tu perfil, rastrea ubicaciones y mantente conectado con nosotros.
+                                        Gestiona tu perfil, rastrea ubicaciones y mantente conectado con nosotro.
                                     </p>
 
                                    
