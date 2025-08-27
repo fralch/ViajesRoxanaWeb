@@ -17,153 +17,100 @@ jobs:
           port: ${{ secrets.SSH_PORT || '22' }}
           script_stop: true
           script: |
-            # Función para debug
-            debug_step() {
-              echo "🔍 DEBUG: Ejecutando - $1"
-              if eval "$1"; then
-                echo "✅ DEBUG: $1 - EXITOSO"
-                return 0
-              else
-                local exit_code=$?
-                echo "❌ DEBUG: $1 - FALLÓ (exit code: $exit_code)"
-                return $exit_code
-              fi
-            }
+            set -e  # Detener si hay errores
             
-            set -e
-            cd "/var/www/ViajesRoxanaWeb"
-
+            # Cargar variables de entorno (para npm/node)
+            source ~/.bashrc || true
+            source ~/.nvm/nvm.sh || true
+            
+            # Ir al directorio del proyecto
+            cd /var/www/ViajesRoxanaWeb
+            
             echo "🚀 Iniciando deploy..."
             echo "📍 Directorio actual: $(pwd)"
-
+            
+            # Verificar versiones
             echo "🔍 Verificando herramientas..."
             node --version || echo "❌ Node.js no encontrado"
-            npm --version || echo "❌ npm no encontrado"  
-            composer --version || echo "❌ Composer no encontrado"
-
-            # Evitar interferencias con Git
-            unset GIT_DIR GIT_WORK_TREE
-
-            # Asegurar repo
-            debug_step "git rev-parse --is-inside-work-tree"
-
-            # Stash si hay cambios locales
-            echo "🔍 DEBUG: Verificando cambios locales..."
-            STASHED=0
-            if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
-              echo "⚠️ Cambios sin commitear, haciendo stash..."
-              debug_step "git stash push --include-untracked"
+            npm --version || echo "❌ npm no encontrado"
+            php --version | head -1 || echo "❌ PHP no encontrado"
+            composer --version | head -1 || echo "❌ Composer no encontrado"
+            
+            # Verificar que estamos en una rama limpia
+            if [ -n "$(git status --porcelain)" ]; then
+              echo "⚠️ Hay cambios sin commitear, haciendo stash..."
+              git stash push --include-untracked
               STASHED=1
             else
-              echo "✅ No hay cambios locales"
+              STASHED=0
             fi
-
-            # Pull limpio
+            
+            # Hacer git pull
             echo "🔄 Haciendo git pull..."
-            debug_step "git fetch origin main"
-            debug_step "git checkout main"  
-            debug_step "git pull --ff-only origin main"
-            echo "✅ Pull OK"
-
-            # Calcular archivos cambiados - CON DEBUG DETALLADO
-            echo "🔍 DEBUG: Calculando archivos cambiados..."
-            set +e
+            git fetch origin main
+            git checkout main
+            git pull origin main
             
-            echo "🔍 DEBUG: Verificando HEAD@{1}..."
-            if git show HEAD@{1} --name-only >/dev/null 2>&1; then
-              echo "✅ DEBUG: HEAD@{1} existe"
-              CHANGED=$(git diff --name-only HEAD@{1} HEAD 2>/dev/null)
-              if [ $? -eq 0 ]; then
-                echo "✅ DEBUG: git diff exitoso"
-              else
-                echo "❌ DEBUG: git diff falló"
-                CHANGED="__ALL__"
-              fi
-            else
-              echo "⚠️ DEBUG: HEAD@{1} no existe, usando __ALL__"
-              CHANGED="__ALL__"
-            fi
-            
-            set -e
-            echo "🗂️ Cambios detectados:"
-            printf '%s\n' "$CHANGED" | sed 's/^/  - /'
-
-            # Restaurar stash si es necesario - CON DEBUG
-            echo "🔍 DEBUG: Verificando stash..."
-            CHANGED_LOCAL=""
+            # Restaurar stash si es necesario
             if [ "$STASHED" = "1" ]; then
               echo "↩️ Restaurando cambios del stash..."
-              debug_step "git stash pop"
-              set +e
-              CHANGED_LOCAL=$(git diff --name-only HEAD 2>/dev/null)
-              set -e
-              echo "🔍 DEBUG: Cambios locales: $CHANGED_LOCAL"
+              git stash pop || echo "⚠️ No se pudo restaurar stash"
             fi
-
-            # Verificar si necesita Composer
-            echo "🔍 DEBUG: Verificando necesidad de Composer..."
-            if printf '%s\n%s\n' "$CHANGED" "$CHANGED_LOCAL" | grep -E -q '(^|/)composer\.json|(^|/)composer\.lock|^__ALL__$'; then
-              echo "📦 Composer install..."
+            
+            # Verificar si composer.json cambió
+            if git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -q "composer.json\|composer.lock" || [ ! -d "vendor" ]; then
+              echo "📦 Instalando dependencias de Composer..."
               export COMPOSER_ALLOW_SUPERUSER=1
-              debug_step "composer install --no-dev --optimize-autoloader --no-interaction"
+              composer install --no-dev --optimize-autoloader --no-interaction
             else
               echo "✅ Composer sin cambios"
             fi
-
-            # Verificar si necesita npm
-            echo "🔍 DEBUG: Verificando necesidad de npm..."
-            if printf '%s\n%s\n' "$CHANGED" "$CHANGED_LOCAL" | grep -E -q '(^|/)package\.json|(^|/)package-lock\.json|^__ALL__$'; then
-              echo "📦 npm deps..."
+            
+            # Verificar si package.json cambió
+            if git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -q "package.json\|package-lock.json" || [ ! -d "node_modules" ]; then
+              echo "📦 Instalando dependencias de npm..."
               if [ -f package-lock.json ]; then 
-                debug_step "npm ci"
+                npm ci
               else 
-                debug_step "npm install"
+                npm install
               fi
             else
               echo "✅ npm sin cambios"
             fi
-
-            # Migraciones - CON DEBUG DETALLADO
-            echo "🔍 DEBUG: Verificando migraciones..."
-            set +e
-            MIGRATE_OUTPUT=$(php artisan migrate:status --no-interaction 2>&1)
-            MIGRATE_EXIT=$?
-            echo "🔍 DEBUG: migrate:status exit code: $MIGRATE_EXIT"
-            echo "🔍 DEBUG: migrate:status output: $MIGRATE_OUTPUT"
             
-            if [ $MIGRATE_EXIT -eq 0 ] && echo "$MIGRATE_OUTPUT" | grep -q "No"; then
+            # Ejecutar migraciones (solo si hay migraciones pendientes)
+            echo "🗄️ Verificando migraciones..."
+            if php artisan migrate:status --no-interaction 2>/dev/null | grep -q "Ran?.*No"; then
               echo "🗄️ Ejecutando migraciones..."
-              set -e
-              debug_step "php artisan migrate --force --no-interaction"
+              php artisan migrate --force --no-interaction
             else
-              echo "✅ No hay migraciones pendientes o comando falló"
-              set -e
+              echo "✅ No hay migraciones pendientes"
             fi
-
-            # Build Vite
-            echo "🔍 DEBUG: Construyendo assets..."
-            debug_step "npm run build"
-
-            # Cache operations - SIN ERRORES CRÍTICOS
+            
+            # Construir assets con Vite
+            echo "🏗️ Construyendo assets con Vite..."
+            npm run build
+            
+            # Limpiar y optimizar cache
             echo "🧹 Limpiando cache..."
-            php artisan config:clear || echo "⚠️ config:clear falló"
-            php artisan route:clear || echo "⚠️ route:clear falló"  
-            php artisan view:clear || echo "⚠️ view:clear falló"
-
-            echo "⚡ Optimizando..."
-            php artisan config:cache || echo "⚠️ config:cache falló"
-            php artisan route:cache || echo "⚠️ route:cache falló"
-            php artisan view:cache || echo "⚠️ view:cache falló"
-            php artisan storage:link || echo "⚠️ storage:link falló"
-
-            # Permisos - SIN ERRORES CRÍTICOS
+            php artisan config:clear || true
+            php artisan route:clear || true
+            php artisan view:clear || true
+            
+            echo "⚡ Optimizando para producción..."
+            php artisan config:cache || true
+            php artisan route:cache || true
+            php artisan view:cache || true
+            php artisan storage:link || true
+            
+            # Establecer permisos correctos
             echo "🔐 Estableciendo permisos..."
-            mkdir -p storage/framework/{cache,sessions,views} bootstrap/cache || echo "⚠️ mkdir falló"
-            chmod -R 775 storage bootstrap/cache || echo "⚠️ chmod falló"
+            mkdir -p storage/framework/{cache,sessions,views} bootstrap/cache || true
+            chmod -R 775 storage bootstrap/cache || true
             chown -R www-data:www-data storage bootstrap/cache || echo "⚠️ chown falló (normal si no eres root)"
-
-            # PHP-FPM - SIN ERRORES CRÍTICOS  
+            
+            # Recargar PHP-FPM
             echo "🔁 Recargando PHP-FPM..."
             systemctl reload php8.3-fpm || systemctl reload php8.2-fpm || systemctl reload php-fpm || echo "⚠️ No se pudo recargar PHP-FPM"
-
+            
             echo "✅ Deploy completado exitosamente!"
