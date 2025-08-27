@@ -376,36 +376,19 @@ export default function AuthenticatedLayout({ header, children }) {
 
                         <div className="-me-2 flex items-center sm:hidden">
                             <button
-                                onClick={() =>
-                                    setShowingNavigationDropdown(
-                                        (previousState) => !previousState,
-                                    )
-                                }
-                                className="inline-flex items-center justify-center rounded-xl p-2 text-red-600 transition duration-150 ease-in-out hover:bg-red-50 focus:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500"
+                                onClick={() => setShowingNavigationDropdown((previousState) => !previousState)}
+                                className="inline-flex items-center justify-center rounded-md p-2 text-white hover:bg-red-500 hover:text-white focus:bg-red-500 focus:text-white focus:outline-none transition duration-150 ease-in-out"
                             >
-                                <svg
-                                    className="h-6 w-6"
-                                    stroke="currentColor"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                >
+                                <svg className="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
                                     <path
-                                        className={
-                                            !showingNavigationDropdown
-                                                ? 'inline-flex'
-                                                : 'hidden'
-                                        }
+                                        className={!showingNavigationDropdown ? 'inline-flex' : 'hidden'}
                                         strokeLinecap="round"
                                         strokeLinejoin="round"
                                         strokeWidth="2"
                                         d="M4 6h16M4 12h16M4 18h16"
                                     />
                                     <path
-                                        className={
-                                            showingNavigationDropdown
-                                                ? 'inline-flex'
-                                                : 'hidden'
-                                        }
+                                        className={showingNavigationDropdown ? 'inline-flex' : 'hidden'}
                                         strokeLinecap="round"
                                         strokeLinejoin="round"
                                         strokeWidth="2"
@@ -417,124 +400,59 @@ export default function AuthenticatedLayout({ header, children }) {
                     </div>
                 </div>
 
-                {user.is_admin && (
-                <div
-                    className={
-                        (showingNavigationDropdown ? 'block' : 'hidden') +
-                        ' sm:hidden'
-                    }
-                >
-                    {/* Navegación móvil - Solo para administradores */}
-                    <div className="px-2 pt-2 pb-3 space-y-1 bg-white/95 border-b border-gray-200">
-                        <Link
-                            href={route('dashboard')}
-                            className={`block px-3 py-2 rounded-lg text-base font-medium transition-colors duration-200 ${
-                                route().current('dashboard') 
-                                    ? 'text-red-700 bg-red-50' 
-                                    : 'text-gray-700 hover:text-red-600 hover:bg-red-50'
-                            }`}
-                        >
-                            📊 Dashboard
-                        </Link>
-
-                        <Link
-                            href={route('paquetes.index')}
-                            className={`block px-3 py-2 rounded-lg text-base font-medium transition-colors duration-200 ${
-                                route().current('paquetes.*') 
-                                    ? 'text-red-700 bg-red-50' 
-                                    : 'text-gray-700 hover:text-red-600 hover:bg-red-50'
-                            }`}
-                        >
-                            📦 Paquetes
-                        </Link>
-
-                        <Link
-                            href={route('grupos.index')}
-                            className={`block px-3 py-2 rounded-lg text-base font-medium transition-colors duration-200 ${
-                                route().current('grupos.*')
-                                    ? 'text-red-700 bg-red-50' 
-                                    : 'text-gray-700 hover:text-red-600 hover:bg-red-50'
-                            }`}
-                        >
-                            👥 Grupos
-                        </Link>
-
-                        <Link
-                            href={route('hijos.index')}
-                            className={`block px-3 py-2 rounded-lg text-base font-medium transition-colors duration-200 ${
-                                route().current('hijos.*') 
-                                    ? 'text-red-700 bg-red-50' 
-                                    : 'text-gray-700 hover:text-red-600 hover:bg-red-50'
-                            }`}
-                        >
-                            👶 Padres
-                        </Link>
-
-                        <Link
-                            href={route('geolocalizacion.index')}
-                            className={`block px-3 py-2 rounded-lg text-base font-medium transition-colors duration-200 ${
-                                route().current('geolocalizacion.*') 
-                                    ? 'text-red-700 bg-red-50' 
-                                    : 'text-gray-700 hover:text-red-600 hover:bg-red-50'
-                            }`}
-                        >
-                            📍 GPS
-                        </Link>
-
-
-
-                        <Link
-                            href={route('trazabilidad.index')}
-                            className={`block px-3 py-2 rounded-lg text-base font-medium transition-colors duration-200 ${
-                                route().current('trazabilidad.*') 
-                                    ? 'text-red-700 bg-red-50' 
-                                    : 'text-gray-700 hover:text-red-600 hover:bg-red-50'
-                            }`}
-                        >
-                            📊 Trazabilidad
-                        </Link>
-
-                        <Link
-                            href={route('notificaciones.index')}
-                            className={`block px-3 py-2 rounded-lg text-base font-medium transition-colors duration-200 ${
-                                route().current('notificaciones.*') 
-                                    ? 'text-red-700 bg-red-50' 
-                                    : 'text-gray-700 hover:text-red-600 hover:bg-red-50'
-                            }`}
-                        >
-                            🔔 Notificaciones
-                        </Link>
+                <div className={(showingNavigationDropdown ? 'block' : 'hidden') + ' sm:hidden'}>
+                    <div className="space-y-1 pb-3 pt-2">
+                        {user.is_admin && (
+                            <>
+                                <ResponsiveNavLink href={route('dashboard')} className="text-white hover:bg-red-500">
+                                    Dashboard
+                                </ResponsiveNavLink>
+                                <ResponsiveNavLink href={route('paquetes.index')} className="text-white hover:bg-red-500">
+                                    Paquetes
+                                </ResponsiveNavLink>
+                                <ResponsiveNavLink href={route('grupos.index')} className="text-white hover:bg-red-500">
+                                    Grupos
+                                </ResponsiveNavLink>
+                                <ResponsiveNavLink href={route('hijos.index')} className="text-white hover:bg-red-500">
+                                    Padres
+                                </ResponsiveNavLink>
+                                <ResponsiveNavLink href={route('geolocalizacion.index')} className="text-white hover:bg-red-500">
+                                    GPS
+                                </ResponsiveNavLink>
+                                <ResponsiveNavLink href={route('trazabilidad.index')} className="text-white hover:bg-red-500">
+                                    Trazabilidad
+                                </ResponsiveNavLink>
+                                <ResponsiveNavLink href={route('notificaciones.index')} className="text-white hover:bg-red-500">
+                                    Notificaciones
+                                </ResponsiveNavLink>
+                            </>
+                        )}
+                        
+                        <ResponsiveNavLink href="/" className="text-white hover:bg-red-500">
+                            Inicio
+                        </ResponsiveNavLink>
                     </div>
                 </div>
-                )}
 
-                {/* Información del usuario - siempre visible */}
+                {/* Mobile Navigation Menu */}
                 {showingNavigationDropdown && (
-                <div className="sm:hidden">
-                    <div className="border-t border-gray-200 pb-1 pt-4 bg-white/95">
-                        <div className="px-4">
-                            <div className="text-base font-medium text-red-600">
-                                {user.name}
+                    <div className="sm:hidden">
+                        <div className="border-t border-red-400 pb-1 pt-4">
+                            <div className="px-4">
+                                <div className="text-base font-medium text-white">{user.name}</div>
+                                <div className="text-sm font-medium text-red-200">{user.email}</div>
                             </div>
-                            <div className="text-sm font-medium text-gray-600">
-                                {user.email}
-                            </div>
-                        </div>
 
-                        <div className="mt-3 space-y-1">
-                            <ResponsiveNavLink href={route('profile.edit')}>
-                                Perfil
-                            </ResponsiveNavLink>
-                            <ResponsiveNavLink
-                                method="post"
-                                href={route('logout')}
-                                as="button"
-                            >
-                                Cerrar sesión
-                            </ResponsiveNavLink>
+                            <div className="mt-3 space-y-1">
+                                <ResponsiveNavLink href={route('profile.edit')} className="text-white hover:bg-red-500">
+                                    Perfil
+                                </ResponsiveNavLink>
+                                <ResponsiveNavLink method="post" href={route('logout')} as="button" className="text-white hover:bg-red-500">
+                                    Cerrar sesión
+                                </ResponsiveNavLink>
+                            </div>
                         </div>
                     </div>
-                </div>
                 )}
             </nav>
 
