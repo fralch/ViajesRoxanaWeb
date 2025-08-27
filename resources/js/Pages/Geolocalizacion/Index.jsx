@@ -14,9 +14,11 @@ export default function Index({ auth, grupos, filters }) {
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [locationHistory, setLocationHistory] = useState([]);
   const [groupedLocations, setGroupedLocations] = useState({}); // objeto, no array
+  const [expandedChild, setExpandedChild] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isMapModalOpen, setMapModalOpen] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState(null);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -76,15 +78,28 @@ export default function Index({ auth, grupos, filters }) {
     }
   };
 
-  const openMapModal = () => setMapModalOpen(true);
-  const closeMapModal = () => setMapModalOpen(false);
+  const toggleChildExpansion = (hijoId) => {
+    setExpandedChild(expandedChild === hijoId ? null : hijoId);
+  };
 
-  const mapMarkers = locationHistory.map((location) => ({
-    lat: location.latitud,
-    lng: location.longitud,
-    title: location.hijo.nombres,
-    description: `Fecha: ${new Date(location.created_at).toLocaleString()}`,
-  }));
+  const openLocationMap = (location) => {
+    setSelectedLocation(location);
+    setIsMapModalOpen(true);
+  };
+
+  const closeMapModal = () => {
+    setIsMapModalOpen(false);
+    setSelectedLocation(null);
+  };
+
+  const mapMarkers = selectedLocation ? [
+    {
+      lat: parseFloat(selectedLocation.latitud),
+      lng: parseFloat(selectedLocation.longitud),
+      title: selectedLocation.hijo?.nombres || 'Ubicación',
+      description: `Fecha: ${formatDateSafe(selectedLocation.created_at)}`
+    }
+  ] : [];
 
   const getStatusBadge = (totalLocations) => {
     if (totalLocations === 0) {
@@ -227,32 +242,10 @@ export default function Index({ auth, grupos, filters }) {
                 {/* Historial de Ubicaciones */}
                 <div className="lg:col-span-2">
                   <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="mb-4">
                       <h3 className="text-base font-medium text-gray-900">
                         {selectedGroup ? `Historial de ${selectedGroup.nombre}` : 'Selecciona un grupo'}
                       </h3>
-                      {selectedGroup && Object.keys(groupedLocations).length > 0 && (
-                        <PrimaryButton
-                          onClick={openMapModal}
-                          className="bg-red-600 hover:bg-red-700 focus:ring-red-500 text-sm px-4 py-2"
-                        >
-                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                            />
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                            />
-                          </svg>
-                          Ver en Mapa
-                        </PrimaryButton>
-                      )}
                     </div>
 
                     {isLoading ? (
@@ -280,30 +273,78 @@ export default function Index({ auth, grupos, filters }) {
                           {/* Mobile - Cards */}
                           <div className="block md:hidden space-y-3">
                             {Object.entries(groupedLocations).map(([hijoId, data]) => (
-                              <div key={hijoId} className="bg-white rounded-lg border border-gray-200 p-4">
-                                <div className="flex items-start justify-between mb-3">
-                                  <div>
-                                    <h4 className="font-medium text-gray-900 text-sm">
-                                      {data.hijo?.nombres ?? 'Participante'}
-                                    </h4>
-                                    <p className="text-xs text-gray-500 mt-1">
-                                      {data.totalLocations} ubicación
-                                      {data.totalLocations !== 1 ? 'es' : ''}
-                                    </p>
+                              <div key={hijoId} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                                <div 
+                                  onClick={() => toggleChildExpansion(hijoId)}
+                                  className="p-4 cursor-pointer hover:bg-gray-50 transition-colors duration-150"
+                                >
+                                  <div className="flex items-start justify-between mb-3">
+                                    <div className="flex items-center">
+                                      <svg 
+                                        className={`w-4 h-4 mr-2 transition-transform duration-200 ${
+                                          expandedChild === hijoId ? 'rotate-90' : ''
+                                        }`} 
+                                        fill="none" 
+                                        stroke="currentColor" 
+                                        viewBox="0 0 24 24"
+                                      >
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                      </svg>
+                                      <div>
+                                        <h4 className="font-medium text-gray-900 text-sm">
+                                          {data.hijo?.nombres ?? 'Participante'}
+                                        </h4>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                          {data.totalLocations} ubicación
+                                          {data.totalLocations !== 1 ? 'es' : ''}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    {getStatusBadge(data.totalLocations)}
                                   </div>
-                                  {getStatusBadge(data.totalLocations)}
+                                  {data.lastLocation && (
+                                    <div className="border-t border-gray-100 pt-3 mt-3">
+                                      <div className="text-xs text-gray-600 space-y-1">
+                                        <div>
+                                          <span className="font-medium">Última ubicación:</span>{' '}
+                                          {formatDateSafe(data.lastLocation.created_at)}
+                                        </div>
+                                        <div>
+                                          <span className="font-medium">Coordenadas:</span>{' '}
+                                          {data.lastLocation.latitud}, {data.lastLocation.longitud}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
-                                {data.lastLocation && (
-                                  <div className="border-t border-gray-100 pt-3 mt-3">
-                                    <div className="text-xs text-gray-600 space-y-1">
-                                      <div>
-                                        <span className="font-medium">Última ubicación:</span>{' '}
-                                        {formatDateSafe(data.lastLocation.created_at)}
-                                      </div>
-                                      <div>
-                                        <span className="font-medium">Coordenadas:</span>{' '}
-                                        {data.lastLocation.latitud}, {data.lastLocation.longitud}
-                                      </div>
+                                {expandedChild === hijoId && data.locations && (
+                                  <div className="border-t border-gray-200 bg-gray-50 p-4">
+                                    <h4 className="text-sm font-medium text-gray-900 mb-3">Ubicaciones de {data.hijo?.nombres ?? 'Participante'}</h4>
+                                    <div className="space-y-3">
+                                      {data.locations.map((location, index) => (
+                                        <div key={index} className="bg-white rounded-lg p-3 border border-gray-200">
+                                          <div className="space-y-2 mb-3">
+                                            <div className="flex justify-between text-sm">
+                                              <span className="text-gray-500 font-medium">Fecha:</span>
+                                              <span className="text-gray-900">{formatDateSafe(location.created_at)}</span>
+                                            </div>
+                                            <div className="flex justify-between text-sm">
+                                              <span className="text-gray-500 font-medium">Coordenadas:</span>
+                                              <span className="text-gray-900">{location.latitud}, {location.longitud}</span>
+                                            </div>
+                                          </div>
+                                          <SecondaryButton
+                                            onClick={() => openLocationMap(location)}
+                                            className="w-full text-xs py-2"
+                                          >
+                                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            </svg>
+                                            Ver Mapa
+                                          </SecondaryButton>
+                                        </div>
+                                      ))}
                                     </div>
                                   </div>
                                 )}
@@ -335,25 +376,75 @@ export default function Index({ auth, grupos, filters }) {
                               </thead>
                               <tbody className="bg-white divide-y divide-gray-200">
                                 {Object.entries(groupedLocations).map(([hijoId, data]) => (
-                                  <tr key={hijoId} className="hover:bg-gray-50 transition-colors duration-150">
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                      <div className="text-sm font-medium text-gray-900">
-                                        {data.hijo?.nombres ?? 'Participante'}
-                                      </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(data.totalLocations)}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                      {data.totalLocations}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                      {data.lastLocation ? formatDateSafe(data.lastLocation.created_at) : 'N/A'}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                      {data.lastLocation
-                                        ? `${data.lastLocation.latitud}, ${data.lastLocation.longitud}`
-                                        : 'N/A'}
-                                    </td>
-                                  </tr>
+                                  <React.Fragment key={hijoId}>
+                                    <tr 
+                                      onClick={() => toggleChildExpansion(hijoId)}
+                                      className="hover:bg-gray-50 transition-colors duration-150 cursor-pointer"
+                                    >
+                                      <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="flex items-center">
+                                          <svg 
+                                            className={`w-4 h-4 mr-2 transition-transform duration-200 ${
+                                              expandedChild === hijoId ? 'rotate-90' : ''
+                                            }`} 
+                                            fill="none" 
+                                            stroke="currentColor" 
+                                            viewBox="0 0 24 24"
+                                          >
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                          </svg>
+                                          <div className="text-sm font-medium text-gray-900">
+                                            {data.hijo?.nombres ?? 'Participante'}
+                                          </div>
+                                        </div>
+                                      </td>
+                                      <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(data.totalLocations)}</td>
+                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {data.totalLocations}
+                                      </td>
+                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {data.lastLocation ? formatDateSafe(data.lastLocation.created_at) : 'N/A'}
+                                      </td>
+                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {data.lastLocation
+                                          ? `${data.lastLocation.latitud}, ${data.lastLocation.longitud}`
+                                          : 'N/A'}
+                                      </td>
+                                    </tr>
+                                    {expandedChild === hijoId && data.locations && (
+                                      <tr>
+                                        <td colSpan="5" className="px-6 py-0">
+                                          <div className="bg-gray-50 rounded-lg p-4 my-2">
+                                            <h4 className="text-sm font-medium text-gray-900 mb-3">Ubicaciones de {data.hijo?.nombres ?? 'Participante'}</h4>
+                                            <div className="space-y-2">
+                                              {data.locations.map((location, index) => (
+                                                <div key={index} className="flex items-center justify-between bg-white rounded-lg p-3 border border-gray-200">
+                                                  <div className="flex-1">
+                                                    <div className="text-sm text-gray-900">
+                                                      <span className="font-medium">Fecha:</span> {formatDateSafe(location.created_at)}
+                                                    </div>
+                                                    <div className="text-sm text-gray-600">
+                                                      <span className="font-medium">Coordenadas:</span> {location.latitud}, {location.longitud}
+                                                    </div>
+                                                  </div>
+                                                  <SecondaryButton
+                                                    onClick={() => openLocationMap(location)}
+                                                    className="ml-3 text-xs px-3 py-1"
+                                                  >
+                                                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    </svg>
+                                                    Ver Mapa
+                                                  </SecondaryButton>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    )}
+                                  </React.Fragment>
                                 ))}
                               </tbody>
                             </table>
