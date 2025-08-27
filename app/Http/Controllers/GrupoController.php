@@ -88,9 +88,31 @@ class GrupoController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Grupo $grupo)
+    public function show(Request $request, Grupo $grupo)
     {
-        //
+        $grupo->load('paquete');
+        
+        $inscripcionesQuery = $grupo->inscripciones()->with(['hijo', 'user']);
+        
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+            $inscripcionesQuery->where(function($q) use ($search) {
+                $q->whereHas('hijo', function($hq) use ($search) {
+                    $hq->where('nombres', 'like', "%{$search}%");
+                })
+                ->orWhereHas('user', function($uq) use ($search) {
+                    $uq->where('name', 'like', "%{$search}%");
+                });
+            });
+        }
+        
+        $inscripciones = $inscripcionesQuery->orderBy('created_at', 'desc')->paginate(10);
+        
+        return Inertia::render('Grupos/Show', [
+            'grupo' => $grupo,
+            'inscripciones' => $inscripciones,
+            'filters' => $request->only(['search'])
+        ]);
     }
 
     /**
