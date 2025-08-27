@@ -1,4 +1,4 @@
-name: Deploy Laravel + React/Vite
+name: Deploy Laravel + React/Vite (Always Run)
 on:
   push:
     branches: [ "main" ]
@@ -23,7 +23,7 @@ jobs:
             source ~/.bashrc 2>/dev/null || true
             source ~/.nvm/nvm.sh 2>/dev/null || true
             
-            # Ruta del proyecto (hardcoded porque PROJECT_PATH está vacío)
+            # Ruta del proyecto
             cd /var/www/ViajesRoxanaWeb
             
             echo "🚀 Iniciando deploy..."
@@ -31,47 +31,30 @@ jobs:
             
             # Verificar herramientas
             echo "🔍 Verificando herramientas..."
-            node --version || echo "❌ Node.js no encontrado"
-            npm --version || echo "❌ npm no encontrado"
-            composer --version || echo "❌ Composer no encontrado"
+            node --version
+            npm --version
+            composer --version
             
             # Git pull
             echo "🔄 Actualizando código..."
             git pull origin main
             
-            # Verificar archivos cambiados para optimizar instalaciones
-            CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
-            echo "📝 Archivos cambiados: ${CHANGED_FILES:-"(no se pudieron detectar)"}"
+            # Siempre ejecutar composer (más lento pero más seguro)
+            echo "📦 Instalando dependencias de Composer..."
+            export COMPOSER_ALLOW_SUPERUSER=1
+            composer install --no-dev --optimize-autoloader --no-interaction
             
-            # Composer - solo si cambió o no existe vendor/
-            if echo "$CHANGED_FILES" | grep -q "composer\.\(json\|lock\)" || [ ! -d vendor ]; then
-              echo "📦 Instalando dependencias de Composer..."
-              export COMPOSER_ALLOW_SUPERUSER=1
-              composer install --no-dev --optimize-autoloader --no-interaction
+            # Siempre ejecutar npm
+            echo "📦 Instalando dependencias de npm..."
+            if [ -f package-lock.json ]; then
+              npm ci
             else
-              echo "✅ Sin cambios en composer.json/lock"
+              npm install
             fi
             
-            # NPM - solo si cambió o no existe node_modules/
-            if echo "$CHANGED_FILES" | grep -q "package\(-lock\)\?\.json" || [ ! -d node_modules ]; then
-              echo "📦 Instalando dependencias de npm..."
-              if [ -f package-lock.json ]; then
-                npm ci
-              else
-                npm install
-              fi
-            else
-              echo "✅ Sin cambios en package.json/lock"
-            fi
-            
-            # Migraciones - solo si hay pendientes
-            echo "🗄️ Verificando migraciones..."
-            if php artisan migrate:status --no-interaction 2>/dev/null | grep -q "No"; then
-              echo "🗄️ Ejecutando migraciones pendientes..."
-              php artisan migrate --force --no-interaction
-            else
-              echo "✅ No hay migraciones pendientes"
-            fi
+            # Siempre intentar migraciones
+            echo "🗄️ Ejecutando migraciones..."
+            php artisan migrate --force --no-interaction || echo "✅ No hay migraciones o ya ejecutadas"
             
             # Build assets
             echo "🏗️ Construyendo assets..."
@@ -89,18 +72,11 @@ jobs:
             php artisan view:cache
             
             # Storage link
-            php artisan storage:link 2>/dev/null || echo "✅ storage:link ya existe"
+            php artisan storage:link || echo "✅ storage:link ya existe"
             
             # Permisos
             echo "🔐 Estableciendo permisos..."
             mkdir -p storage/framework/{cache,sessions,views} bootstrap/cache
             chmod -R 775 storage bootstrap/cache
-            
-            # Recargar PHP-FPM
-            echo "🔁 Recargando PHP-FPM..."
-            systemctl reload php8.3-fpm 2>/dev/null || \
-            systemctl reload php8.2-fpm 2>/dev/null || \
-            systemctl reload php-fpm 2>/dev/null || \
-            echo "⚠️ No se pudo recargar PHP-FPM"
             
             echo "✅ Deploy completado exitosamente!"
