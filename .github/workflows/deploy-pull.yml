@@ -1,4 +1,4 @@
-name: Deploy Laravel + React/Vite (Debug Path)
+name: Deploy Laravel + React/Vite
 on:
   push:
     branches: [ "main" ]
@@ -8,7 +8,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy por SSH - Debug Path
+      - name: Deploy por SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -17,55 +17,90 @@ jobs:
           port: ${{ secrets.SSH_PORT || '22' }}
           script_stop: true
           script: |
-            set -e
-            
-            # Debug: Ver qué está pasando con las variables
-            echo "🔍 DEBUG: Variables de entorno..."
-            echo "PROJECT_PATH secret: '${{ secrets.PROJECT_PATH }}'"
-            echo "PWD actual: '$(pwd)'"
-            echo "HOME: '$HOME'"
-            echo "USER: '$(whoami)'"
+            set -e  # Detener si hay errores
             
             # Cargar variables de entorno
             source ~/.bashrc 2>/dev/null || true
             source ~/.nvm/nvm.sh 2>/dev/null || true
             
-            # Intentar con la variable primero
-            PROJECT_DIR="${{ secrets.PROJECT_PATH }}"
-            echo "🔍 DEBUG: PROJECT_DIR variable: '$PROJECT_DIR'"
-            
-            # Si la variable está vacía, usar hardcoded
-            if [ -z "$PROJECT_DIR" ]; then
-              echo "⚠️ PROJECT_PATH está vacío, usando ruta hardcoded..."
-              PROJECT_DIR="/var/www/ViajesRoxanaWeb"
-            fi
-            
-            echo "🔍 DEBUG: Intentando ir a: '$PROJECT_DIR'"
-            
-            # Verificar si el directorio existe
-            if [ ! -d "$PROJECT_DIR" ]; then
-              echo "❌ El directorio '$PROJECT_DIR' no existe!"
-              echo "📁 Directorios disponibles en /var/www:"
-              ls -la /var/www/ 2>/dev/null || echo "No se puede listar /var/www"
-              exit 1
-            fi
-            
-            # Ir al directorio
-            cd "$PROJECT_DIR"
+            # Ruta del proyecto (hardcoded porque PROJECT_PATH está vacío)
+            cd /var/www/ViajesRoxanaWeb
             
             echo "🚀 Iniciando deploy..."
             echo "📍 Directorio actual: $(pwd)"
-            echo "📁 Contenido:"
-            ls -la | head -5
             
-            # Verificar Git
-            if [ -d .git ]; then
-              echo "✅ Repositorio Git encontrado"
-              echo "🔄 Haciendo git pull..."
-              git pull origin main
+            # Verificar herramientas
+            echo "🔍 Verificando herramientas..."
+            node --version || echo "❌ Node.js no encontrado"
+            npm --version || echo "❌ npm no encontrado"
+            composer --version || echo "❌ Composer no encontrado"
+            
+            # Git pull
+            echo "🔄 Actualizando código..."
+            git pull origin main
+            
+            # Verificar archivos cambiados para optimizar instalaciones
+            CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
+            echo "📝 Archivos cambiados: ${CHANGED_FILES:-"(no se pudieron detectar)"}"
+            
+            # Composer - solo si cambió o no existe vendor/
+            if echo "$CHANGED_FILES" | grep -q "composer\.\(json\|lock\)" || [ ! -d vendor ]; then
+              echo "📦 Instalando dependencias de Composer..."
+              export COMPOSER_ALLOW_SUPERUSER=1
+              composer install --no-dev --optimize-autoloader --no-interaction
             else
-              echo "❌ No es un repositorio Git!"
-              exit 1
+              echo "✅ Sin cambios en composer.json/lock"
             fi
             
-            echo "✅ Path y Git funcionan correctamente!"
+            # NPM - solo si cambió o no existe node_modules/
+            if echo "$CHANGED_FILES" | grep -q "package\(-lock\)\?\.json" || [ ! -d node_modules ]; then
+              echo "📦 Instalando dependencias de npm..."
+              if [ -f package-lock.json ]; then
+                npm ci
+              else
+                npm install
+              fi
+            else
+              echo "✅ Sin cambios en package.json/lock"
+            fi
+            
+            # Migraciones - solo si hay pendientes
+            echo "🗄️ Verificando migraciones..."
+            if php artisan migrate:status --no-interaction 2>/dev/null | grep -q "No"; then
+              echo "🗄️ Ejecutando migraciones pendientes..."
+              php artisan migrate --force --no-interaction
+            else
+              echo "✅ No hay migraciones pendientes"
+            fi
+            
+            # Build assets
+            echo "🏗️ Construyendo assets..."
+            npm run build
+            
+            # Limpieza y optimización Laravel
+            echo "🧹 Limpiando cache..."
+            php artisan config:clear
+            php artisan route:clear
+            php artisan view:clear
+            
+            echo "⚡ Optimizando para producción..."
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+            
+            # Storage link
+            php artisan storage:link 2>/dev/null || echo "✅ storage:link ya existe"
+            
+            # Permisos
+            echo "🔐 Estableciendo permisos..."
+            mkdir -p storage/framework/{cache,sessions,views} bootstrap/cache
+            chmod -R 775 storage bootstrap/cache
+            
+            # Recargar PHP-FPM
+            echo "🔁 Recargando PHP-FPM..."
+            systemctl reload php8.3-fpm 2>/dev/null || \
+            systemctl reload php8.2-fpm 2>/dev/null || \
+            systemctl reload php-fpm 2>/dev/null || \
+            echo "⚠️ No se pudo recargar PHP-FPM"
+            
+            echo "✅ Deploy completado exitosamente!"
