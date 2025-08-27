@@ -13,7 +13,7 @@ jobs:
         with:
           host: ${{ secrets.SSH_HOST }}          # ej: 167.71.170.142
           username: ${{ secrets.SSH_USER }}      # ej: root
-          key: ${{ secrets.SSH_PRIVATE_KEY }}    # tu id_rsa (OpenSSH, multilínea)
+          key: ${{ secrets.SSH_PRIVATE_KEY }}    # tu id_rsa
           port: ${{ secrets.SSH_PORT || '22' }}
           script_stop: true
           script: |
@@ -31,13 +31,13 @@ jobs:
             npm --version || echo "❌ npm no encontrado"
             composer --version || echo "❌ Composer no encontrado"
 
-            # Evitar variables que rompan Git
+            # Evitar interferencias con Git
             unset GIT_DIR GIT_WORK_TREE
 
-            # Asegurar que estamos dentro de un repo
+            # Asegurar repo
             git rev-parse --is-inside-work-tree
 
-            # Stash si hay cambios locales (por seguridad)
+            # Stash si hay cambios locales
             STASHED=0
             if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
               echo "⚠️ Cambios sin commitear, haciendo stash..."
@@ -45,44 +45,51 @@ jobs:
               STASHED=1
             fi
 
-            # Guardar HEAD previo y hacer pull limpio
-            PREV_HEAD=$(git rev-parse HEAD 2>/dev/null || echo "")
+            # Pull limpio
+            echo "🔄 Haciendo git pull..."
             git fetch origin main
             git checkout main
-            echo "🔄 Haciendo git pull..."
             git pull --ff-only origin main
+            echo "✅ Pull OK"
 
-            # Archivos cambiados por el pull
-            if [ -n "$PREV_HEAD" ]; then
-              CHANGED="$(git diff --name-only "$PREV_HEAD"...HEAD || true)"
-            else
-              CHANGED="$(git diff --name-only HEAD~1 HEAD || true)"
+            # Calcular archivos cambiados de forma robusta:
+            # 1) Intento con HEAD@{1}..HEAD
+            # 2) Si falla, marcamos "__ALL__" para forzar instalaciones
+            set +e
+            CHANGED=$(git diff --name-only HEAD@{1} HEAD 2>/dev/null)
+            if [ $? -ne 0 ]; then
+              CHANGED="__ALL__"
             fi
+            set -e
+            echo "🗂️ Cambios detectados:"
+            printf '%s\n' "$CHANGED" | sed 's/^/  - /'
 
-            # Restaurar cambios del stash (si hubo)
+            # Si hicimos stash, restaurar (y captar cambios locales)
             CHANGED_LOCAL=""
             if [ "$STASHED" = "1" ]; then
               echo "↩️ Restaurando cambios del stash..."
               if git stash pop; then
-                CHANGED_LOCAL="$(git diff --name-only HEAD || true)"
+                set +e
+                CHANGED_LOCAL=$(git diff --name-only HEAD 2>/dev/null)
+                set -e
               else
                 echo "❗ Conflictos al aplicar el stash. Revisa 'git status' en el servidor."
                 exit 1
               fi
             fi
 
-            # Composer si cambió composer.json/lock
-            if echo "$CHANGED$CHANGED_LOCAL" | grep -E -q '(^|/)composer\.json|(^|/)composer\.lock'; then
-              echo "📦 Instalando dependencias de Composer..."
+            # Composer si cambió composer.json/lock (por pull o stash)
+            if printf '%s\n%s\n' "$CHANGED" "$CHANGED_LOCAL" | grep -E -q '(^|/)composer\.json|(^|/)composer\.lock|^__ALL__$'; then
+              echo "📦 Composer install..."
               export COMPOSER_ALLOW_SUPERUSER=1
               composer install --no-dev --optimize-autoloader --no-interaction
             else
               echo "✅ Composer sin cambios"
             fi
 
-            # npm si cambió package.* o lockfiles
-            if echo "$CHANGED$CHANGED_LOCAL" | grep -E -q '(^|/)package\.json|(^|/)package-lock\.json|(^|/)pnpm-lock\.yaml|(^|/)yarn\.lock'; then
-              echo "📦 Instalando dependencias de npm..."
+            # npm si cambió package.* / lockfiles (por pull o stash)
+            if printf '%s\n%s\n' "$CHANGED" "$CHANGED_LOCAL" | grep -E -q '(^|/)package\.json|(^|/)package-lock\.json|(^|/)pnpm-lock\.yaml|(^|/)yarn\.lock|^__ALL__$'; then
+              echo "📦 npm deps..."
               if [ -f package-lock.json ]; then npm ci; else npm install; fi
             else
               echo "✅ npm sin cambios"
@@ -117,4 +124,10 @@ jobs:
             echo "🔐 Estableciendo permisos..."
             mkdir -p storage/framework/{cache,sessions,views} bootstrap/cache
             chmod -R 775 storage bootstrap/cache || true
-            chown -R ww
+            chown -R www-data:www-data storage bootstrap/cache || true
+
+            # Recargar PHP-FPM
+            echo "🔁 Recargando PHP-FPM..."
+            systemctl reload php8.3-fpm || systemctl reload php8.2-fpm || systemctl reload php-fpm || true
+
+            echo "✅ Deploy completado exitosamente!"
