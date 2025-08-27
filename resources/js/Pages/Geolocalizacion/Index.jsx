@@ -324,15 +324,19 @@ export default function Index({ auth, grupos, filters }) {
                                       {data.locations.map((location, index) => (
                                         <div key={index} className="bg-white rounded-lg p-3 border border-gray-200">
                                           <div className="space-y-2 mb-3">
-                                            <div className="flex justify-between text-sm">
-                                              <span className="text-gray-500 font-medium">Fecha:</span>
-                                              <span className="text-gray-900">{formatDateSafe(location.created_at)}</span>
-                                            </div>
-                                            <div className="flex justify-between text-sm">
-                                              <span className="text-gray-500 font-medium">Coordenadas:</span>
-                                              <span className="text-gray-900">{location.latitud}, {location.longitud}</span>
-                                            </div>
-                                          </div>
+                                             <div className="flex justify-between text-sm">
+                                               <span className="text-gray-500 font-medium">Fecha:</span>
+                                               <span className="text-gray-900">{new Date(location.created_at).toLocaleDateString('es-ES')}</span>
+                                             </div>
+                                             <div className="flex justify-between text-sm">
+                                               <span className="text-gray-500 font-medium">Hora:</span>
+                                               <span className="text-gray-900">{new Date(location.created_at).toLocaleTimeString('es-ES')}</span>
+                                             </div>
+                                             <div className="flex justify-between text-sm">
+                                               <span className="text-gray-500 font-medium">Coordenadas:</span>
+                                               <span className="text-gray-900">{location.latitud}, {location.longitud}</span>
+                                             </div>
+                                           </div>
                                           <SecondaryButton
                                             onClick={() => openLocationMap(location)}
                                             className="w-full text-xs py-2"
@@ -421,7 +425,10 @@ export default function Index({ auth, grupos, filters }) {
                                                 <div key={index} className="flex items-center justify-between bg-white rounded-lg p-3 border border-gray-200">
                                                   <div className="flex-1">
                                                     <div className="text-sm text-gray-900">
-                                                      <span className="font-medium">Fecha:</span> {formatDateSafe(location.created_at)}
+                                                      <span className="font-medium">Fecha:</span> {new Date(location.created_at).toLocaleDateString('es-ES')}
+                                                    </div>
+                                                    <div className="text-sm text-gray-900">
+                                                      <span className="font-medium">Hora:</span> {new Date(location.created_at).toLocaleTimeString('es-ES')}
                                                     </div>
                                                     <div className="text-sm text-gray-600">
                                                       <span className="font-medium">Coordenadas:</span> {location.latitud}, {location.longitud}
