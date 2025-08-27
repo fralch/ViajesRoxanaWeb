@@ -3,6 +3,9 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+
 
 return new class extends Migration
 {
@@ -23,6 +26,19 @@ return new class extends Migration
             $table->rememberToken();
             $table->timestamps();
         });
+
+        // Crear el usuario administrador por defecto
+        DB::table('users')->insert([
+            'name'              => 'Administrador',
+            'email'             => 'admin@viajesroxana.com',
+            'phone'             => '+0000000000',
+            'dni'               => '00000000X',
+            'email_verified_at' => now(),
+            'password'          => Hash::make('12345678'),   // cámbialo al desplegar
+            'is_admin'          => true,
+            'created_at'        => now(),
+            'updated_at'        => now(),
+        ]);
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
