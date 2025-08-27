@@ -1,4 +1,4 @@
-name: Deploy Laravel + React/Vite (Safe)
+name: Deploy Laravel + React/Vite (Debug Path)
 on:
   push:
     branches: [ "main" ]
@@ -8,7 +8,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy por SSH
+      - name: Deploy por SSH - Debug Path
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -17,74 +17,55 @@ jobs:
           port: ${{ secrets.SSH_PORT || '22' }}
           script_stop: true
           script: |
-            set -e  # Detener si hay errores
+            set -e
+            
+            # Debug: Ver qué está pasando con las variables
+            echo "🔍 DEBUG: Variables de entorno..."
+            echo "PROJECT_PATH secret: '${{ secrets.PROJECT_PATH }}'"
+            echo "PWD actual: '$(pwd)'"
+            echo "HOME: '$HOME'"
+            echo "USER: '$(whoami)'"
             
             # Cargar variables de entorno
             source ~/.bashrc 2>/dev/null || true
             source ~/.nvm/nvm.sh 2>/dev/null || true
             
-            # Ir al directorio del proyecto
-            cd ${{ secrets.PROJECT_PATH }}
+            # Intentar con la variable primero
+            PROJECT_DIR="${{ secrets.PROJECT_PATH }}"
+            echo "🔍 DEBUG: PROJECT_DIR variable: '$PROJECT_DIR'"
+            
+            # Si la variable está vacía, usar hardcoded
+            if [ -z "$PROJECT_DIR" ]; then
+              echo "⚠️ PROJECT_PATH está vacío, usando ruta hardcoded..."
+              PROJECT_DIR="/var/www/ViajesRoxanaWeb"
+            fi
+            
+            echo "🔍 DEBUG: Intentando ir a: '$PROJECT_DIR'"
+            
+            # Verificar si el directorio existe
+            if [ ! -d "$PROJECT_DIR" ]; then
+              echo "❌ El directorio '$PROJECT_DIR' no existe!"
+              echo "📁 Directorios disponibles en /var/www:"
+              ls -la /var/www/ 2>/dev/null || echo "No se puede listar /var/www"
+              exit 1
+            fi
+            
+            # Ir al directorio
+            cd "$PROJECT_DIR"
             
             echo "🚀 Iniciando deploy..."
             echo "📍 Directorio actual: $(pwd)"
+            echo "📁 Contenido:"
+            ls -la | head -5
             
-            # Verificar herramientas
-            echo "🔍 Verificando herramientas..."
-            node --version || echo "❌ Node.js no encontrado"
-            npm --version || echo "❌ npm no encontrado" 
-            composer --version || echo "❌ Composer no encontrado"
-            
-            # EVITAR git status completamente - hacer stash preventivo
-            echo "🔄 Haciendo stash preventivo (por si acaso)..."
-            git stash push --include-untracked -m "Auto-stash before deploy $(date)" 2>/dev/null || echo "✅ No había cambios para stash"
-            
-            # Git pull directo
-            echo "🔄 Actualizando código..."
-            git fetch origin main
-            git checkout main 2>/dev/null || echo "Ya estamos en main"
-            git pull origin main
-            
-            # Siempre ejecutar composer y npm (más seguro)
-            echo "📦 Actualizando dependencias de Composer..."
-            export COMPOSER_ALLOW_SUPERUSER=1
-            composer install --no-dev --optimize-autoloader --no-interaction
-            
-            echo "📦 Actualizando dependencias de npm..."
-            if [ -f package-lock.json ]; then
-              npm ci
+            # Verificar Git
+            if [ -d .git ]; then
+              echo "✅ Repositorio Git encontrado"
+              echo "🔄 Haciendo git pull..."
+              git pull origin main
             else
-              npm install
+              echo "❌ No es un repositorio Git!"
+              exit 1
             fi
             
-            # Migraciones - método más simple
-            echo "🗄️ Ejecutando migraciones..."
-            php artisan migrate --force --no-interaction 2>/dev/null || echo "✅ No hay migraciones o ya están ejecutadas"
-            
-            # Build assets
-            echo "🏗️ Construyendo assets..."
-            npm run build
-            
-            # Limpieza y optimización (sin fallar si hay errores)
-            echo "🧹 Limpiando y optimizando..."
-            php artisan config:clear 2>/dev/null || true
-            php artisan route:clear 2>/dev/null || true
-            php artisan view:clear 2>/dev/null || true
-            php artisan config:cache 2>/dev/null || true
-            php artisan route:cache 2>/dev/null || true
-            php artisan view:cache 2>/dev/null || true
-            php artisan storage:link 2>/dev/null || true
-            
-            # Permisos
-            echo "🔐 Estableciendo permisos..."
-            mkdir -p storage/framework/{cache,sessions,views} bootstrap/cache 2>/dev/null || true
-            chmod -R 775 storage bootstrap/cache 2>/dev/null || true
-            
-            # Opcional: Recargar PHP-FPM
-            echo "🔁 Recargando PHP-FPM..."
-            sudo systemctl reload php8.3-fpm 2>/dev/null || \
-            sudo systemctl reload php8.2-fpm 2>/dev/null || \
-            sudo systemctl reload php-fpm 2>/dev/null || \
-            echo "⚠️ No se pudo recargar PHP-FPM"
-            
-            echo "✅ Deploy completado exitosamente!"
+            echo "✅ Path y Git funcionan correctamente!"
