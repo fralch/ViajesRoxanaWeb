@@ -28,4 +28,9 @@ class Paquete extends Model
     {
         return $this->hasMany(Inscripcion::class);
     }
+
+    public function recorridos()
+    {
+        return $this->hasMany(RecorridoPaquete::class)->orderBy('orden');
+    }
 }
