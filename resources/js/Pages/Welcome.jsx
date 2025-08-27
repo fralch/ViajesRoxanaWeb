@@ -456,7 +456,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                                     
                                     <p className="text-xl lg:text-2xl text-gray-700 leading-relaxed max-w-2xl">
                                         Bienvenido a tu <span className="font-semibold text-red-600">portal personal</span> de Viajes Roxana. 
-                                        Gestiona tu perfil, rastrea ubicaciones y mantente conectado con nosotro.
+                                        Gestiona tu perfil, rastrea ubicaciones y mantente conectado con nosotros.
                                     </p>
 
                                    
@@ -651,12 +651,23 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                                     Nuestro equipo está disponible 24/7 para asistirte en todo lo que necesites
                                 </p>
                                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                                    <button className="bg-white text-red-600 px-8 py-3 rounded-2xl font-semibold hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
+                                    <a 
+                                        href="https://wa.me/51961114404?text=Hola,%20me%20gustaría%20obtener%20más%20información"
+                                        target="_blank"
+                                        rel="noopener noreferrer" 
+                                        className="bg-white text-red-600 px-8 py-3 rounded-2xl font-semibold hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 inline-block"
+                                    >
                                         Chat en vivo
-                                    </button>
-                                    <button className="border-2 border-white text-white px-8 py-3 rounded-2xl font-semibold hover:bg-white hover:text-red-600 transition-all duration-200">
+                                    </a>
+                                    <a 
+                                        href="tel:961610362"
+                                        className="border-2 border-white text-white px-8 py-3 rounded-2xl font-semibold hover:bg-white hover:text-red-600 transition-all duration-200 inline-flex items-center gap-2"
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                        </svg>
                                         Llamar ahora
-                                    </button>
+                                    </a>
                                 </div>
                             </div>
                         </div>
