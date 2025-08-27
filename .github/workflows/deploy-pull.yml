@@ -11,9 +11,9 @@ jobs:
       - name: Deploy por SSH (pull en servidor)
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.SSH_HOST }}          # ej: 167.71.170.142
-          username: ${{ secrets.SSH_USER }}      # ej: root
-          key: ${{ secrets.SSH_PRIVATE_KEY }}    # tu id_rsa
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || '22' }}
           script_stop: true
           script: |
@@ -22,9 +22,17 @@ jobs:
 
             echo "🚀 Iniciando deploy..."
             echo "📍 Directorio actual: $(pwd)"
-            ls -la | sed 's/^/  /'
-            echo "🔎 .git:"
-            ls -ld .git || true
+            
+            # Función para manejar errores no críticos
+            safe_run() {
+              if "$@"; then
+                echo "✅ $1 exitoso"
+                return 0
+              else
+                echo "⚠️ $1 falló (continuando...)"
+                return 1
+              fi
+            }
 
             echo "🔍 Verificando herramientas..."
             node --version || echo "❌ Node.js no encontrado"
@@ -52,19 +60,18 @@ jobs:
             git pull --ff-only origin main
             echo "✅ Pull OK"
 
-            # Calcular archivos cambiados de forma robusta:
-            # 1) Intento con HEAD@{1}..HEAD
-            # 2) Si falla, marcamos "__ALL__" para forzar instalaciones
+            # Calcular archivos cambiados
             set +e
             CHANGED=$(git diff --name-only HEAD@{1} HEAD 2>/dev/null)
             if [ $? -ne 0 ]; then
               CHANGED="__ALL__"
             fi
             set -e
+            
             echo "🗂️ Cambios detectados:"
             printf '%s\n' "$CHANGED" | sed 's/^/  - /'
 
-            # Si hicimos stash, restaurar (y captar cambios locales)
+            # Restaurar stash si es necesario
             CHANGED_LOCAL=""
             if [ "$STASHED" = "1" ]; then
               echo "↩️ Restaurando cambios del stash..."
@@ -73,12 +80,12 @@ jobs:
                 CHANGED_LOCAL=$(git diff --name-only HEAD 2>/dev/null)
                 set -e
               else
-                echo "❗ Conflictos al aplicar el stash. Revisa 'git status' en el servidor."
+                echo "❗ Conflictos al aplicar el stash."
                 exit 1
               fi
             fi
 
-            # Composer si cambió composer.json/lock (por pull o stash)
+            # Composer install
             if printf '%s\n%s\n' "$CHANGED" "$CHANGED_LOCAL" | grep -E -q '(^|/)composer\.json|(^|/)composer\.lock|^__ALL__$'; then
               echo "📦 Composer install..."
               export COMPOSER_ALLOW_SUPERUSER=1
@@ -87,47 +94,69 @@ jobs:
               echo "✅ Composer sin cambios"
             fi
 
-            # npm si cambió package.* / lockfiles (por pull o stash)
-            if printf '%s\n%s\n' "$CHANGED" "$CHANGED_LOCAL" | grep -E -q '(^|/)package\.json|(^|/)package-lock\.json|(^|/)pnpm-lock\.yaml|(^|/)yarn\.lock|^__ALL__$'; then
+            # npm install/build
+            if printf '%s\n%s\n' "$CHANGED" "$CHANGED_LOCAL" | grep -E -q '(^|/)package\.json|(^|/)package-lock\.json|^__ALL__$'; then
               echo "📦 npm deps..."
               if [ -f package-lock.json ]; then npm ci; else npm install; fi
             else
               echo "✅ npm sin cambios"
             fi
 
-            # Migraciones sólo si hay pendientes
+            # Migraciones
             echo "🗄️ Verificando migraciones..."
-            if php artisan migrate:status --no-interaction | awk -F'|' 'NR>2 && $0 ~ /No/ {p=1} END{exit(!p)}'; then
+            set +e
+            MIGRATE_STATUS=$(php artisan migrate:status --no-interaction 2>/dev/null)
+            if echo "$MIGRATE_STATUS" | grep -q "No"; then
               echo "🗄️ Ejecutando migraciones..."
               php artisan migrate --force --no-interaction
             else
               echo "✅ No hay migraciones pendientes"
             fi
+            set -e
 
             # Build Vite
             echo "🏗️ Construyendo assets con Vite..."
-            npm run build || echo "⚠️ Build omitido (sin Node/npm)"
+            npm run build
 
-            # Limpiar y optimizar cache
+            # Limpiar cache
             echo "🧹 Limpiando cache..."
-            php artisan config:clear || true
-            php artisan route:clear || true
-            php artisan view:clear || true
+            safe_run php artisan config:clear
+            safe_run php artisan route:clear  
+            safe_run php artisan view:clear
 
             echo "⚡ Optimizando..."
-            php artisan config:cache || true
-            php artisan route:cache || true
-            php artisan view:cache || true
-            php artisan storage:link || true
+            safe_run php artisan config:cache
+            safe_run php artisan route:cache
+            safe_run php artisan view:cache
+            safe_run php artisan storage:link
 
-            # Permisos
+            # Permisos (con sudo si es necesario)
             echo "🔐 Estableciendo permisos..."
             mkdir -p storage/framework/{cache,sessions,views} bootstrap/cache
-            chmod -R 775 storage bootstrap/cache || true
-            chown -R www-data:www-data storage bootstrap/cache || true
+            
+            # Intentar con sudo primero, luego sin sudo
+            if sudo -n chmod -R 775 storage bootstrap/cache 2>/dev/null; then
+              echo "✅ Permisos de archivos establecidos"
+            else
+              safe_run chmod -R 775 storage bootstrap/cache
+            fi
+            
+            if sudo -n chown -R www-data:www-data storage bootstrap/cache 2>/dev/null; then
+              echo "✅ Propietario establecido"
+            else
+              echo "⚠️ No se pudo cambiar propietario (requiere sudo)"
+            fi
 
-            # Recargar PHP-FPM
+            # Recargar PHP-FPM (con sudo si es necesario)
             echo "🔁 Recargando PHP-FPM..."
-            systemctl reload php8.3-fpm || systemctl reload php8.2-fpm || systemctl reload php-fpm || true
+            if sudo -n systemctl reload php8.3-fpm 2>/dev/null; then
+              echo "✅ PHP 8.3-FPM recargado"
+            elif sudo -n systemctl reload php8.2-fpm 2>/dev/null; then
+              echo "✅ PHP 8.2-FPM recargado"  
+            elif sudo -n systemctl reload php-fpm 2>/dev/null; then
+              echo "✅ PHP-FPM recargado"
+            else
+              echo "⚠️ No se pudo recargar PHP-FPM (requiere sudo)"
+            fi
 
             echo "✅ Deploy completado exitosamente!"
