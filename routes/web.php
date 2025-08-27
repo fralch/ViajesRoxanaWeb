@@ -88,6 +88,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('recorrido-paquetes/update-order', [RecorridoPaqueteController::class, 'updateOrder'])->name('recorrido-paquetes.update-order');
     Route::resource('recorrido-paquetes', RecorridoPaqueteController::class);
     Route::resource('geolocalizacion', GeolocalizacionController::class);
+    Route::get('geolocalizacion/{grupo}/history', [GeolocalizacionController::class, 'getGroupHistory'])->name('geolocalizacion.group.history');
     Route::resource('trazabilidad', TrazabilidadController::class);
     Route::resource('notificaciones', NotificacionController::class)->parameters(['notificaciones' => 'notificacion']);
 
