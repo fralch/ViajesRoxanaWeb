@@ -13,37 +13,46 @@ jobs:
         with:
           host: ${{ secrets.SSH_HOST }}          # ej: 167.71.170.142
           username: ${{ secrets.SSH_USER }}      # ej: root
-          key: ${{ secrets.SSH_PRIVATE_KEY }}    # tu id_rsa
+          key: ${{ secrets.SSH_PRIVATE_KEY }}    # tu id_rsa (OpenSSH, multilínea)
           port: ${{ secrets.SSH_PORT || '22' }}
           script_stop: true
           script: |
             set -e
-            cd ${{ secrets.PROJECT_PATH }}
+            cd "/var/www/ViajesRoxanaWeb"
 
             echo "🚀 Iniciando deploy..."
             echo "📍 Directorio actual: $(pwd)"
+            ls -la | sed 's/^/  /'
+            echo "🔎 .git:"
+            ls -ld .git || true
 
             echo "🔍 Verificando herramientas..."
             node --version || echo "❌ Node.js no encontrado"
             npm --version || echo "❌ npm no encontrado"
             composer --version || echo "❌ Composer no encontrado"
 
-            # Stash si hay cambios locales
+            # Evitar variables que rompan Git
+            unset GIT_DIR GIT_WORK_TREE
+
+            # Asegurar que estamos dentro de un repo
+            git rev-parse --is-inside-work-tree
+
+            # Stash si hay cambios locales (por seguridad)
             STASHED=0
-            if [ -n "$(git status --porcelain)" ]; then
+            if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
               echo "⚠️ Cambios sin commitear, haciendo stash..."
               git stash push --include-untracked || true
               STASHED=1
             fi
 
-            # Guardar HEAD previo y traer cambios limpios
-            PREV_HEAD=$(git rev-parse HEAD || echo "")
+            # Guardar HEAD previo y hacer pull limpio
+            PREV_HEAD=$(git rev-parse HEAD 2>/dev/null || echo "")
             git fetch origin main
             git checkout main
             echo "🔄 Haciendo git pull..."
             git pull --ff-only origin main
 
-            # Cambios del pull
+            # Archivos cambiados por el pull
             if [ -n "$PREV_HEAD" ]; then
               CHANGED="$(git diff --name-only "$PREV_HEAD"...HEAD || true)"
             else
@@ -57,23 +66,26 @@ jobs:
               if git stash pop; then
                 CHANGED_LOCAL="$(git diff --name-only HEAD || true)"
               else
-                echo "❗ Conflictos al aplicar el stash. Revisa 'git status' y resuélvelos."
+                echo "❗ Conflictos al aplicar el stash. Revisa 'git status' en el servidor."
                 exit 1
               fi
             fi
 
-            # Composer si cambió composer.json/lock (por pull o por stash)
-            if echo "$CHANGED" | grep -E -q '(^|/)composer\.json|(^|/)composer\.lock' \
-               || echo "$CHANGED_LOCAL" | grep -E -q '(^|/)composer\.json|(^|/)composer\.lock'; then
+            # Composer si cambió composer.json/lock
+            if echo "$CHANGED$CHANGED_LOCAL" | grep -E -q '(^|/)composer\.json|(^|/)composer\.lock'; then
               echo "📦 Instalando dependencias de Composer..."
+              export COMPOSER_ALLOW_SUPERUSER=1
               composer install --no-dev --optimize-autoloader --no-interaction
+            else
+              echo "✅ Composer sin cambios"
             fi
 
-            # npm si cambió package.* / lockfiles (por pull o por stash)
-            if echo "$CHANGED" | grep -E -q '(^|/)package\.json|(^|/)package-lock\.json|(^|/)pnpm-lock\.yaml|(^|/)yarn\.lock' \
-               || echo "$CHANGED_LOCAL" | grep -E -q '(^|/)package\.json|(^|/)package-lock\.json|(^|/)pnpm-lock\.yaml|(^|/)yarn\.lock'; then
+            # npm si cambió package.* o lockfiles
+            if echo "$CHANGED$CHANGED_LOCAL" | grep -E -q '(^|/)package\.json|(^|/)package-lock\.json|(^|/)pnpm-lock\.yaml|(^|/)yarn\.lock'; then
               echo "📦 Instalando dependencias de npm..."
               if [ -f package-lock.json ]; then npm ci; else npm install; fi
+            else
+              echo "✅ npm sin cambios"
             fi
 
             # Migraciones sólo si hay pendientes
@@ -105,8 +117,4 @@ jobs:
             echo "🔐 Estableciendo permisos..."
             mkdir -p storage/framework/{cache,sessions,views} bootstrap/cache
             chmod -R 775 storage bootstrap/cache || true
-
-            # Recargar PHP-FPM
-            systemctl reload php8.3-fpm || systemctl reload php8.2-fpm || systemctl reload php-fpm || true
-
-            echo "✅ Deploy completado exitosamente!"
+            chown -R ww
