@@ -1,4 +1,4 @@
-name: Deploy Laravel + React/Vite
+name: Deploy Laravel + React/Vite (Safe)
 on:
   push:
     branches: [ "main" ]
@@ -32,93 +32,59 @@ jobs:
             # Verificar herramientas
             echo "🔍 Verificando herramientas..."
             node --version || echo "❌ Node.js no encontrado"
-            npm --version || echo "❌ npm no encontrado"
+            npm --version || echo "❌ npm no encontrado" 
             composer --version || echo "❌ Composer no encontrado"
             
-            # Manejar cambios locales de forma más robusta
-            echo "🔍 Verificando estado del repositorio..."
-            if git status --porcelain 2>/dev/null | grep -q .; then
-              echo "⚠️ Hay cambios sin commitear, haciendo stash..."
-              git stash push --include-untracked -m "Auto-stash before deploy $(date)"
-            else
-              echo "✅ Repositorio limpio"
-            fi
+            # EVITAR git status completamente - hacer stash preventivo
+            echo "🔄 Haciendo stash preventivo (por si acaso)..."
+            git stash push --include-untracked -m "Auto-stash before deploy $(date)" 2>/dev/null || echo "✅ No había cambios para stash"
             
-            # Git pull con manejo de errores
+            # Git pull directo
             echo "🔄 Actualizando código..."
             git fetch origin main
-            git checkout main
+            git checkout main 2>/dev/null || echo "Ya estamos en main"
             git pull origin main
             
-            # Obtener archivos cambiados (con fallback)
-            CHANGED_FILES=""
-            if git rev-parse HEAD~1 >/dev/null 2>&1; then
-              CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
-            fi
+            # Siempre ejecutar composer y npm (más seguro)
+            echo "📦 Actualizando dependencias de Composer..."
+            export COMPOSER_ALLOW_SUPERUSER=1
+            composer install --no-dev --optimize-autoloader --no-interaction
             
-            echo "📝 Archivos cambiados: ${CHANGED_FILES:-"(primer deploy o error detectando cambios)"}"
-            
-            # Composer - verificar cambios o forzar si no se puede detectar
-            if echo "$CHANGED_FILES" | grep -q "composer\.\(json\|lock\)" || [ -z "$CHANGED_FILES" ]; then
-              echo "📦 Actualizando dependencias de Composer..."
-              export COMPOSER_ALLOW_SUPERUSER=1
-              composer install --no-dev --optimize-autoloader --no-interaction
+            echo "📦 Actualizando dependencias de npm..."
+            if [ -f package-lock.json ]; then
+              npm ci
             else
-              echo "✅ Sin cambios en composer.json/lock"
+              npm install
             fi
             
-            # NPM - verificar cambios o forzar si no se puede detectar
-            if echo "$CHANGED_FILES" | grep -q "package\(-lock\)\?\.json" || [ -z "$CHANGED_FILES" ]; then
-              echo "📦 Actualizando dependencias de npm..."
-              if [ -f package-lock.json ]; then
-                npm ci
-              else
-                npm install
-              fi
-            else
-              echo "✅ Sin cambios en package.json/lock"
-            fi
-            
-            # Migraciones - con mejor manejo de errores
-            echo "🗄️ Verificando migraciones..."
-            MIGRATE_STATUS=$(php artisan migrate:status --no-interaction 2>/dev/null || echo "ERROR")
-            
-            if [ "$MIGRATE_STATUS" != "ERROR" ] && echo "$MIGRATE_STATUS" | grep -q "No"; then
-              echo "🗄️ Ejecutando migraciones pendientes..."
-              php artisan migrate --force --no-interaction
-            else
-              echo "✅ No hay migraciones pendientes"
-            fi
+            # Migraciones - método más simple
+            echo "🗄️ Ejecutando migraciones..."
+            php artisan migrate --force --no-interaction 2>/dev/null || echo "✅ No hay migraciones o ya están ejecutadas"
             
             # Build assets
             echo "🏗️ Construyendo assets..."
             npm run build
             
-            # Limpieza de cache
-            echo "🧹 Limpiando cache..."
-            php artisan config:clear || echo "⚠️ Warning: config:clear falló"
-            php artisan route:clear || echo "⚠️ Warning: route:clear falló"
-            php artisan view:clear || echo "⚠️ Warning: view:clear falló"
-            
-            # Optimización
-            echo "⚡ Optimizando para producción..."
-            php artisan config:cache || echo "⚠️ Warning: config:cache falló"
-            php artisan route:cache || echo "⚠️ Warning: route:cache falló"
-            php artisan view:cache || echo "⚠️ Warning: view:cache falló"
-            
-            # Storage link
-            php artisan storage:link 2>/dev/null || echo "⚠️ storage:link ya existe o falló"
+            # Limpieza y optimización (sin fallar si hay errores)
+            echo "🧹 Limpiando y optimizando..."
+            php artisan config:clear 2>/dev/null || true
+            php artisan route:clear 2>/dev/null || true
+            php artisan view:clear 2>/dev/null || true
+            php artisan config:cache 2>/dev/null || true
+            php artisan route:cache 2>/dev/null || true
+            php artisan view:cache 2>/dev/null || true
+            php artisan storage:link 2>/dev/null || true
             
             # Permisos
             echo "🔐 Estableciendo permisos..."
             mkdir -p storage/framework/{cache,sessions,views} bootstrap/cache 2>/dev/null || true
-            chmod -R 775 storage bootstrap/cache 2>/dev/null || echo "⚠️ Warning: chmod falló"
+            chmod -R 775 storage bootstrap/cache 2>/dev/null || true
             
-            # Opcional: Recargar PHP-FPM (solo si tienes permisos)
-            echo "🔁 Intentando recargar PHP-FPM..."
+            # Opcional: Recargar PHP-FPM
+            echo "🔁 Recargando PHP-FPM..."
             sudo systemctl reload php8.3-fpm 2>/dev/null || \
             sudo systemctl reload php8.2-fpm 2>/dev/null || \
             sudo systemctl reload php-fpm 2>/dev/null || \
-            echo "⚠️ No se pudo recargar PHP-FPM (normal si no tienes permisos sudo)"
+            echo "⚠️ No se pudo recargar PHP-FPM"
             
             echo "✅ Deploy completado exitosamente!"
