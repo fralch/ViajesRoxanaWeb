@@ -13,6 +13,9 @@ export default function Index({ paquetes, filters }) {
   const [search, setSearch] = useState(filters.search || '');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [paqueteToDelete, setPaqueteToDelete] = useState(null);
+  const [expandedPaquetes, setExpandedPaquetes] = useState(new Set());
+  const [editingRoutes, setEditingRoutes] = useState(null);
+  const [routesOrder, setRoutesOrder] = useState({});
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -50,6 +53,79 @@ export default function Index({ paquetes, filters }) {
 
   // Función eliminada - ya no necesitamos modal personalizado
   const deletePaquete = () => {};  // Mantener para evitar errores
+
+  const togglePaqueteExpansion = (paqueteId) => {
+    const newExpanded = new Set(expandedPaquetes);
+    if (newExpanded.has(paqueteId)) {
+      newExpanded.delete(paqueteId);
+    } else {
+      newExpanded.add(paqueteId);
+    }
+    setExpandedPaquetes(newExpanded);
+  };
+
+  const startEditingRoutes = (paqueteId, recorridos) => {
+    setEditingRoutes(paqueteId);
+    const order = {};
+    recorridos.forEach(recorrido => {
+      order[recorrido.id] = recorrido;
+    });
+    setRoutesOrder(order);
+  };
+
+  const moveRoute = (routeId, direction) => {
+    const routes = Object.values(routesOrder).sort((a, b) => a.orden - b.orden);
+    const currentIndex = routes.findIndex(r => r.id === routeId);
+    
+    if (direction === 'up' && currentIndex > 0) {
+      const temp = routes[currentIndex].orden;
+      routes[currentIndex].orden = routes[currentIndex - 1].orden;
+      routes[currentIndex - 1].orden = temp;
+    } else if (direction === 'down' && currentIndex < routes.length - 1) {
+      const temp = routes[currentIndex].orden;
+      routes[currentIndex].orden = routes[currentIndex + 1].orden;
+      routes[currentIndex + 1].orden = temp;
+    }
+
+    const newOrder = {};
+    routes.forEach(route => {
+      newOrder[route.id] = route;
+    });
+    setRoutesOrder(newOrder);
+  };
+
+  const saveRoutesOrder = async () => {
+    const routes = Object.values(routesOrder).map(route => ({
+      id: route.id,
+      orden: route.orden
+    }));
+
+    try {
+      await router.patch('recorrido-paquetes/update-order', 
+        { routes },
+        {
+          preserveScroll: true,
+          onSuccess: () => {
+            showSuccess('¡Orden actualizado!', 'El orden de los recorridos ha sido actualizado exitosamente.');
+            setEditingRoutes(null);
+            setRoutesOrder({});
+          },
+          onError: (errors) => {
+            console.error('Error updating routes order:', errors);
+            showError('Error', 'No se pudo actualizar el orden de los recorridos.');
+          }
+        }
+      );
+    } catch (error) {
+      console.error('Exception updating routes order:', error);
+      showError('Error', 'Ocurrió un error al actualizar el orden.');
+    }
+  };
+
+  const cancelEditingRoutes = () => {
+    setEditingRoutes(null);
+    setRoutesOrder({});
+  };
 
   const getStatusBadge = (activo) => {
     return activo ? (
@@ -154,6 +230,16 @@ export default function Index({ paquetes, filters }) {
 
                           {/* Actions */}
                           <div className="mt-4 flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => togglePaqueteExpansion(paquete.id)}
+                              className="inline-flex items-center justify-center h-10 px-3 rounded-lg text-purple-700 hover:text-purple-800 hover:bg-purple-50 transition-colors"
+                              title="Ver recorridos"
+                            >
+                              <svg className={`w-4 h-4 transition-transform ${expandedPaquetes.has(paquete.id) ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+
                             <Link
                               href={route('paquetes.edit', paquete.id)}
                               className="inline-flex items-center justify-center h-10 px-3 rounded-lg text-blue-700 hover:text-blue-800 hover:bg-blue-50 transition-colors"
@@ -174,6 +260,93 @@ export default function Index({ paquetes, filters }) {
                               </svg>
                             </button>
                           </div>
+
+                          {/* Routes section */}
+                          {expandedPaquetes.has(paquete.id) && (
+                            <div className="mt-4 pt-4 border-t border-gray-200">
+                              <div className="flex items-center justify-between mb-3">
+                                <h4 className="text-sm font-medium text-gray-900">Recorridos</h4>
+                                {paquete.recorridos && paquete.recorridos.length > 0 && (
+                                  <button
+                                    onClick={() => editingRoutes === paquete.id ? cancelEditingRoutes() : startEditingRoutes(paquete.id, paquete.recorridos)}
+                                    className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                                      editingRoutes === paquete.id
+                                        ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                                    }`}
+                                  >
+                                    {editingRoutes === paquete.id ? 'Cancelar' : 'Editar orden'}
+                                  </button>
+                                )}
+                              </div>
+
+                              {paquete.recorridos && paquete.recorridos.length > 0 ? (
+                                <div className="space-y-2">
+                                  {(editingRoutes === paquete.id ? Object.values(routesOrder).sort((a, b) => a.orden - b.orden) : paquete.recorridos).map((recorrido, index) => (
+                                    <div key={recorrido.id} className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+                                      <div className="flex items-center gap-3">
+                                        <span className="flex-shrink-0 w-6 h-6 bg-purple-100 text-purple-800 rounded-full flex items-center justify-center text-xs font-medium">
+                                          {recorrido.orden}
+                                        </span>
+                                        <span className="text-sm font-medium text-gray-900">{recorrido.nombre}</span>
+                                        {!recorrido.activo && (
+                                          <span className="px-2 py-0.5 text-xs bg-red-100 text-red-700 rounded-full">Inactivo</span>
+                                        )}
+                                      </div>
+                                      {editingRoutes === paquete.id && (
+                                        <div className="flex gap-1">
+                                          <button
+                                            onClick={() => moveRoute(recorrido.id, 'up')}
+                                            disabled={index === 0}
+                                            className={`p-1 rounded ${
+                                              index === 0
+                                                ? 'text-gray-300 cursor-not-allowed'
+                                                : 'text-gray-600 hover:text-gray-800 hover:bg-white'
+                                            }`}
+                                          >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 14l5-5 5 5" />
+                                            </svg>
+                                          </button>
+                                          <button
+                                            onClick={() => moveRoute(recorrido.id, 'down')}
+                                            disabled={index === (editingRoutes === paquete.id ? Object.keys(routesOrder).length : paquete.recorridos.length) - 1}
+                                            className={`p-1 rounded ${
+                                              index === (editingRoutes === paquete.id ? Object.keys(routesOrder).length : paquete.recorridos.length) - 1
+                                                ? 'text-gray-300 cursor-not-allowed'
+                                                : 'text-gray-600 hover:text-gray-800 hover:bg-white'
+                                            }`}
+                                          >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 10l-5 5-5-5" />
+                                            </svg>
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
+                                  {editingRoutes === paquete.id && (
+                                    <div className="flex gap-2 pt-2">
+                                      <button
+                                        onClick={saveRoutesOrder}
+                                        className="flex-1 px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors"
+                                      >
+                                        Guardar orden
+                                      </button>
+                                      <button
+                                        onClick={cancelEditingRoutes}
+                                        className="px-3 py-2 bg-gray-300 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-400 transition-colors"
+                                      >
+                                        Cancelar
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <p className="text-sm text-gray-500 italic">No hay recorridos configurados para este paquete</p>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </li>
                     ))}
@@ -208,46 +381,157 @@ export default function Index({ paquetes, filters }) {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {paquetes.data.length > 0 ? (
                       paquetes.data.map((paquete) => (
-                        <tr key={paquete.id} className="hover:bg-gray-50 transition-colors duration-150">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">{paquete.nombre}</div>
-                              <div className="text-sm text-gray-500">ID: {paquete.id}</div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">{paquete.destino}</div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <p className="text-sm text-gray-700 truncate max-w-xs">{paquete.descripcion}</p>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {getStatusBadge(paquete.activo)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-center">
-                            <div className="flex items-center justify-center gap-2">
-                              <Link
-                                href={route('paquetes.edit', paquete.id)}
-                                className="inline-flex items-center justify-center w-9 h-9 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-200"
-                                title="Editar paquete"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                              </Link>
+                        <React.Fragment key={paquete.id}>
+                          <tr className="hover:bg-gray-50 transition-colors duration-150">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div>
+                                <div className="text-sm font-medium text-gray-900">{paquete.nombre}</div>
+                                <div className="text-sm text-gray-500">ID: {paquete.id}</div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{paquete.destino}</div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <p className="text-sm text-gray-700 truncate max-w-xs">{paquete.descripcion}</p>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {getStatusBadge(paquete.activo)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-center">
+                              <div className="flex items-center justify-center gap-2">
+                                <button
+                                  onClick={() => togglePaqueteExpansion(paquete.id)}
+                                  className="inline-flex items-center justify-center w-9 h-9 text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors duration-200"
+                                  title="Ver recorridos"
+                                >
+                                  <svg className={`w-4 h-4 transition-transform ${expandedPaquetes.has(paquete.id) ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                  </svg>
+                                </button>
 
-                              <button
-                                onClick={() => confirmDelete(paquete)}
-                                className="inline-flex items-center justify-center w-9 h-9 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200"
-                                title="Eliminar paquete"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
+                                <Link
+                                  href={route('paquetes.edit', paquete.id)}
+                                  className="inline-flex items-center justify-center w-9 h-9 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-200"
+                                  title="Editar paquete"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                  </svg>
+                                </Link>
+
+                                <button
+                                  onClick={() => confirmDelete(paquete)}
+                                  className="inline-flex items-center justify-center w-9 h-9 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                                  title="Eliminar paquete"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                          {/* Routes section */}
+                          {expandedPaquetes.has(paquete.id) && (
+                            <tr>
+                              <td colSpan={5} className="px-6 py-4 bg-gray-50 border-b">
+                                <div className="bg-white rounded-lg p-4">
+                                  <div className="flex items-center justify-between mb-4">
+                                    <h4 className="text-sm font-medium text-gray-900">Recorridos del paquete</h4>
+                                    {paquete.recorridos && paquete.recorridos.length > 0 && (
+                                      <button
+                                        onClick={() => editingRoutes === paquete.id ? cancelEditingRoutes() : startEditingRoutes(paquete.id, paquete.recorridos)}
+                                        className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                                          editingRoutes === paquete.id
+                                            ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                            : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                                        }`}
+                                      >
+                                        {editingRoutes === paquete.id ? 'Cancelar edición' : 'Editar orden'}
+                                      </button>
+                                    )}
+                                  </div>
+
+                                  {paquete.recorridos && paquete.recorridos.length > 0 ? (
+                                    <div className="space-y-3">
+                                      {(editingRoutes === paquete.id ? Object.values(routesOrder).sort((a, b) => a.orden - b.orden) : paquete.recorridos).map((recorrido, index) => (
+                                        <div key={recorrido.id} className="flex items-center justify-between bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                          <div className="flex items-center gap-4">
+                                            <span className="flex-shrink-0 w-8 h-8 bg-purple-100 text-purple-800 rounded-full flex items-center justify-center text-sm font-semibold">
+                                              {recorrido.orden}
+                                            </span>
+                                            <div>
+                                              <span className="text-sm font-semibold text-gray-900">{recorrido.nombre}</span>
+                                              {!recorrido.activo && (
+                                                <span className="ml-2 px-2 py-0.5 text-xs bg-red-100 text-red-700 rounded-full">Inactivo</span>
+                                              )}
+                                            </div>
+                                          </div>
+                                          {editingRoutes === paquete.id && (
+                                            <div className="flex gap-1">
+                                              <button
+                                                onClick={() => moveRoute(recorrido.id, 'up')}
+                                                disabled={index === 0}
+                                                className={`p-2 rounded-lg transition-colors ${
+                                                  index === 0
+                                                    ? 'text-gray-300 cursor-not-allowed'
+                                                    : 'text-gray-600 hover:text-gray-800 hover:bg-white'
+                                                }`}
+                                                title="Mover hacia arriba"
+                                              >
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 14l5-5 5 5" />
+                                                </svg>
+                                              </button>
+                                              <button
+                                                onClick={() => moveRoute(recorrido.id, 'down')}
+                                                disabled={index === (editingRoutes === paquete.id ? Object.keys(routesOrder).length : paquete.recorridos.length) - 1}
+                                                className={`p-2 rounded-lg transition-colors ${
+                                                  index === (editingRoutes === paquete.id ? Object.keys(routesOrder).length : paquete.recorridos.length) - 1
+                                                    ? 'text-gray-300 cursor-not-allowed'
+                                                    : 'text-gray-600 hover:text-gray-800 hover:bg-white'
+                                                }`}
+                                                title="Mover hacia abajo"
+                                              >
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 10l-5 5-5-5" />
+                                                </svg>
+                                              </button>
+                                            </div>
+                                          )}
+                                        </div>
+                                      ))}
+                                      {editingRoutes === paquete.id && (
+                                        <div className="flex gap-3 pt-4 justify-end">
+                                          <button
+                                            onClick={saveRoutesOrder}
+                                            className="px-6 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+                                          >
+                                            Guardar cambios
+                                          </button>
+                                          <button
+                                            onClick={cancelEditingRoutes}
+                                            className="px-6 py-2 bg-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-400 transition-colors"
+                                          >
+                                            Cancelar
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <div className="text-center py-8">
+                                      <svg className="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                                      </svg>
+                                      <p className="text-sm text-gray-500">No hay recorridos configurados para este paquete</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
                       ))
                     ) : (
                       <tr>

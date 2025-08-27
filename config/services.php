@@ -41,4 +41,8 @@ return [
         'instance_id' => env('WHATSAPP_INSTANCE_ID'),
     ],
 
+    'mapbox' => [
+        'access_token' => env('MAPBOX_ACCESS_TOKEN'),
+    ],
+
 ];

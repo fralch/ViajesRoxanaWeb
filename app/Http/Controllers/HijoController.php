@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Hijo;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
@@ -15,30 +16,57 @@ class HijoController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Hijo::with('user');
-        
-        // Si no es admin, solo mostrar sus propios hijos
+        // Si no es admin, mostrar solo sus propios datos
         if (!Auth::user()->is_admin) {
-            $query->where('user_id', Auth::id());
+            $user = Auth::user()->load(['hijos' => function($query) use ($request) {
+                if ($request->has('search') && $request->search) {
+                    $search = $request->search;
+                    $query->where(function($q) use ($search) {
+                        $q->where('nombres', 'like', "%{$search}%")
+                          ->orWhere('doc_numero', 'like', "%{$search}%");
+                    });
+                }
+                $query->orderBy('nombres');
+            }]);
+            
+            return Inertia::render('Hijos/Index', [
+                'users' => collect([$user]),
+                'filters' => $request->only(['search']),
+                'isAdmin' => false
+            ]);
         }
+        
+        // Para admin, mostrar todos los usuarios con hijos
+        $query = User::whereHas('hijos')->with(['hijos' => function($hijoQuery) use ($request) {
+            if ($request->has('search') && $request->search) {
+                $search = $request->search;
+                $hijoQuery->where(function($q) use ($search) {
+                    $q->where('nombres', 'like', "%{$search}%")
+                      ->orWhere('doc_numero', 'like', "%{$search}%");
+                });
+            }
+            $hijoQuery->orderBy('nombres');
+        }]);
         
         if ($request->has('search') && $request->search) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
-                $q->where('nombres', 'like', "%{$search}%")
-                  ->orWhere('doc_numero', 'like', "%{$search}%")
-                  ->orWhereHas('user', function($uq) use ($search) {
-                      $uq->where('name', 'like', "%{$search}%")
-                         ->orWhere('email', 'like', "%{$search}%");
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('dni', 'like', "%{$search}%")
+                  ->orWhereHas('hijos', function($hijoQuery) use ($search) {
+                      $hijoQuery->where('nombres', 'like', "%{$search}%")
+                               ->orWhere('doc_numero', 'like', "%{$search}%");
                   });
             });
         }
         
-        $hijos = $query->orderBy('nombres')->paginate(10);
+        $users = $query->orderBy('name')->paginate(10);
         
         return Inertia::render('Hijos/Index', [
-            'hijos' => $hijos,
-            'filters' => $request->only(['search'])
+            'users' => $users,
+            'filters' => $request->only(['search']),
+            'isAdmin' => true
         ]);
     }
 

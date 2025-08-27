@@ -26,8 +26,8 @@ class Grupo extends Model
     protected $casts = [
         'activo' => 'boolean',
         'capacidad' => 'integer',
-        'fecha_inicio' => 'date',
-        'fecha_fin' => 'date',
+        'fecha_inicio' => 'date:Y-m-d',
+        'fecha_fin' => 'date:Y-m-d',
         'tipo_encargado' => 'array',
         'nombre_encargado' => 'array',
         'celular_encargado' => 'array',

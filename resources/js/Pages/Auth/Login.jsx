@@ -23,7 +23,7 @@ export default function Login() {
       <div className="w-full max-w-md">
         {/* Encabezado */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-red-600 mb-2">¡Bienvenido/a a tu próxima aventura!</h1>
+          <h1 className="text-2xl font-bold text-red-600 mb-2">¡Tu viaje comienza aquí!</h1>
         </div>
 
         {/* Card */}
@@ -32,7 +32,7 @@ export default function Login() {
             <form onSubmit={submit}>
               {/* Logo */}
               <div className="flex justify-center mb-8">
-                <img src="/imgs/logo-viajesroxana.png" alt="Viajes Roxana" className="h-12 w-auto" />
+                <img src="/imgs/logo-viajesroxana-min.png" alt="Viajes Roxana" className="h-12 w-auto" />
               </div>
 
               <div className="text-center text-2xl font-semibold text-gray-800 mb-8">Inicia Sesión</div>

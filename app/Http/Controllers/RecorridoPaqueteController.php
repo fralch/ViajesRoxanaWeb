@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\RecorridoPaquete;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Http\JsonResponse;
 
 class RecorridoPaqueteController extends Controller
 {
@@ -64,5 +65,28 @@ class RecorridoPaqueteController extends Controller
     public function destroy(RecorridoPaquete $recorridoPaquete)
     {
         //
+    }
+
+    /**
+     * Update the order of routes for a package
+     */
+    public function updateOrder(Request $request): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'routes' => 'required|array',
+                'routes.*.id' => 'required|integer|exists:recorrido_paquetes,id',
+                'routes.*.orden' => 'required|integer|min:1'
+            ]);
+
+            foreach ($validated['routes'] as $routeData) {
+                RecorridoPaquete::where('id', $routeData['id'])
+                    ->update(['orden' => $routeData['orden']]);
+            }
+
+            return response()->json(['message' => 'Orden actualizado exitosamente']);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error al actualizar el orden: ' . $e->getMessage()], 500);
+        }
     }
 }

@@ -2,6 +2,11 @@ import { Link, Head, usePage } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import Dropdown from '@/Components/Dropdown';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
+import SimpleMap from '@/Components/SimpleMap';
+import LocationModal from '@/Components/LocationModal';
+import { useGeolocation } from '@/hooks/useGeolocation';
+import mapboxService from '@/services/mapboxService';
+import { formatDateSafe, formatDateRange } from '@/utils/dateUtils';
 
 export default function Welcome({ auth, laravelVersion, phpVersion, user_with_children }) {
     const user = usePage().props.auth.user;
@@ -10,6 +15,25 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
     const [showLocationModal, setShowLocationModal] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [selectedChild, setSelectedChild] = useState(null);
+    const [selectedGroup, setSelectedGroup] = useState(null);
+    
+    // Estados para geolocalización
+    const [currentAddress, setCurrentAddress] = useState('Obteniendo ubicación...');
+    const [lastUpdate, setLastUpdate] = useState(null);
+    const [locationAccuracy, setLocationAccuracy] = useState(null);
+    const [lastLocation, setLastLocation] = useState(null);
+    const [locationLoading, setLocationLoading] = useState(false);
+    const [locationError, setLocationError] = useState(null);
+    
+    // Hook de geolocalización
+    const { 
+        location, 
+        loading: geoLoading, 
+        error: geoError, 
+        getCurrentPosition,
+        getAccuracyInfo,
+        formatCoordinates 
+    } = useGeolocation();
 
     // Redirección a login si no está autenticado
     useEffect(() => {
@@ -25,6 +49,15 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
         }
     }, [userWithChildren]);
 
+    // Inicializar grupo seleccionado cuando cambia el hijo
+    useEffect(() => {
+        if (selectedChild && selectedChild.inscripciones && selectedChild.inscripciones.length > 0) {
+            setSelectedGroup(selectedChild.inscripciones[0].grupo);
+        } else {
+            setSelectedGroup(null);
+        }
+    }, [selectedChild]);
+
     // Si no hay usuario, no renderizar nada mientras se redirige
     if (!user) {
         return null;
@@ -36,118 +69,68 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
         return () => clearTimeout(timer);
     }, []);
 
-    // Componente Modal mejorado
-    const LocationModal = () => (
-        <div className={`fixed inset-0 z-50 ${showLocationModal ? 'flex' : 'hidden'} items-center justify-center p-4`}>
-            <div 
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300" 
-                onClick={() => setShowLocationModal(false)}
-            ></div>
-            <div className="relative bg-white rounded-3xl p-8 w-full max-w-5xl max-h-[85vh] overflow-auto shadow-2xl transform transition-all duration-300 scale-100">
-                {/* Header del modal */}
-                <div className="flex justify-between items-center mb-6">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                            <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <h2 className="text-3xl font-bold text-gray-900">Ubicación en Tiempo Real</h2>
-                            <p className="text-gray-600">Leonardo Calderon</p>
-                        </div>
-                    </div>
-                    <button 
-                        onClick={() => setShowLocationModal(false)}
-                        className="w-12 h-12 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200"
-                    >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
+    // Cargar última ubicación del hijo seleccionado desde BD
+    useEffect(() => {
+        if (selectedChild && selectedChild.id) {
+            const fetchLastLocation = async () => {
+                setLocationLoading(true);
+                setLocationError(null);
+                
+                try {
+                    const response = await fetch(`/api/hijo-location/${selectedChild.id}/last`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                        },
+                        credentials: 'same-origin'
+                    });
 
-                {/* Mapa simulado mejorado */}
-                <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl h-96 mb-6 relative overflow-hidden shadow-inner">
-                    <div className="absolute inset-0 opacity-30">
-                        <div className="w-full h-full bg-repeat" style={{
-                            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.1'%3E%3Cpath d='m36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-                        }}></div>
-                    </div>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="text-center">
-                            <div className="relative">
-                                <div className="w-20 h-20 bg-red-500 rounded-full mx-auto mb-4 flex items-center justify-center shadow-lg animate-pulse">
-                                    <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    </svg>
-                                </div>
-                                <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
-                                    <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
-                                </div>
-                            </div>
-                            <p className="text-lg font-semibold text-gray-700">Ubicación Actual</p>
-                            <p className="text-sm text-gray-500 mt-1">Carrera 15 #85-23, Bogotá</p>
-                        </div>
-                    </div>
-                </div>
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
 
-                {/* Grid de información mejorada */}
-                <div className="grid gap-4 md:grid-cols-3 mb-6">
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                            <h3 className="font-semibold text-blue-900">Última Actualización</h3>
-                        </div>
-                        <p className="text-blue-800">Hace 30 segundos</p>
-                        <p className="text-xs text-blue-600 mt-1">Actualización automática cada 30s</p>
-                    </div>
+                    const data = await response.json();
+                    
+                    if (data.success && data.location) {
+                        setLastLocation(data.location);
+                        setLastUpdate(new Date(data.location.timestamp));
+                        
+                        // Geocodificación inversa con las coordenadas de la BD
+                        try {
+                            const addressData = await mapboxService.reverseGeocode(
+                                data.location.longitude, 
+                                data.location.latitude
+                            );
+                            setCurrentAddress(addressData.address);
+                        } catch (geoError) {
+                            console.error('Error en geocodificación inversa:', geoError);
+                            setCurrentAddress('Dirección no disponible');
+                        }
+                    } else {
+                        setLocationError(data.message || 'No se encontró ubicación');
+                        setCurrentAddress('Sin datos de ubicación');
+                        setLastLocation(null);
+                    }
+                } catch (error) {
+                    console.error('Error cargando ubicación del hijo:', error);
+                    setLocationError(error.message || 'Error al cargar ubicación');
+                    setCurrentAddress('Error al obtener ubicación');
+                    setLastLocation(null);
+                } finally {
+                    setLocationLoading(false);
+                }
+            };
 
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                            <h3 className="font-semibold text-green-900">Estado</h3>
-                        </div>
-                        <p className="text-green-800">Seguro y en ruta</p>
-                        <p className="text-xs text-green-600 mt-1">Velocidad: 45 km/h</p>
-                    </div>
+            fetchLastLocation();
+        }
+    }, [selectedChild]);
 
-                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                </svg>
-                            </div>
-                            <h3 className="font-semibold text-purple-900">Coordenadas</h3>
-                        </div>
-                        <p className="text-purple-800 text-sm">4.6097° N, 74.0817° W</p>
-                        <p className="text-xs text-purple-600 mt-1">Precisión: ±3 metros</p>
-                    </div>
-                </div>
+    // Asignar token globalmente para SimpleMap
+    useEffect(() => {
+        window.mapboxToken = 'pk.eyJ1IjoiZnJhbGNoIiwiYSI6ImNtZXJ0ZGk1bzBhcDcyaXBxOGpvY3F5bjcifQ.jBkOkpE1eJoYVs-g5BifWA';
+    }, []);
 
-                {/* Botones de acción */}
-                <div className="flex gap-3 justify-end">
-                    <button className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors duration-200">
-                        Compartir ubicación
-                    </button>
-                    <button className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors duration-200 shadow-lg hover:shadow-xl">
-                        Contactar al conductor
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
 
     // Componente de tarjeta mejorado
     const ServiceCard = ({ icon, title, description, status, link, color = "red", badge = null, onClick = null }) => {
@@ -437,31 +420,35 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                         <div className="flex flex-col lg:flex-row items-center gap-16">
                             <div className="flex-1 space-y-8 text-center lg:text-left">
                                 <div className="space-y-6">
-                                    {/* Selector de hijo con animación */}
-                                    {userWithChildren && userWithChildren.hijos && userWithChildren.hijos.length > 1 ? (
-                                        <div className="inline-flex items-center gap-3 bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg">
-                                            <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse"></div>
-                                            <select 
-                                                value={selectedChild?.id || ''} 
-                                                onChange={(e) => {
-                                                    const child = userWithChildren.hijos.find(hijo => hijo.id == e.target.value);
-                                                    setSelectedChild(child);
-                                                }}
-                                                className="text-blue-700 font-semibold text-sm bg-transparent border-none focus:outline-none cursor-pointer"
-                                            >
-                                                {userWithChildren.hijos.map(hijo => (
-                                                    <option key={hijo.id} value={hijo.id}>
-                                                        Seleccionar hijo: {hijo.nombres}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    ) : (
-                                        <div className="inline-flex items-center gap-3 bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg">
-                                            <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                                            <span className="text-green-700 font-semibold text-sm">Estado: Conectado</span>
-                                        </div>
-                                    )}
+                                    <div className="space-y-3">
+                                        {/* Selector de hijo con animación */}
+                                        {userWithChildren && userWithChildren.hijos && userWithChildren.hijos.length > 1 ? (
+                                            <div className="inline-flex items-center gap-3 bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg">
+                                                <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse"></div>
+                                                <select 
+                                                    value={selectedChild?.id || ''} 
+                                                    onChange={(e) => {
+                                                        const child = userWithChildren.hijos.find(hijo => hijo.id == e.target.value);
+                                                        setSelectedChild(child);
+                                                    }}
+                                                    className="text-blue-700 font-semibold text-sm bg-transparent border-none focus:outline-none cursor-pointer"
+                                                >
+                                                    {userWithChildren.hijos.map(hijo => (
+                                                        <option key={hijo.id} value={hijo.id}>
+                                                            Seleccionar hijo: {hijo.nombres}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        ) : userWithChildren && userWithChildren.hijos && userWithChildren.hijos.length === 1 ? (
+                                            <div className="inline-flex items-center gap-3 bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg">
+                                                <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                                                <span className="text-green-700 font-semibold text-sm">Hijo: {selectedChild?.nombres}</span>
+                                            </div>
+                                        ) : null}
+
+                                        
+                                    </div>
                                     
                                     <h1 className="text-5xl lg:text-6xl font-bold bg-gradient-to-r from-gray-900 via-red-800 to-red-600 bg-clip-text text-transparent leading-tight">
                                         ¡Hola {user?.name || 'Usuario'}!
@@ -472,12 +459,47 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                                         Gestiona tu perfil, rastrea ubicaciones y mantente conectado con nosotros.
                                     </p>
 
+                                   
+
                                     {/* Stats rápidas */}
                                     <div className="flex flex-wrap gap-6 justify-center lg:justify-start pt-4">
-                                        <div className="bg-white/80 backdrop-blur-sm rounded-2xl px-4 py-3 shadow-lg">
-                                            <div className="text-2xl font-bold text-red-600">20</div>
-                                            <div className="text-sm text-gray-600">Años viajando</div>
-                                        </div>
+                                        {/* Selector/Información de grupo */}
+                                        {selectedChild && selectedChild.inscripciones && selectedChild.inscripciones.length > 0 && (
+                                            selectedChild.inscripciones.length > 1 ? (
+                                                <div className="inline-flex items-center gap-3 bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg">
+                                                    <div className="w-3 h-3 bg-purple-400 rounded-full animate-pulse"></div>
+                                                    <select 
+                                                        value={selectedGroup?.id || ''} 
+                                                        onChange={(e) => {
+                                                            const group = selectedChild.inscripciones.find(insc => insc.grupo.id == e.target.value)?.grupo;
+                                                            setSelectedGroup(group);
+                                                        }}
+                                                        className="text-purple-700 font-semibold text-sm bg-transparent border-none focus:outline-none cursor-pointer"
+                                                    >
+                                                        {selectedChild.inscripciones.map(inscripcion => (
+                                                            <option key={inscripcion.grupo.id} value={inscripcion.grupo.id}>
+                                                                Grupo: {inscripcion.grupo.nombre}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            ) : (
+                                                <div className="inline-flex flex-col items-start gap-1 bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                                                        <span className="text-red-500 font-semibold text-sm">
+                                                            Grupo: {selectedChild.inscripciones[0].grupo.nombre}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-xs text-gray-600 ml-6">
+                                                        Paquete: {selectedChild.inscripciones[0].grupo.paquete?.nombre}
+                                                    </div>
+                                                    <div className="text-xs text-gray-600 ml-6">
+                                                        Fecha: {formatDateSafe(selectedChild.inscripciones[0].grupo.fecha_inicio)} - {formatDateSafe(selectedChild.inscripciones[0].grupo.fecha_fin)}
+                                                    </div>
+                                                </div>
+                                            )
+                                        )}
                                         <div className="bg-white/80 backdrop-blur-sm rounded-2xl px-4 py-3 shadow-lg">
                                             <div className="text-2xl font-bold text-green-600">100%</div>
                                             <div className="text-sm text-gray-600">Satisfacción</div>
@@ -486,7 +508,32 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                                             <div className="text-2xl font-bold text-blue-600">24/7</div>
                                             <div className="text-sm text-gray-600">Soporte</div>
                                         </div>
+                                        
                                     </div>
+                                     {/* Información detallada del grupo para múltiples grupos */}
+                                    {selectedChild && selectedChild.inscripciones && selectedChild.inscripciones.length > 1 && selectedGroup && (
+                                        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 shadow-lg border border-blue-200">
+                                            <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                                                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 7a3 3 0 11-6 0 3 3 0 016 0zM6 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                </svg>
+                                                Información del Grupo Seleccionado
+                                            </h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-semibold text-gray-700">Paquete:</span>
+                                                    <span className="text-gray-600">{selectedGroup.paquete?.nombre}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-semibold text-gray-700">Fechas:</span>
+                                                    <span className="text-gray-600">
+                                                        {formatDateSafe(selectedGroup.fecha_inicio)} - {formatDateSafe(selectedGroup.fecha_fin)}
+                                                    </span>
+                                                </div>
+                                              
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             
@@ -545,7 +592,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                             icon="/imgs/perfilvr.png"
                             title={selectedChild ? `Perfil ${selectedChild.nombres}` : "Perfil hijo"}
                             description="Gestiona tus datos personales, ficha médica y nutricional de forma segura."
-                            link="/perfil"
+                            link={selectedChild ? route('perfil.hijo', selectedChild.id) : "#"}
                             color="red"
                             status="active"
                         />
@@ -558,7 +605,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                                 </svg>
                             }
                             title={selectedChild ? `Ubicación ${selectedChild.nombres}` : "Ubicación"}
-                            description="Rastrea la ubicación de tu hijo en tiempo real durante el viaje con GPS de precisión."
+                            description="Rastrea la ubicación de tu hijo  durante el viaje con GPS de precisión."
                             onClick={() => setShowLocationModal(true)}
                             color="orange"
                             status="active"
@@ -617,12 +664,26 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                 </section>
 
                 {/* Location Modal */}
-                <LocationModal />
+                <LocationModal 
+                    isOpen={showLocationModal}
+                    onClose={() => setShowLocationModal(false)}
+                    selectedChild={selectedChild}
+                    lastLocation={lastLocation}
+                    setLastLocation={setLastLocation}
+                    currentAddress={currentAddress}
+                    setCurrentAddress={setCurrentAddress}
+                    lastUpdate={lastUpdate}
+                    setLastUpdate={setLastUpdate}
+                    locationLoading={locationLoading}
+                    setLocationLoading={setLocationLoading}
+                    locationError={locationError}
+                    setLocationError={setLocationError}
+                />
 
              
             </div>
 
-            <style jsx>{`
+            <style>{`
                 @keyframes marquee {
                     0% { transform: translate3d(100%, 0, 0); }
                     100% { transform: translate3d(-100%, 0, 0); }

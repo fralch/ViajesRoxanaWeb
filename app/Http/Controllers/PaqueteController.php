@@ -21,7 +21,7 @@ class PaqueteController extends Controller
             });
         }
 
-        $paquetes = $query->orderBy('created_at', 'desc')->paginate(10);
+        $paquetes = $query->with('recorridos')->orderBy('created_at', 'desc')->paginate(10);
 
         return Inertia::render('Paquetes/Index', [
             'paquetes' => $paquetes,

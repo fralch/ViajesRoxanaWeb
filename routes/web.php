@@ -12,6 +12,7 @@ use App\Http\Controllers\RecorridoPaqueteController;
 use App\Http\Controllers\GeolocalizacionController;
 use App\Http\Controllers\TrazabilidadController;
 use App\Http\Controllers\NotificacionController;
+use App\Http\Controllers\PerfilHijoController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
@@ -27,7 +28,7 @@ Route::get('/', function () {
     $userData = null;
     
     if ($user) {
-        $userData = $user->load('hijos');
+        $userData = $user->load(['hijos.inscripciones.grupo.paquete']);
     }
     
     return Inertia::render('Welcome', [
@@ -84,10 +85,33 @@ Route::middleware('auth')->group(function () {
     Route::resource('paquetes', PaqueteController::class);
     Route::resource('grupos', GrupoController::class);
     Route::resource('inscripciones', InscripcionController::class)->parameters(['inscripciones' => 'inscripcion']);
+    Route::patch('recorrido-paquetes/update-order', [RecorridoPaqueteController::class, 'updateOrder'])->name('recorrido-paquetes.update-order');
     Route::resource('recorrido-paquetes', RecorridoPaqueteController::class);
     Route::resource('geolocalizacion', GeolocalizacionController::class);
+    Route::get('geolocalizacion/{grupo}/history', [GeolocalizacionController::class, 'getGroupHistory'])->name('geolocalizacion.group.history');
     Route::resource('trazabilidad', TrazabilidadController::class);
     Route::resource('notificaciones', NotificacionController::class)->parameters(['notificaciones' => 'notificacion']);
+
+    // Rutas para perfil del hijo
+    Route::get('/perfil/hijo/{hijo}', [PerfilHijoController::class, 'show'])->name('perfil.hijo');
+    Route::post('/perfil/hijo/{hijo}/update', [PerfilHijoController::class, 'update'])->name('perfil.hijo.update');
+    
+    // Rutas API para Mapbox
+    Route::prefix('api/mapbox')->group(function () {
+        Route::get('/token', [App\Http\Controllers\MapboxController::class, 'getMapboxToken'])->name('mapbox.token');
+        Route::post('/reverse-geocode', [App\Http\Controllers\MapboxController::class, 'reverseGeocode'])->name('mapbox.reverse-geocode');
+        Route::post('/search-places', [App\Http\Controllers\MapboxController::class, 'searchPlaces'])->name('mapbox.search-places');
+        Route::post('/calculate-distance', [App\Http\Controllers\MapboxController::class, 'calculateDistance'])->name('mapbox.calculate-distance');
+        Route::post('/get-route', [App\Http\Controllers\MapboxController::class, 'getRoute'])->name('mapbox.get-route');
+    });
+    
+    // Rutas API para ubicación de hijos
+    Route::prefix('api/hijo-location')->group(function () {
+        Route::get('/{hijo}/last', [App\Http\Controllers\HijoLocationController::class, 'getLastLocation'])->name('hijo.location.last');
+        Route::get('/{hijo}/history', [App\Http\Controllers\HijoLocationController::class, 'getLocationHistory'])->name('hijo.location.history');
+        Route::get('/{hijo}/stats', [App\Http\Controllers\HijoLocationController::class, 'getLocationStats'])->name('hijo.location.stats');
+        Route::post('/{hijo}/simulate', [App\Http\Controllers\HijoLocationController::class, 'simulateLocationUpdate'])->name('hijo.location.simulate');
+    });
 
     Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');

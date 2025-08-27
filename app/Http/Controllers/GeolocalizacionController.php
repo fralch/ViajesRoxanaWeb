@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Geolocalizacion;
+use App\Models\Grupo;
+use App\Models\Inscripcion;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Carbon\Carbon;
 
 class GeolocalizacionController extends Controller
 {
@@ -13,56 +16,21 @@ class GeolocalizacionController extends Controller
      */
     public function index()
     {
-        return Inertia::render('Geolocalizacion/Index');
-    }
+        $grupos = Grupo::all();
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        return Inertia::render('Geolocalizacion/Create');
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Geolocalizacion $geolocalizacion)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Geolocalizacion $geolocalizacion)
-    {
-        return Inertia::render('Geolocalizacion/Edit', [
-            'geolocalizacion' => $geolocalizacion
+        return Inertia::render('Geolocalizacion/Index', [
+            'grupos' => $grupos
         ]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Geolocalizacion $geolocalizacion)
+    public function getGroupHistory(Grupo $grupo)
     {
-        //
-    }
+        $hijosIds = Inscripcion::where('grupo_id', $grupo->id)->pluck('hijo_id');
+        $locations = Geolocalizacion::whereIn('hijo_id', $hijosIds)
+            ->with('hijo:id,nombres')
+            ->orderBy('created_at', 'desc')
+            ->get();
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Geolocalizacion $geolocalizacion)
-    {
-        //
+        return response()->json($locations);
     }
 }
