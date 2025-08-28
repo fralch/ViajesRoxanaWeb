@@ -3,7 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Trazabilidad;
+use App\Models\Grupo;
+use App\Models\Notificacion;
+use App\Models\Inscripcion;
+use App\Models\Hijo;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 use Inertia\Inertia;
 
 class TrazabilidadController extends Controller
@@ -13,7 +19,115 @@ class TrazabilidadController extends Controller
      */
     public function index()
     {
-        return Inertia::render('Trazabilidad/Index');
+        // Obtener grupos activos (cuyo rango de fechas incluye la fecha actual)
+        $gruposActivos = Grupo::with(['paquete:id,nombre,destino'])
+            ->whereDate('fecha_inicio', '<=', Carbon::today())
+            ->whereDate('fecha_fin', '>=', Carbon::today())
+            ->get();
+
+        return Inertia::render('Trazabilidad/Index', [
+            'gruposActivos' => $gruposActivos
+        ]);
+    }
+
+    /**
+     * Mostrar interfaz para configurar mensaje de notificación
+     */
+    public function mensaje($grupoId)
+    {
+        $grupo = Grupo::with(['paquete:id,nombre,destino'])->findOrFail($grupoId);
+        
+        return Inertia::render('Trazabilidad/Mensaje', [
+            'grupo' => $grupo
+        ]);
+    }
+
+    /**
+     * Mostrar interfaz de escáner NFC
+     */
+    public function scanner($grupoId)
+    {
+        $grupo = Grupo::with(['paquete:id,nombre,destino'])->findOrFail($grupoId);
+        $mensaje = session('mensaje_notificacion', '');
+        
+        return Inertia::render('Trazabilidad/Scanner', [
+            'grupo' => $grupo,
+            'mensaje' => $mensaje
+        ]);
+    }
+
+    /**
+     * Procesar escaneo NFC y registrar trazabilidad
+     */
+    public function procesarEscaneo(Request $request)
+    {
+        $validated = $request->validate([
+            'grupo_id' => 'required|exists:grupos,id',
+            'hijo_id' => 'required|exists:hijos,id',
+            'descripcion' => 'required|string|max:500',
+            'latitud' => 'required|numeric|between:-90,90',
+            'longitud' => 'required|numeric|between:-180,180',
+            'nfc_id' => 'nullable|string|max:100'
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // Obtener información del grupo y paquete
+            $grupo = Grupo::with('paquete')->findOrFail($validated['grupo_id']);
+            
+            // Crear registro de trazabilidad
+            $trazabilidad = Trazabilidad::create([
+                'paquete_id' => $grupo->paquete_id,
+                'grupo_id' => $validated['grupo_id'],
+                'hijo_id' => $validated['hijo_id'],
+                'descripcion' => $validated['descripcion'],
+                'latitud' => $validated['latitud'],
+                'longitud' => $validated['longitud']
+            ]);
+
+            // Obtener información del hijo y su padre
+            $hijo = Hijo::with('user')->findOrFail($validated['hijo_id']);
+            
+            // Crear notificación para el padre
+            if ($hijo->user) {
+                Notificacion::create([
+                    'hijo_id' => $validated['hijo_id'],
+                    'user_id' => $hijo->user->id,
+                    'mensaje' => $validated['descripcion'],
+                    'celular' => $hijo->user->phone,
+                    'estado' => 'pendiente'
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Escaneo registrado exitosamente',
+                'trazabilidad' => $trazabilidad
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al procesar el escaneo: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtener hijos inscritos en un grupo
+     */
+    public function obtenerHijosGrupo($grupoId)
+    {
+        $hijos = Hijo::whereHas('inscripciones', function($query) use ($grupoId) {
+            $query->where('grupo_id', $grupoId);
+        })->select('id', 'nombres', 'doc_numero')->get();
+
+        return response()->json($hijos);
     }
 
     /**

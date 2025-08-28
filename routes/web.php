@@ -90,6 +90,13 @@ Route::middleware('auth')->group(function () {
     Route::resource('geolocalizacion', GeolocalizacionController::class);
     Route::get('geolocalizacion/{grupo}/history', [GeolocalizacionController::class, 'getGroupHistory'])->name('geolocalizacion.group.history');
     Route::resource('trazabilidad', TrazabilidadController::class);
+    
+    // Rutas específicas para interfaces móviles de trazabilidad
+    Route::get('trazabilidad/mensaje/{grupo}', [TrazabilidadController::class, 'mensaje'])->name('trazabilidad.mensaje');
+    Route::get('trazabilidad/scanner/{grupo}', [TrazabilidadController::class, 'scanner'])->name('trazabilidad.scanner');
+    Route::post('trazabilidad/procesar-escaneo', [TrazabilidadController::class, 'procesarEscaneo'])->name('trazabilidad.procesar-escaneo');
+    Route::get('trazabilidad/{grupo}/hijos', [TrazabilidadController::class, 'obtenerHijosGrupo'])->name('trazabilidad.hijos-grupo');
+    
     Route::resource('notificaciones', NotificacionController::class)->parameters(['notificaciones' => 'notificacion']);
 
     // Rutas para perfil del hijo
