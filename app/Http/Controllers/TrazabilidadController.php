@@ -279,7 +279,7 @@ class TrazabilidadController extends Controller
                 $mensajeWhatsApp .= "\n\n📍 Ubicación en tiempo real: https://maps.google.com/maps?q={$latitud},{$longitud}";
                 $mensajeWhatsApp .= "\nCoordenadas: Lat {$latitud}, Lng {$longitud}";
             }
-            $mensajeWhatsApp .= "\n\n📅 Grupo: {$grupo->nombre}";
+            $mensajeWhatsApp .= "\n\n🌎 Grupo: {$grupo->nombre}";
             $mensajeWhatsApp .= "\n⏰ Fecha y hora: " . now('America/Lima')->format('d/m/Y H:i:s');
             $mensajeWhatsApp .= "\n\n Sistema de Trazabilidad - Viajes Roxana";
 
