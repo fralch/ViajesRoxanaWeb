@@ -99,6 +99,7 @@ Route::middleware('auth')->group(function () {
     
     // Rutas específicas para interfaces móviles de trazabilidad
     Route::get('trazabilidad/mensaje/{grupo}', [TrazabilidadController::class, 'mensaje'])->name('trazabilidad.mensaje');
+    Route::post('trazabilidad/mensaje/{grupo}', [TrazabilidadController::class, 'guardarMensaje'])->name('trazabilidad.guardar-mensaje');
     Route::get('trazabilidad/scanner/{grupo}', [TrazabilidadController::class, 'scanner'])->name('trazabilidad.scanner');
     Route::post('trazabilidad/procesar-escaneo', [TrazabilidadController::class, 'procesarEscaneo'])->name('trazabilidad.procesar-escaneo');
     Route::get('trazabilidad/{grupo}/hijos', [TrazabilidadController::class, 'obtenerHijosGrupo'])->name('trazabilidad.hijos-grupo');
@@ -125,6 +126,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/{hijo}/stats', [App\Http\Controllers\HijoLocationController::class, 'getLocationStats'])->name('hijo.location.stats');
         Route::post('/{hijo}/simulate', [App\Http\Controllers\HijoLocationController::class, 'simulateLocationUpdate'])->name('hijo.location.simulate');
     });
+
+    Route::get('/api/hijos/by-dni/{dni}', [HijoController::class, 'getHijoByDni']);
 
     Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');

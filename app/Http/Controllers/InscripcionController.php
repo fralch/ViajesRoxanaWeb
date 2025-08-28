@@ -8,6 +8,7 @@ use App\Models\Grupo;
 use App\Models\User;
 use App\Models\Hijo;
 use App\Http\Requests\StoreInscripcionFormRequest;
+use App\Services\WhatsAppService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -318,7 +319,7 @@ class InscripcionController extends Controller
             
                 // Enviar WhatsApp si el usuario fue creado exitosamente
                 if ($user) {
-                    $this->enviarWhatsApp($validated['parent_phone'], $validated['parent_name'], $password);
+                    WhatsAppService::enviarWhatsApp($validated['parent_phone'], $validated['parent_name'], $password);
                 }
             } else {
                 // Si el usuario ya existe, actualizar datos si es necesario
@@ -375,109 +376,6 @@ class InscripcionController extends Controller
             ->with('success', 'Inscripción realizada exitosamente. Recibirás un correo con los detalles.');
     }
 
-    private function enviarWhatsApp($phone, $name, $password)
-    {
-        try {
-            \Log::info("Iniciando envío de WhatsApp", [
-                'phone' => $phone,
-                'name' => $name,
-                'timestamp' => now()
-            ]);
-
-            $mensaje = "¡Hola, {$name}! 🎉✨\n";
-            $mensaje .= "¡Estamos súper felices de tenerte con nosotros en ViajeRoxana! 💥 Tu aventura empieza aquí.\n\n";
-            $mensaje .= "Tus datos para entrar son:\n";
-            $mensaje .= "👤 Usuario: {$name}\n";
-            $mensaje .= "🔑 Contraseña: {$password}\n\n";
-            $mensaje .= "Ingresa fácilmente por aquí 👉 https://grupoviajesroxana.com/\n\n";
-            $mensaje .= "Si necesitas ayuda o tienes alguna duda, escríbenos. ¡Estamos para ti! 😄🙌\n\n";
-            $mensaje .= "¡Gracias por unirte y ser parte de esta gran comunidad! 🚀💙";
-            
-            $curl = curl_init();
-            $phoneWithCode = '51' . $phone;
-            
-            // Usar la URL que funciona (necesitarás obtener tu ID único)
-            $instanceId = config('services.whatsapp.instance_id', 'NTE5NjExMTQ0MDQ='); // Tu ID único
-            $apiUrl = "https://apiwsp.factiliza.com/v1/message/sendtext/{$instanceId}";
-            
-            \Log::info("Preparando request de WhatsApp", [
-                'phone_formatted' => $phoneWithCode,
-                'message_length' => strlen($mensaje),
-                'api_url' => $apiUrl
-            ]);
-            
-            curl_setopt_array($curl, [
-                CURLOPT_URL => $apiUrl,
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_ENCODING => "",
-                CURLOPT_MAXREDIRS => 10,
-                CURLOPT_TIMEOUT => 30,
-                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-                CURLOPT_CUSTOMREQUEST => "POST",
-                // Cambiar la estructura del JSON
-                CURLOPT_POSTFIELDS => json_encode([
-                    'number' => $phoneWithCode,  // Cambio de 'phone' a 'number'
-                    'text' => $mensaje           // Cambio de 'message' a 'text'
-                ]),
-                CURLOPT_HTTPHEADER => [
-                    "Authorization: Bearer " . config('services.whatsapp.token', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzOTM1NCIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6ImNvbnN1bHRvciJ9.MrhLuClAq-NTpvXx_72Zw9kTOIEqMiSRWVzPfeF64Xg'),
-                    "Content-Type: application/json"
-                ],
-            ]);
-
-            $response = curl_exec($curl);
-            $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-            $err = curl_error($curl);
-            
-            curl_close($curl);
-
-            \Log::info("Respuesta de API WhatsApp", [
-                'http_code' => $httpCode,
-                'response' => $response,
-                'phone' => $phoneWithCode
-            ]);
-
-            if ($err) {
-                \Log::error("Error cURL enviando WhatsApp", [
-                    'error' => $err,
-                    'phone' => $phoneWithCode,
-                    'name' => $name
-                ]);
-                return false;
-            }
-
-            $responseData = json_decode($response, true);
-            
-            if ($httpCode >= 200 && $httpCode < 300) {
-                \Log::info("WhatsApp enviado exitosamente", [
-                    'phone' => $phoneWithCode,
-                    'name' => $name,
-                    'response_data' => $responseData,
-                    'timestamp' => now()
-                ]);
-                return true;
-            } else {
-                \Log::error("Error en respuesta de API WhatsApp", [
-                    'http_code' => $httpCode,
-                    'response' => $response,
-                    'phone' => $phoneWithCode,
-                    'name' => $name
-                ]);
-                return false;
-            }
-            
-        } catch (\Exception $e) {
-            \Log::error("Excepción enviando WhatsApp", [
-                'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'phone' => $phone,
-                'name' => $name,
-                'line' => $e->getLine(),
-                'file' => $e->getFile()
-            ]);
-            return false;
-        }
-    }
 
 
     /**
