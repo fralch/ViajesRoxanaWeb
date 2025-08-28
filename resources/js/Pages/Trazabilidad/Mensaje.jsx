@@ -143,7 +143,7 @@ export default function Mensaje({ auth, grupo, errors = {} }) {
                     <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/>
                     </svg>
-                    Envío instantáneo por SMS
+                    Envío instantáneo por Whatsapp
                   </div>
                 </div>
               </div>
