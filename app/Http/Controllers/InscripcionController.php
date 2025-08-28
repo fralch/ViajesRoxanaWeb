@@ -319,7 +319,7 @@ class InscripcionController extends Controller
             
                 // Enviar WhatsApp si el usuario fue creado exitosamente
                 if ($user) {
-                    WhatsAppService::enviarWhatsApp($validated['parent_phone'], $validated['parent_name'], $password);
+                    WhatsAppService::enviarWhatsApp($validated['parent_phone'], $validated['parent_email'], $password);
                 }
             } else {
                 // Si el usuario ya existe, actualizar datos si es necesario

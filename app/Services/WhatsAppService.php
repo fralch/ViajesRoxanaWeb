@@ -15,14 +15,17 @@ class WhatsAppService
                 'timestamp' => now()
             ]);
 
-            $mensaje = "¡Hola, {$name}! 🎉✨\n";
-            $mensaje .= "¡Estamos súper felices de tenerte con nosotros en ViajeRoxana! 💥 Tu aventura empieza aquí.\n\n";
-            $mensaje .= "Tus datos para entrar son:\n";
+            $mensaje = "Viajes Roxana – Intranet de Padres\n\n";
+            $mensaje .= "👋 ¡Bienvenido, {$name}!\n\n";
             $mensaje .= "👤 Usuario: {$name}\n";
-            $mensaje .= "🔑 Contraseña: {$password}\n\n";
-            $mensaje .= "Ingresa fácilmente por aquí 👉 https://grupoviajesroxana.com/\n\n";
-            $mensaje .= "Si necesitas ayuda o tienes alguna duda, escríbenos. ¡Estamos para ti! 😄🙌\n\n";
-            $mensaje .= "¡Gracias por unirte y ser parte de esta gran comunidad! 🚀💙";
+            $mensaje .= "🔐 Contraseña: {$password}\n\n";
+            $mensaje .= "📲 Ingresa aquí : grupoviajesroxana.com\n\n";
+            $mensaje .= "👉 Con tu cuenta podrás:\n\n";
+            $mensaje .= "Ver la información y el itinerario de tu hijo.\n";
+            $mensaje .= "* Acceder a comunicados y novedades del viaje.\n";
+            $mensaje .= "* Registrar tus datos de contacto para recibir notificaciones en tiempo real durante el viaje.\n";
+            $mensaje .= "* La intranet es tu canal oficial para mantenerte informado y seguro.\n";
+            $mensaje .= "Si tienes dudas, contáctanos. Estamos para ti. 🤝";
             
             $curl = curl_init();
             $phoneWithCode = '51' . $phone;

@@ -88,7 +88,7 @@ const ChildCard = ({ index, child, updateChild, removeChild, canRemove }) => {
   return (
     <div className="mb-4 p-4 rounded-xl border border-gray-200 bg-gray-50/60">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-800">Hijo(a) {index + 1}</h3>
+        <h3 className="text-sm font-semibold text-gray-800">Hijo(a) </h3>
         {canRemove && (
           <button
             type="button"
@@ -175,6 +175,7 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
   const [existingUserData, setExistingUserData] = useState(null);
   const [dniValidated, setDniValidated] = useState(false);
   const [dniLoading, setDniLoading] = useState(false);
+  const [consentChecked, setConsentChecked] = useState(false);
 
   // Función para validar DNI - ÚNICA verificación
   const validateDNI = async (dni) => {
@@ -840,7 +841,7 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
                   onClick={addChild}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 focus:ring-2 focus:ring-red-500"
                 >
-                  <span aria-hidden>＋</span> Agregar otro hijo(a)
+                  <span aria-hidden>＋</span> Agregar hijo
                 </button>
               </div>
             </section>
@@ -852,6 +853,8 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
                   id="consent"
                   type="checkbox"
                   required
+                  checked={consentChecked}
+                  onChange={(e) => setConsentChecked(e.target.checked)}
                   className="mt-1 h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
                 />
                 <label htmlFor="consent" className="text-sm text-gray-700">
@@ -865,11 +868,11 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
             <div className="sticky bottom-0 pt-4 bg-gradient-to-t from-white/80 to-transparent">
               <button
                 type="submit"
-                disabled={processing || !dniValidated}
+                disabled={processing || !dniValidated || !consentChecked}
                 className={classNames(
                   "w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-semibold text-white",
                   "bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-300",
-                  (processing || !dniValidated) && "opacity-70 cursor-not-allowed"
+                  (processing || !dniValidated || !consentChecked) && "opacity-70 cursor-not-allowed"
                 )}
               >
                 {processing ? (
@@ -899,6 +902,8 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
                   </>
                 ) : !dniValidated ? (
                   <>Complete el DNI para continuar</>
+                ) : !consentChecked ? (
+                  <>Acepte los términos para continuar</>
                 ) : (
                   <>Enviar datos</>
                 )}
