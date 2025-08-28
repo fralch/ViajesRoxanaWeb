@@ -21,8 +21,8 @@ class GrupoSeeder extends Seeder
             $numGrupos = rand(2, 3);
             
             for ($i = 1; $i <= $numGrupos; $i++) {
-                // 50% de grupos en el pasado (para trazabilidad) y 50% en el futuro
-                if ($i <= ceil($numGrupos / 2)) {
+                // El primer grupo siempre en el pasado, el resto en el futuro
+                if ($i == 1) {
                     // Grupos pasados (1-60 días atrás)
                     $fechaInicio = now()->subDays(rand(1, 60));
                 } else {

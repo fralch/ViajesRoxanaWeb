@@ -13,19 +13,6 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call([
-            PaqueteSeeder::class,
-            GrupoSeeder::class,
-            HijoSeeder::class,
-            SaludFichaSeeder::class,
-            NutricionFichaSeeder::class,
-            InscripcionSeeder::class,
-            GeolocalizacionSeeder::class,
-            RecorridoPaqueteSeeder::class,
-            TrazabilidadSeeder::class,
-            NotificacionSeeder::class,
-        ]);
-
         // Crear usuarios de prueba
         User::firstOrCreate(
             ['email' => 'admin@viajesroxana.com'],
@@ -49,5 +36,18 @@ class DatabaseSeeder extends Seeder
 
         // Crear usuarios adicionales
         User::factory(8)->create();
+
+        $this->call([
+            PaqueteSeeder::class,
+            GrupoSeeder::class,
+            HijoSeeder::class,
+            SaludFichaSeeder::class,
+            NutricionFichaSeeder::class,
+            InscripcionSeeder::class,
+            GeolocalizacionSeeder::class,
+            RecorridoPaqueteSeeder::class,
+            TrazabilidadSeeder::class,
+            NotificacionSeeder::class,
+        ]);
     }
 }
