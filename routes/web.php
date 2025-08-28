@@ -99,6 +99,7 @@ Route::middleware('auth')->group(function () {
     
     // Rutas específicas para interfaces móviles de trazabilidad
     Route::get('trazabilidad/mensaje/{grupo}', [TrazabilidadController::class, 'mensaje'])->name('trazabilidad.mensaje');
+    Route::post('trazabilidad/mensaje/{grupo}', [TrazabilidadController::class, 'guardarMensaje'])->name('trazabilidad.guardar-mensaje');
     Route::get('trazabilidad/scanner/{grupo}', [TrazabilidadController::class, 'scanner'])->name('trazabilidad.scanner');
     Route::post('trazabilidad/procesar-escaneo', [TrazabilidadController::class, 'procesarEscaneo'])->name('trazabilidad.procesar-escaneo');
     Route::get('trazabilidad/{grupo}/hijos', [TrazabilidadController::class, 'obtenerHijosGrupo'])->name('trazabilidad.hijos-grupo');

@@ -32,10 +32,31 @@ export default function Mensaje({ auth, grupo, errors = {} }) {
 
     setProcessing(true);
     
-    // Guardar mensaje en sesión y navegar al scanner
-    sessionStorage.setItem('mensaje_notificacion', data.descripcion);
-    router.visit(`/trazabilidad/scanner/${grupo.id}`, {
-      onFinish: () => setProcessing(false)
+    // Enviar mensaje al backend para guardarlo en la tabla trazabilidad para todos los hijos del grupo
+    router.post(`/trazabilidad/mensaje/${grupo.id}`, {
+      descripcion: data.descripcion
+    }, {
+      onSuccess: (response) => {
+        // Mostrar mensaje de éxito
+        alert(`Mensaje configurado exitosamente para ${response.props.children_count || 'todos los'} niños del grupo.`);
+        
+        // Navegar al scanner
+        router.visit(`/trazabilidad/scanner/${grupo.id}`);
+      },
+      onError: (errors) => {
+        console.error('Error al guardar mensaje:', errors);
+        
+        if (errors.descripcion) {
+          alert('Error: ' + errors.descripcion);
+        } else {
+          alert('Error al configurar el mensaje. Por favor, intenta nuevamente.');
+        }
+        
+        setProcessing(false);
+      },
+      onFinish: () => {
+        // setProcessing se maneja en onError si hay error, o se navega si es exitoso
+      }
     });
   };
 
