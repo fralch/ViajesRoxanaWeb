@@ -6,6 +6,7 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import InputLabel from '@/Components/InputLabel';
 import InputError from '@/Components/InputError';
+import Swal from 'sweetalert2';
 
 export default function Mensaje({ auth, grupo, errors = {} }) {
   const [data, setData] = useState({
@@ -26,7 +27,12 @@ export default function Mensaje({ auth, grupo, errors = {} }) {
     e.preventDefault();
     
     if (!data.descripcion.trim()) {
-      alert('Por favor, ingresa un mensaje para enviar.');
+      Swal.fire({
+        icon: 'warning',
+        title: 'Campo requerido',
+        text: 'Por favor, ingresa un mensaje para enviar.',
+        confirmButtonColor: '#059669'
+      });
       return;
     }
 
@@ -36,26 +42,26 @@ export default function Mensaje({ auth, grupo, errors = {} }) {
     router.post(`/trazabilidad/mensaje/${grupo.id}`, {
       descripcion: data.descripcion
     }, {
-      onSuccess: (response) => {
-        // Mostrar mensaje de éxito
-        alert(`Mensaje configurado exitosamente para ${response.props.children_count || 'todos los'} niños del grupo.`);
-        
-        // Navegar al scanner
-        router.visit(`/trazabilidad/scanner/${grupo.id}`);
-      },
       onError: (errors) => {
         console.error('Error al guardar mensaje:', errors);
         
         if (errors.descripcion) {
-          alert('Error: ' + errors.descripcion);
+          Swal.fire({
+            icon: 'error',
+            title: 'Error de validación',
+            text: errors.descripcion,
+            confirmButtonColor: '#059669'
+          });
         } else {
-          alert('Error al configurar el mensaje. Por favor, intenta nuevamente.');
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Error al configurar el mensaje. Por favor, intenta nuevamente.',
+            confirmButtonColor: '#059669'
+          });
         }
         
         setProcessing(false);
-      },
-      onFinish: () => {
-        // setProcessing se maneja en onError si hay error, o se navega si es exitoso
       }
     });
   };

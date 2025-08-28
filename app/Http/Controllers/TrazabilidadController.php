@@ -89,11 +89,11 @@ class TrazabilidadController extends Controller
             // Guardar también en sesión para compatibilidad con el scanner actual
             session(['mensaje_notificacion' => $validated['descripcion']]);
 
-            return response()->json([
+            // Redirigir al scanner con mensaje de éxito
+            return redirect()->route('trazabilidad.scanner', $grupoId)->with([
                 'success' => true,
                 'message' => 'Mensaje configurado exitosamente para todos los niños del grupo',
-                'children_count' => count($registrosTrazabilidad),
-                'redirect_url' => route('trazabilidad.scanner', $grupoId)
+                'children_count' => count($registrosTrazabilidad)
             ]);
 
         } catch (\Exception $e) {
@@ -105,10 +105,9 @@ class TrazabilidadController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
             
-            return response()->json([
-                'success' => false,
-                'message' => 'Error interno del servidor: ' . $e->getMessage()
-            ], 500);
+            return back()->withErrors([
+                'descripcion' => 'Error al configurar el mensaje: ' . $e->getMessage()
+            ])->withInput();
         }
     }
 
