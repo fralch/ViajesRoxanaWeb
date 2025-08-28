@@ -16,6 +16,8 @@ class TrazabilidadSeeder extends Seeder
     {
         $inscripciones = Inscripcion::with(['grupo', 'hijo'])->get();
         
+        echo "DEBUG: Total inscripciones encontradas: " . $inscripciones->count() . "\n";
+        
         $actividades = [
             'Llegada al punto de encuentro',
             'Abordaje del transporte',
@@ -43,8 +45,13 @@ class TrazabilidadSeeder extends Seeder
         ];
         
         foreach ($inscripciones as $inscripcion) {
+            echo "DEBUG: Procesando inscripción ID: " . $inscripcion->id . "\n";
+            echo "DEBUG: Fecha inicio grupo: " . $inscripcion->grupo->fecha_inicio . "\n";
+            echo "DEBUG: Fecha actual: " . now() . "\n";
+            
             // Solo crear trazabilidad para grupos que ya iniciaron (fechas pasadas)
             if ($inscripcion->grupo->fecha_inicio <= now()) {
+                echo "DEBUG: Grupo cumple condición de fecha, creando registros...\n";
                 $numRegistros = rand(3, 8); // Entre 3 y 8 registros por niño
                 
                 // Determinar coordenadas base según el destino del paquete
@@ -76,8 +83,15 @@ class TrazabilidadSeeder extends Seeder
                         'latitud' => $coordenadaBase['lat'] + $latVariacion,
                         'longitud' => $coordenadaBase['lng'] + $lngVariacion,
                     ]);
+                    echo "DEBUG: Registro de trazabilidad creado para hijo ID: " . $inscripcion->hijo_id . "\n";
                 }
+                echo "DEBUG: Total registros creados para esta inscripción: " . $numRegistros . "\n";
+            } else {
+                echo "DEBUG: Grupo NO cumple condición de fecha, saltando...\n";
             }
         }
+        
+        $totalTrazabilidad = \App\Models\Trazabilidad::count();
+        echo "DEBUG: Total registros de trazabilidad en la BD: " . $totalTrazabilidad . "\n";
     }
 }

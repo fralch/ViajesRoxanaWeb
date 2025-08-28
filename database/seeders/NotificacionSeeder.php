@@ -15,7 +15,7 @@ class NotificacionSeeder extends Seeder
      */
     public function run(): void
     {
-        $hijos = Hijo::with('usuario')->get();
+        $hijos = Hijo::with('user')->get();
         
         $tiposMensajes = [
             'Su hijo {nombre} ha llegado seguro al destino.',
@@ -44,7 +44,7 @@ class NotificacionSeeder extends Seeder
                 $numerosEmergencia = $hijo->nums_emergencia;
                 $celular = is_array($numerosEmergencia) && count($numerosEmergencia) > 0 
                     ? $numerosEmergencia[array_rand($numerosEmergencia)]
-                    : $hijo->usuario->phone;
+                    : $hijo->user->phone;
                 
                 Notificacion::create([
                     'hijo_id' => $hijo->id,

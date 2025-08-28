@@ -21,7 +21,14 @@ class GrupoSeeder extends Seeder
             $numGrupos = rand(2, 3);
             
             for ($i = 1; $i <= $numGrupos; $i++) {
-                $fechaInicio = now()->addDays(rand(30, 180));
+                // 50% de grupos en el pasado (para trazabilidad) y 50% en el futuro
+                if ($i <= ceil($numGrupos / 2)) {
+                    // Grupos pasados (1-60 días atrás)
+                    $fechaInicio = now()->subDays(rand(1, 60));
+                } else {
+                    // Grupos futuros (30-180 días adelante)
+                    $fechaInicio = now()->addDays(rand(30, 180));
+                }
                 $fechaFin = $fechaInicio->copy()->addDays(rand(3, 7));
                 
                 Grupo::create([

@@ -17,6 +17,8 @@ class DatabaseSeeder extends Seeder
             PaqueteSeeder::class,
             GrupoSeeder::class,
             HijoSeeder::class,
+            SaludFichaSeeder::class,
+            NutricionFichaSeeder::class,
             InscripcionSeeder::class,
             GeolocalizacionSeeder::class,
             RecorridoPaqueteSeeder::class,
@@ -25,19 +27,25 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // Crear usuarios de prueba
-        User::factory()->create([
-            'name' => 'Administrador',
-            'email' => 'admin@viajesroxana.com',
-            'phone' => '3001234567',
-            'is_admin' => true,
-        ]);
+        User::firstOrCreate(
+            ['email' => 'admin@viajesroxana.com'],
+            [
+                'name' => 'Administrador',
+                'phone' => '3001234567',
+                'is_admin' => true,
+                'password' => bcrypt('password'),
+            ]
+        );
 
-        User::factory()->create([
-            'name' => 'Usuario Test',
-            'email' => 'test@example.com',
-            'phone' => '3007654321',
-            'is_admin' => false,
-        ]);
+        User::firstOrCreate(
+            ['email' => 'test@example.com'],
+            [
+                'name' => 'Usuario Test',
+                'phone' => '3007654321',
+                'is_admin' => false,
+                'password' => bcrypt('password'),
+            ]
+        );
 
         // Crear usuarios adicionales
         User::factory(8)->create();
