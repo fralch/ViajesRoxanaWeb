@@ -123,11 +123,26 @@ class TrazabilidadController extends Controller
      */
     public function obtenerHijosGrupo($grupoId)
     {
-        $hijos = Hijo::whereHas('inscripciones', function($query) use ($grupoId) {
-            $query->where('grupo_id', $grupoId);
-        })->select('id', 'nombres', 'doc_numero')->get();
+        $grupo = Grupo::findOrFail($grupoId);
+        
+        $inscripciones = $grupo->inscripciones()->with(['hijo', 'user'])->get();
+        
+        // Formatear los datos para el frontend
+        $hijosConPadres = $inscripciones->map(function($inscripcion) {
+            return [
+                'id' => $inscripcion->hijo->id,
+                'nombres' => $inscripcion->hijo->nombres,
+                'doc_numero' => $inscripcion->hijo->doc_numero,
+                'user' => $inscripcion->user ? [
+                    'id' => $inscripcion->user->id,
+                    'name' => $inscripcion->user->name,
+                    'email' => $inscripcion->user->email,
+                    'phone' => $inscripcion->user->phone,
+                ] : null
+            ];
+        });
 
-        return response()->json($hijos);
+        return response()->json($hijosConPadres);
     }
 
     /**

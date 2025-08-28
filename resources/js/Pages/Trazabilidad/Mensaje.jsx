@@ -43,8 +43,6 @@ export default function Mensaje({ auth, grupo, errors = {} }) {
     router.visit('/trazabilidad');
   };
 
-
-
   return (
     <AuthenticatedLayout header="Configurar Mensaje">
       <Head title="Trazabilidad - Configurar Mensaje" />
@@ -121,6 +119,37 @@ export default function Mensaje({ auth, grupo, errors = {} }) {
             </div>
           </div>
 
+          {/* Campo de mensaje personalizado - MOVIDO AQUÍ */}
+          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 mb-6 lg:mb-8">
+            <div className="flex items-center mb-4">
+              <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+              </div>
+              <InputLabel htmlFor="descripcion" value="Mensaje personalizado" className="text-lg font-semibold" />
+            </div>
+            
+            <textarea
+              id="descripcion"
+              value={data.descripcion}
+              onChange={(e) => setData(prev => ({ ...prev, descripcion: e.target.value }))}
+              className="w-full px-4 py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-base"
+              rows={5}
+              placeholder="Escribe tu mensaje personalizado aquí... Ejemplo: Los niños han llegado de forma segura a [ubicación] y están participando en las actividades programadas."
+            />
+            
+            <InputError message={errors.descripcion} className="mt-2" />
+            
+            <div className="flex justify-between items-center mt-3 text-sm text-gray-500">
+              <span>Este mensaje se enviará junto con la ubicación GPS</span>
+              <span className={`font-medium ${
+                (data.descripcion?.length || 0) > 450 ? 'text-red-500' : 
+                (data.descripcion?.length || 0) > 400 ? 'text-orange-500' : 'text-gray-500'
+              }`}>{data.descripcion?.length || 0}/500</span>
+            </div>
+          </div>
+
           {/* Descripción del proceso */}
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 lg:p-8 mb-6 lg:mb-8">
             <div className="flex items-start">
@@ -150,43 +179,10 @@ export default function Mensaje({ auth, grupo, errors = {} }) {
             </div>
           </div>
 
-          {/* Formulario de mensaje */}
+          {/* Formulario con botones de acción */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
             <div className="lg:col-span-2">
               <form onSubmit={handleSubmit} className="space-y-6">
-
-
-                {/* Campo de mensaje personalizado */}
-                <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-                  <div className="flex items-center mb-4">
-                    <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
-                      <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                      </svg>
-                    </div>
-                    <InputLabel htmlFor="descripcion" value="Mensaje personalizado" className="text-lg font-semibold" />
-                  </div>
-                  
-                  <textarea
-                    id="descripcion"
-                    value={data.descripcion}
-                    onChange={(e) => setData(prev => ({ ...prev, descripcion: e.target.value }))}
-                    className="w-full px-4 py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-base"
-                    rows={5}
-                    placeholder="Escribe tu mensaje personalizado aquí... Ejemplo: Los niños han llegado de forma segura a [ubicación] y están participando en las actividades programadas."
-                  />
-                  
-                  <InputError message={errors.descripcion} className="mt-2" />
-                  
-                  <div className="flex justify-between items-center mt-3 text-sm text-gray-500">
-                    <span>Este mensaje se enviará junto con la ubicación GPS</span>
-                    <span className={`font-medium ${
-                      (data.descripcion?.length || 0) > 450 ? 'text-red-500' : 
-                      (data.descripcion?.length || 0) > 400 ? 'text-orange-500' : 'text-gray-500'
-                    }`}>{data.descripcion?.length || 0}/500</span>
-                  </div>
-                </div>
-
                 {/* Botones de acción */}
                 <div className="flex flex-col sm:flex-row gap-4">
                   <SecondaryButton 
@@ -255,7 +251,7 @@ export default function Mensaje({ auth, grupo, errors = {} }) {
                     </div>
                     <div>
                       <p className="font-medium text-sm">Notificación enviada</p>
-                      <p className="text-xs text-gray-600">Los padres reciben SMS con ubicación</p>
+                      <p className="text-xs text-gray-600">Los padres reciben Whatsapp con ubicación</p>
                     </div>
                   </div>
                 </div>
