@@ -7,6 +7,7 @@ use App\Models\Grupo;
 use App\Models\Notificacion;
 use App\Models\Inscripcion;
 use App\Models\Hijo;
+use App\Services\WhatsAppService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -300,6 +301,16 @@ class TrazabilidadController extends Controller
                 'celular' => $padre->phone,
                 'estado' => 'pendiente'
             ]);
+
+            // Enviar WhatsApp directamente
+            $whatsappEnviado = WhatsAppService::enviarMensajeTrazabilidad($padre->phone, $mensajeWhatsApp);
+            
+            // Actualizar el estado de la notificación según el resultado del envío
+            if ($whatsappEnviado) {
+                $notificacion->update(['estado' => 'enviado']);
+            } else {
+                $notificacion->update(['estado' => 'fallido']);
+            }
 
             DB::commit();
 
