@@ -43,18 +43,7 @@ export default function Mensaje({ auth, grupo, errors = {} }) {
     router.visit('/trazabilidad');
   };
 
-  const mensajesPredefinidos = [
-    "Los niños han llegado al destino de forma segura",
-    "Iniciando actividades del día",
-    "Hora del almuerzo - todos los niños están bien",
-    "Regresando al punto de encuentro",
-    "Actividad completada exitosamente",
-    "Parada técnica - todo en orden"
-  ];
 
-  const seleccionarMensajePredefinido = (mensaje) => {
-    setData(prev => ({ ...prev, descripcion: mensaje }));
-  };
 
   return (
     <AuthenticatedLayout header="Configurar Mensaje">
@@ -165,34 +154,7 @@ export default function Mensaje({ auth, grupo, errors = {} }) {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
             <div className="lg:col-span-2">
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Mensajes predefinidos */}
-                <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-                  <div className="flex items-center mb-4">
-                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
-                      <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
-                      </svg>
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900">Mensajes sugeridos</h3>
-                  </div>
-                  <div className="grid grid-cols-1 gap-3">
-                    {mensajesPredefinidos.map((mensaje, index) => (
-                      <button
-                        key={index}
-                        type="button"
-                        onClick={() => seleccionarMensajePredefinido(mensaje)}
-                        className="w-full text-left p-4 bg-gray-50 hover:bg-green-50 rounded-lg border border-gray-200 hover:border-green-300 transition-all duration-200 text-sm lg:text-base group"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="group-hover:text-green-700">{mensaje}</span>
-                          <svg className="w-4 h-4 text-gray-400 group-hover:text-green-500 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                          </svg>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+
 
                 {/* Campo de mensaje personalizado */}
                 <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
@@ -208,7 +170,7 @@ export default function Mensaje({ auth, grupo, errors = {} }) {
                   <textarea
                     id="descripcion"
                     value={data.descripcion}
-                    onChange={(e) => setData('descripcion', e.target.value)}
+                    onChange={(e) => setData(prev => ({ ...prev, descripcion: e.target.value }))}
                     className="w-full px-4 py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-base"
                     rows={5}
                     placeholder="Escribe tu mensaje personalizado aquí... Ejemplo: Los niños han llegado de forma segura a [ubicación] y están participando en las actividades programadas."
@@ -219,9 +181,9 @@ export default function Mensaje({ auth, grupo, errors = {} }) {
                   <div className="flex justify-between items-center mt-3 text-sm text-gray-500">
                     <span>Este mensaje se enviará junto con la ubicación GPS</span>
                     <span className={`font-medium ${
-                      data.descripcion.length > 450 ? 'text-red-500' : 
-                      data.descripcion.length > 400 ? 'text-orange-500' : 'text-gray-500'
-                    }`}>{data.descripcion.length}/500</span>
+                      (data.descripcion?.length || 0) > 450 ? 'text-red-500' : 
+                      (data.descripcion?.length || 0) > 400 ? 'text-orange-500' : 'text-gray-500'
+                    }`}>{data.descripcion?.length || 0}/500</span>
                   </div>
                 </div>
 

@@ -47,6 +47,11 @@ Route::post('/paquete/{paquete}/grupo/{grupo}/form', [InscripcionController::cla
 // Ruta para verificar si existe un usuario
 Route::post('/check-user-exists', [InscripcionController::class, 'checkUserExists'])->name('check.user.exists');
 
+// Ruta pública para confirmación de trazabilidad por DNI (NFC)
+Route::get('/nfc/{dni_hijo}', [TrazabilidadController::class, 'confirmacionTrazabilidad'])
+    ->name('trazabilidad.confirmacion')
+    ->where('dni_hijo', '[0-9]+');
+
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
@@ -89,6 +94,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('recorrido-paquetes', RecorridoPaqueteController::class);
     Route::resource('geolocalizacion', GeolocalizacionController::class);
     Route::get('geolocalizacion/{grupo}/history', [GeolocalizacionController::class, 'getGroupHistory'])->name('geolocalizacion.group.history');
+    
     Route::resource('trazabilidad', TrazabilidadController::class);
     
     // Rutas específicas para interfaces móviles de trazabilidad

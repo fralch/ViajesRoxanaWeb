@@ -131,6 +131,81 @@ class TrazabilidadController extends Controller
     }
 
     /**
+     * Mostrar confirmación de trazabilidad por DNI del hijo
+     */
+    public function confirmacionTrazabilidad($dni_hijo)
+    {
+        // Buscar el hijo por DNI
+        $hijo = Hijo::where('doc_numero', $dni_hijo)->first();
+        
+        if (!$hijo) {
+            abort(404, 'Niño no encontrado');
+        }
+
+        // Obtener el padre del hijo
+        $padre = $hijo->user; // El padre es el usuario relacionado con el hijo
+        
+        if (!$padre) {
+            abort(404, 'Padre no encontrado');
+        }
+
+        // Obtener el grupo activo del hijo (si existe) a través de las inscripciones
+        $grupo = Grupo::whereHas('inscripciones', function($query) use ($hijo) {
+                $query->where('hijo_id', $hijo->id);
+            })
+            ->whereDate('fecha_inicio', '<=', now())
+            ->whereDate('fecha_fin', '>=', now())
+            ->with('paquete')
+            ->first();
+
+        // Obtener el último mensaje configurado para el grupo (si existe)
+        $mensaje = null;
+        if ($grupo) {
+            $ultimaTrazabilidad = Trazabilidad::where('grupo_id', $grupo->id)
+                ->whereNotNull('descripcion')
+                ->latest()
+                ->first();
+            
+            if ($ultimaTrazabilidad) {
+                $mensaje = $ultimaTrazabilidad->descripcion;
+            }
+        }
+
+        // Si no hay mensaje del grupo, usar mensaje por defecto
+        if (!$mensaje) {
+            $mensaje = "Su hijo {$hijo->nombres} {$hijo->apellidos} ha sido registrado en el sistema de trazabilidad.";
+        }
+
+        // Registrar la trazabilidad automáticamente
+        if ($grupo) {
+            Trazabilidad::create([
+                'paquete_id' => $grupo->paquete_id, // Agregar paquete_id que es requerido
+                'grupo_id' => $grupo->id,
+                'hijo_id' => $hijo->id,
+                'descripcion' => $mensaje,
+                'latitud' => request()->input('lat', 0), // Se puede obtener por JavaScript
+                'longitud' => request()->input('lng', 0),
+            ]);
+
+            // Crear notificación para el padre usando el esquema correcto
+            Notificacion::create([
+                'hijo_id' => $hijo->id,
+                'user_id' => $padre->id,
+                'mensaje' => $mensaje,
+                'celular' => $padre->phone,
+                'estado' => 'pendiente'
+            ]);
+        }
+
+        return Inertia::render('Trazabilidad/Confirmacion', [
+            'hijo' => $hijo,
+            'padre' => $padre,
+            'mensaje' => $mensaje,
+            'grupo' => $grupo,
+        ]);
+    }
+
+    /**
      * Show the form for creating a new resource.
      */
     public function create()

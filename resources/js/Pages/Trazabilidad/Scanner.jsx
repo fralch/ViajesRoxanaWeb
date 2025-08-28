@@ -5,30 +5,15 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 
 export default function Scanner({ auth, grupo, mensaje, errors = {} }) {
-  const [hijosGrupo, setHijosGrupo] = useState([]);
-  const [hijoSeleccionado, setHijoSeleccionado] = useState(null);
   const [scanning, setScanning] = useState(false);
   const [nfcSupported, setNfcSupported] = useState(false);
   const [location, setLocation] = useState(null);
   const [locationError, setLocationError] = useState(null);
   const [registros, setRegistros] = useState([]);
   const [processing, setProcessing] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [mensajeActual, setMensajeActual] = useState(mensaje || '');
 
   useEffect(() => {
-    // Cargar hijos del grupo desde el backend
-    fetch(route('trazabilidad.hijos-grupo', grupo.id))
-      .then(response => response.json())
-      .then(data => {
-        setHijosGrupo(data);
-        setLoading(false);
-      })
-      .catch(error => {
-        console.error('Error al cargar hijos:', error);
-        setLoading(false);
-      });
-
     // Obtener mensaje de la sesión si no viene del backend
     if (!mensaje) {
       const mensajeSesion = sessionStorage.getItem('mensaje_notificacion');
@@ -110,56 +95,39 @@ export default function Scanner({ auth, grupo, mensaje, errors = {} }) {
     setProcessing(true);
     
     try {
+      const dniFromNfc = nfcId.replace('NFC_', ''); // Extraer DNI del ID NFC
+      
       // Simular registro de trazabilidad
       const nuevoRegistro = {
         id: Date.now(),
         nfc_id: nfcId,
+        dni: dniFromNfc,
         timestamp: new Date().toLocaleTimeString('es-ES'),
         latitud: location.latitud,
         longitud: location.longitud,
         descripcion: mensajeActual || 'Ubicación registrada',
-        estado: 'registrado'
+        estado: 'procesando'
       };
       
       setRegistros(prev => [nuevoRegistro, ...prev]);
       
-      // Llamada real al backend
-       const response = await fetch(route('trazabilidad.procesar-escaneo'), {
-         method: 'POST',
-         headers: {
-           'Content-Type': 'application/json',
-           'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-         },
-         body: JSON.stringify({
-           grupo_id: grupo.id,
-           hijo_id: hijoSeleccionado?.id || nfcId,
-           descripcion: mensajeActual,
-           latitud: location.latitud,
-           longitud: location.longitud,
-           nfc_id: nfcId
-         })
-       });
-
-       const result = await response.json();
-       
-       if (!result.success) {
-         throw new Error(result.message || 'Error al procesar el escaneo');
-       }
+      // Abrir en nueva pestaña la URL del niño con ubicación
+      window.open(`/trazabilidad/${dniFromNfc}?lat=${location.latitud}&lng=${location.longitud}`, '_blank');
       
-      // Simular envío de notificación
+      // Actualizar estado del registro
       setTimeout(() => {
         setRegistros(prev => 
           prev.map(reg => 
             reg.id === nuevoRegistro.id 
-              ? { ...reg, estado: 'notificado' }
+              ? { ...reg, estado: 'completado' }
               : reg
           )
         );
-      }, 2000);
+      }, 1000);
       
     } catch (error) {
       console.error('Error procesando escaneo:', error);
-      alert('Error al procesar el escaneo');
+      alert('Error al procesar el escaneo: ' + error.message);
     } finally {
       setProcessing(false);
     }
@@ -180,7 +148,15 @@ export default function Scanner({ auth, grupo, mensaje, errors = {} }) {
 
   // Simular escaneo para demo (cuando NFC no está disponible)
   const simularEscaneo = () => {
-    const nfcIdSimulado = `NFC_${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    // En la realidad, el NFC contendría el DNI del niño
+    const simulatedDNI = prompt('Simular escaneo NFC - Ingrese DNI del niño:');
+    
+    if (!simulatedDNI) {
+      alert('Escaneo cancelado');
+      return;
+    }
+    
+    const nfcIdSimulado = `NFC_${simulatedDNI}`;
     procesarEscaneoNFC(nfcIdSimulado);
   };
 
@@ -258,57 +234,7 @@ export default function Scanner({ auth, grupo, mensaje, errors = {} }) {
                 </div>
               </div>
 
-              {/* Selección de hijo */}
-              {!loading && hijosGrupo.length > 0 && (
-                <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-                  <div className="flex items-center mb-4">
-                    <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
-                      <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                      </svg>
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900">Seleccionar Niño</h3>
-                  </div>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                    {hijosGrupo.map((hijo) => (
-                      <button
-                        key={hijo.id}
-                        onClick={() => setHijoSeleccionado(hijo)}
-                        className={`text-left p-4 rounded-lg border-2 transition-all duration-200 ${
-                          hijoSeleccionado?.id === hijo.id
-                            ? 'border-indigo-500 bg-indigo-50 shadow-md'
-                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 hover:shadow-sm'
-                        }`}
-                      >
-                        <div className="flex items-center">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 ${
-                            hijoSeleccionado?.id === hijo.id ? 'bg-indigo-100' : 'bg-gray-100'
-                          }`}>
-                            <svg className={`w-5 h-5 ${
-                              hijoSeleccionado?.id === hijo.id ? 'text-indigo-600' : 'text-gray-400'
-                            }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                            </svg>
-                          </div>
-                          <div>
-                            <div className={`font-medium ${
-                              hijoSeleccionado?.id === hijo.id ? 'text-indigo-900' : 'text-gray-900'
-                            }`}>{hijo.nombres}</div>
-                            <div className="text-sm text-gray-500">Documento: {hijo.doc_numero}</div>
-                          </div>
-                          {hijoSeleccionado?.id === hijo.id && (
-                            <div className="ml-auto">
-                              <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/>
-                              </svg>
-                            </div>
-                          )}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+
 
               {/* Estado de ubicación */}
               <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
@@ -409,38 +335,50 @@ export default function Scanner({ auth, grupo, mensaje, errors = {} }) {
                   </p>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  {!scanning ? (
-                    <>
-                      <PrimaryButton 
-                        onClick={iniciarEscaneoNFC}
-                        disabled={!location}
-                        className="bg-purple-600 hover:bg-purple-700 focus:bg-purple-700 active:bg-purple-900 px-8 py-4 text-lg font-semibold"
-                      >
-                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                        </svg>
-                        {nfcSupported ? 'Iniciar Escaneo NFC' : 'NFC No Disponible'}
-                      </PrimaryButton>
-                      
-                      {!nfcSupported && (
-                        <SecondaryButton onClick={simularEscaneo} disabled={!location} className="px-8 py-4 text-lg">
-                          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-                          </svg>
-                          Simular Escaneo
-                        </SecondaryButton>
-                      )}
-                    </>
-                  ) : (
-                    <SecondaryButton onClick={detenerEscaneo} className="px-8 py-4 text-lg bg-red-50 hover:bg-red-100 text-red-700 border-red-200">
-                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9l6 6m0-6L9 15"/>
-                      </svg>
-                      Detener Escaneo
-                    </SecondaryButton>
-                  )}
+                <div className="text-center">
+                    <button
+                        onClick={nfcSupported ? iniciarEscaneoNFC : simularEscaneo}
+                        disabled={scanning || processing || !location}
+                        className={`inline-flex items-center px-8 py-4 rounded-2xl text-lg font-semibold transition-all duration-300 transform hover:scale-105 ${
+                            scanning || processing || !location
+                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                : 'bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl'
+                        }`}
+                    >
+                        {scanning || processing ? (
+                            <>
+                                <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent mr-3"></div>
+                                {scanning ? 'Escaneando...' : 'Procesando...'}
+                            </>
+                        ) : (
+                            <>
+                                <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                </svg>
+                                {nfcSupported ? 'Escanear Pulsera NFC' : 'Simular Escaneo NFC'}
+                            </>
+                        )}
+                    </button>
+                    
+                    <p className="text-sm text-gray-600 mt-3">
+                        {nfcSupported 
+                            ? 'Acerca la pulsera NFC al dispositivo para registrar la ubicación'
+                            : 'Modo simulación: ingresa el DNI del niño para probar la funcionalidad'
+                        }
+                    </p>
+                    
+                    {scanning && (
+                        <button
+                            onClick={detenerEscaneo}
+                            className="mt-4 inline-flex items-center px-6 py-3 rounded-lg text-base font-medium bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 transition-colors duration-200"
+                        >
+                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9l6 6m0-6L9 15"/>
+                            </svg>
+                            Detener Escaneo
+                        </button>
+                    )}
                 </div>
               </div>
             </div>
@@ -480,16 +418,12 @@ export default function Scanner({ auth, grupo, mensaje, errors = {} }) {
                   <h4 className="font-medium text-sm text-gray-900 mb-3">Estadísticas</h4>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Niños en grupo:</span>
-                      <span className="font-medium">{hijosGrupo.length}</span>
-                    </div>
-                    <div className="flex justify-between">
                       <span className="text-gray-600">Registros hoy:</span>
                       <span className="font-medium">{registros.length}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Notificaciones:</span>
-                      <span className="font-medium">{registros.filter(r => r.estado === 'notificado').length}</span>
+                      <span className="text-gray-600">Completados:</span>
+                      <span className="font-medium">{registros.filter(r => r.estado === 'completado').length}</span>
                     </div>
                   </div>
                 </div>
@@ -526,24 +460,28 @@ export default function Scanner({ auth, grupo, mensaje, errors = {} }) {
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center mb-2">
-                            <span className="font-semibold text-gray-900 text-base mr-3">{registro.nfc_id}</span>
+                            <span className="font-semibold text-gray-900 text-base mr-3">DNI: {registro.dni}</span>
                             <span className="text-sm text-gray-500 bg-gray-200 px-2 py-1 rounded">{registro.timestamp}</span>
                           </div>
-                          <p className="text-sm text-gray-700">{registro.descripcion}</p>
+                          <div className="text-sm text-gray-600 space-y-1">
+                            <div>NFC ID: {registro.nfc_id}</div>
+                            <div>Ubicación: {registro.latitud?.toFixed(6)}, {registro.longitud?.toFixed(6)}</div>
+                            <div>Mensaje: {registro.descripcion}</div>
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center ml-4">
-                        {registro.estado === 'registrado' ? (
+                        {registro.estado === 'procesando' ? (
                           <div className="flex items-center text-yellow-600 bg-yellow-50 px-3 py-2 rounded-lg">
                             <div className="animate-spin rounded-full h-4 w-4 border-2 border-yellow-600 border-t-transparent mr-2"></div>
-                            <span className="text-sm font-medium">Enviando...</span>
+                            <span className="text-sm font-medium">Procesando...</span>
                           </div>
                         ) : (
                           <div className="flex items-center text-green-600 bg-green-50 px-3 py-2 rounded-lg">
                             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/>
                             </svg>
-                            <span className="text-sm font-medium">Notificado</span>
+                            <span className="text-sm font-medium">Completado</span>
                           </div>
                         )}
                       </div>
