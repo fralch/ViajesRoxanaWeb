@@ -6,6 +6,7 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import SecondaryButton from '@/Components/SecondaryButton';
+import Swal from 'sweetalert2';
 
 export default function PerfilHijo({ hijo }) {
     const { flash } = usePage().props;
@@ -27,7 +28,34 @@ export default function PerfilHijo({ hijo }) {
 
     const handlePerfilSubmit = (e) => {
         e.preventDefault();
-        postPerfil(route('perfil.hijo.update', hijo.id));
+        postPerfil(route('perfil.hijo.update', hijo.id), {
+            onSuccess: () => {
+                Swal.fire({
+                    title: '¡Perfil Guardado!',
+                    text: 'La información del perfil ha sido guardado correctamente.',
+                    icon: 'success',
+                    confirmButtonText: 'Continuar',
+                    confirmButtonColor: '#dc2626',
+                    timer: 3000,
+                    timerProgressBar: true,
+                    showClass: {
+                        popup: 'animate__animated animate__fadeInDown'
+                    },
+                    hideClass: {
+                        popup: 'animate__animated animate__fadeOutUp'
+                    }
+                });
+            },
+            onError: () => {
+                Swal.fire({
+                    title: 'Error al Guardar',
+                    text: 'Hubo un problema al guardar la información. Por favor, verifica los datos e inténtalo nuevamente.',
+                    icon: 'error',
+                    confirmButtonText: 'Entendido',
+                    confirmButtonColor: '#dc2626'
+                });
+            }
+        });
     };
 
     const addEmergencyNumber = () => {
