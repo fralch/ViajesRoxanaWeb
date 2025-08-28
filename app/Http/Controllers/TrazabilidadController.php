@@ -158,40 +158,53 @@ class TrazabilidadController extends Controller
             ->with('paquete')
             ->first();
 
-        // Obtener el último mensaje configurado para el grupo (si existe)
-        $mensaje = null;
-        if ($grupo) {
+        // Obtener coordenadas desde la solicitud (enviadas por JavaScript del frontend)
+        $latitud = request()->input('lat', 0);
+        $longitud = request()->input('lng', 0);
+        $descripcion = request()->input('descripcion', '');
+
+        // Obtener el último mensaje configurado para el grupo si no se proporciona descripción
+        if (empty($descripcion) && $grupo) {
             $ultimaTrazabilidad = Trazabilidad::where('grupo_id', $grupo->id)
                 ->whereNotNull('descripcion')
                 ->latest()
                 ->first();
             
             if ($ultimaTrazabilidad) {
-                $mensaje = $ultimaTrazabilidad->descripcion;
+                $descripcion = $ultimaTrazabilidad->descripcion;
             }
         }
 
         // Si no hay mensaje del grupo, usar mensaje por defecto
-        if (!$mensaje) {
-            $mensaje = "Su hijo {$hijo->nombres} {$hijo->apellidos} ha sido registrado en el sistema de trazabilidad.";
+        if (empty($descripcion)) {
+            $descripcion = "Su hijo {$hijo->nombres} {$hijo->apellidos} ha sido registrado en el sistema de trazabilidad.";
         }
 
+        // Crear mensaje completo con información de ubicación
+        $mensajeCompleto = $descripcion;
+        if ($latitud != 0 || $longitud != 0) {
+            $mensajeCompleto .= "\n\n📍 Ubicación: https://maps.google.com/maps?q={$latitud},{$longitud}";
+            $mensajeCompleto .= "\nCoordenadas: {$latitud}, {$longitud}";
+        }
+        $mensajeCompleto .= "\n\n⏰ Hora: " . now()->format('d/m/Y H:i:s');
+
         // Registrar la trazabilidad automáticamente
+        $trazabilidad = null;
         if ($grupo) {
-            Trazabilidad::create([
-                'paquete_id' => $grupo->paquete_id, // Agregar paquete_id que es requerido
+            $trazabilidad = Trazabilidad::create([
+                'paquete_id' => $grupo->paquete_id,
                 'grupo_id' => $grupo->id,
                 'hijo_id' => $hijo->id,
-                'descripcion' => $mensaje,
-                'latitud' => request()->input('lat', 0), // Se puede obtener por JavaScript
-                'longitud' => request()->input('lng', 0),
+                'descripcion' => $descripcion,
+                'latitud' => $latitud,
+                'longitud' => $longitud,
             ]);
 
-            // Crear notificación para el padre usando el esquema correcto
+            // Crear notificación para el padre con el mensaje completo incluyendo ubicación
             Notificacion::create([
                 'hijo_id' => $hijo->id,
                 'user_id' => $padre->id,
-                'mensaje' => $mensaje,
+                'mensaje' => $mensajeCompleto,
                 'celular' => $padre->phone,
                 'estado' => 'pendiente'
             ]);
@@ -200,8 +213,13 @@ class TrazabilidadController extends Controller
         return Inertia::render('Trazabilidad/Confirmacion', [
             'hijo' => $hijo,
             'padre' => $padre,
-            'mensaje' => $mensaje,
+            'mensaje' => $mensajeCompleto,
             'grupo' => $grupo,
+            'trazabilidad' => $trazabilidad,
+            'ubicacion' => [
+                'latitud' => $latitud,
+                'longitud' => $longitud
+            ]
         ]);
     }
 

@@ -192,4 +192,15 @@ class HijoController extends Controller
         return Redirect::route('hijos.index')
                       ->with('success', 'Hijo eliminado exitosamente.');
     }
+
+    public function getHijoByDni($dni)
+    {
+        $hijo = Hijo::where('doc_numero', $dni)->first();
+
+        if (!$hijo) {
+            return response()->json(null, 404);
+        }
+
+        return response()->json($hijo);
+    }
 }

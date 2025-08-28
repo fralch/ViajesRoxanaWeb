@@ -93,11 +93,19 @@ export default function Scanner({ auth, grupo, mensaje, errors = {} }) {
     }
 
     setProcessing(true);
-    
+
     try {
       const dniFromNfc = nfcId.replace('NFC_', ''); // Extraer DNI del ID NFC
-      
-      // Simular registro de trazabilidad
+
+      // Obtener el hijo_id a partir del DNI
+      const response = await axios.get(`/api/hijos/by-dni/${dniFromNfc}`);
+      const hijo = response.data;
+
+      if (!hijo) {
+        alert('No se encontró un hijo con el DNI proporcionado.');
+        return;
+      }
+
       const nuevoRegistro = {
         id: Date.now(),
         nfc_id: nfcId,
@@ -108,23 +116,29 @@ export default function Scanner({ auth, grupo, mensaje, errors = {} }) {
         descripcion: mensajeActual || 'Ubicación registrada',
         estado: 'procesando'
       };
-      
+
       setRegistros(prev => [nuevoRegistro, ...prev]);
-      
-      // Abrir en nueva pestaña la URL del niño con ubicación
-      window.open(`/trazabilidad/${dniFromNfc}?lat=${location.latitud}&lng=${location.longitud}`, '_blank');
-      
+
+      await axios.post('/trazabilidad/procesar-escaneo', {
+        grupo_id: grupo.id,
+        hijo_id: hijo.id,
+        descripcion: mensajeActual || 'Ubicación registrada',
+        latitud: location.latitud,
+        longitud: location.longitud,
+        nfc_id: nfcId
+      });
+
       // Actualizar estado del registro
       setTimeout(() => {
-        setRegistros(prev => 
-          prev.map(reg => 
-            reg.id === nuevoRegistro.id 
+        setRegistros(prev =>
+          prev.map(reg =>
+            reg.id === nuevoRegistro.id
               ? { ...reg, estado: 'completado' }
               : reg
           )
         );
       }, 1000);
-      
+
     } catch (error) {
       console.error('Error procesando escaneo:', error);
       alert('Error al procesar el escaneo: ' + error.message);

@@ -126,6 +126,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/{hijo}/simulate', [App\Http\Controllers\HijoLocationController::class, 'simulateLocationUpdate'])->name('hijo.location.simulate');
     });
 
+    Route::get('/api/hijos/by-dni/{dni}', [HijoController::class, 'getHijoByDni']);
+
     Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');
 

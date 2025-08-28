@@ -1,17 +1,81 @@
 import React, { useState, useEffect } from 'react';
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 
-export default function Confirmacion({ hijo, padre, mensaje }) {
+export default function Confirmacion({ hijo, padre, mensaje, grupo, ubicacion }) {
   const [countdown, setCountdown] = useState(10);
   const [processing, setProcessing] = useState(true);
   const [sent, setSent] = useState(false);
+  const [location, setLocation] = useState(ubicacion || null);
 
   useEffect(() => {
-    // Simular envío de notificación
-    const sendTimer = setTimeout(() => {
-      setProcessing(false);
-      setSent(true);
-    }, 3000);
+    // Obtener ubicación GPS y enviar datos al backend
+    const obtenerUbicacionYEnviar = () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            
+            setLocation({ latitud: lat, longitud: lng });
+            
+            // Enviar datos al backend si no se han enviado ya
+            if (!ubicacion || (ubicacion.latitud === 0 && ubicacion.longitud === 0)) {
+              enviarDatosUbicacion(lat, lng);
+            } else {
+              // Ya se tienen coordenadas válidas, marcar como procesado
+              setTimeout(() => {
+                setProcessing(false);
+                setSent(true);
+              }, 2000);
+            }
+          },
+          (error) => {
+            console.error('Error obteniendo ubicación:', error);
+            // Si no se puede obtener ubicación, usar datos existentes
+            setTimeout(() => {
+              setProcessing(false);
+              setSent(true);
+            }, 2000);
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 60000
+          }
+        );
+      } else {
+        // Geolocalización no soportada, usar datos existentes
+        setTimeout(() => {
+          setProcessing(false);
+          setSent(true);
+        }, 2000);
+      }
+    };
+
+    // Función para enviar datos de ubicación al backend
+    const enviarDatosUbicacion = (lat, lng) => {
+      const url = window.location.pathname; // /nfc/{dni_hijo}
+      const descripcion = mensaje ? mensaje.split('\n')[0] : ''; // Tomar solo la primera línea del mensaje
+      
+      router.reload({
+        data: {
+          lat: lat,
+          lng: lng,
+          descripcion: descripcion
+        },
+        onSuccess: () => {
+          setProcessing(false);
+          setSent(true);
+        },
+        onError: () => {
+          setProcessing(false);
+          setSent(true);
+        }
+      });
+    };
+
+    // Iniciar proceso de obtención de ubicación
+    obtenerUbicacionYEnviar();
 
     // Cuenta regresiva para cerrar la pestaña
     const countdownTimer = setInterval(() => {
@@ -26,7 +90,6 @@ export default function Confirmacion({ hijo, padre, mensaje }) {
     }, 1000);
 
     return () => {
-      clearTimeout(sendTimer);
       clearInterval(countdownTimer);
     };
   }, []);
@@ -97,18 +160,49 @@ export default function Confirmacion({ hijo, padre, mensaje }) {
                 </div>
               </div>
 
+              {/* Ubicación GPS */}
+              {location && location.latitud !== 0 && location.longitud !== 0 && (
+                <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                  <div className="flex items-start">
+                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                      <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-green-900 mb-1">Ubicación GPS capturada:</p>
+                      <p className="text-xs text-green-700 mb-2">
+                        Lat: {location.latitud.toFixed(6)}, Lng: {location.longitud.toFixed(6)}
+                      </p>
+                      <a 
+                        href={`https://maps.google.com/maps?q=${location.latitud},${location.longitud}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center text-xs text-green-600 hover:text-green-800 font-medium"
+                      >
+                        📍 Ver en Google Maps
+                        <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                        </svg>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Mensaje */}
               {mensaje && (
                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                   <div className="flex items-start">
                     <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
                       <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
                       </svg>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-blue-900 mb-1">Mensaje enviado:</p>
-                      <p className="text-sm text-blue-800">{mensaje}</p>
+                      <p className="text-sm font-medium text-blue-900 mb-1">Mensaje enviado por WhatsApp:</p>
+                      <p className="text-sm text-blue-800 whitespace-pre-line">{mensaje}</p>
                     </div>
                   </div>
                 </div>
@@ -118,18 +212,20 @@ export default function Confirmacion({ hijo, padre, mensaje }) {
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center">
-                    <div className={`w-4 h-4 rounded-full mr-2 ${sent ? 'bg-green-500' : 'bg-yellow-400'}`}></div>
+                    <div className={`w-4 h-4 rounded-full mr-2 ${(location && location.latitud !== 0 && location.longitud !== 0) ? 'bg-green-500' : 'bg-yellow-400 animate-pulse'}`}></div>
                     <span className="text-gray-700">Ubicación GPS registrada</span>
                   </div>
-                  <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/>
-                  </svg>
+                  {(location && location.latitud !== 0 && location.longitud !== 0) && (
+                    <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/>
+                    </svg>
+                  )}
                 </div>
                 
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center">
                     <div className={`w-4 h-4 rounded-full mr-2 ${sent ? 'bg-green-500' : processing ? 'bg-yellow-400 animate-pulse' : 'bg-gray-300'}`}></div>
-                    <span className="text-gray-700">Notificación SMS enviada</span>
+                    <span className="text-gray-700">Notificación WhatsApp enviada</span>
                   </div>
                   {sent && (
                     <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
