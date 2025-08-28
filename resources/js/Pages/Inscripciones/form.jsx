@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { useForm } from "@inertiajs/react";
+import { useForm, router } from "@inertiajs/react";
 import axios from "axios";
 import { showSuccess, showError, showWarning, showToast } from "../../utils/swal";
 import { formatDateSafe } from "@/utils/dateUtils";
@@ -427,11 +427,14 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
     post(submitUrl, {
       preserveScroll: true,
       onSuccess: () => {
-        // Mostrar alerta de éxito
+        // Mostrar alerta de éxito y redirigir al login
         showSuccess(
           '¡Inscripción exitosa!', 
           'Los datos se han guardado correctamente. Recibirás un correo con los detalles.'
-        );
+        ).then(() => {
+          // Redirigir al login después de cerrar el sweet alert
+          router.visit('/login');
+        });
         
         // Resetear formulario
         setData({
