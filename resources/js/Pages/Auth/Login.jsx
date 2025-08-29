@@ -155,12 +155,7 @@ export default function Login() {
 
               <div className="border-t border-gray-200 pt-4">
                 <div className="text-center">
-                  <p className="text-sm text-gray-600">
-                    ¿Olvidaste tu contraseña?{' '}
-                    <a className="text-red-600 hover:text-red-700 font-medium hover:underline transition-colors duration-200" href="/forgot-password">
-                      Recupera el acceso
-                    </a>
-                  </p>
+                
                 </div>
               </div>
             </form>
