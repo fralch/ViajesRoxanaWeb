@@ -268,7 +268,7 @@ export default function Create({ paquetes }) {
                   {/* Internos */}
                   <div className="p-6 rounded-lg bg-red-50 border border-red-200">
                     <div className="flex items-center justify-between mb-4">
-                      <h4 className="text-md font-medium text-gray-900">Encargados Internos</h4>
+                      <h4 className="text-md font-medium text-gray-900">Encargados Externo</h4>
                       <PrimaryButton type="button" onClick={addEncargado} className="px-3 py-2 text-xs">
                         <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
