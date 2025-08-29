@@ -255,7 +255,7 @@ export default function Create({ paquetes }) {
                           </svg>
                           <span className="text-sm font-medium text-gray-900">Encargados de Agencia</span>
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">Personal externo</p>
+                        <p className="text-xs text-gray-500 mt-1">Personal de agencia</p>
                       </div>
                     </div>
                   </div>
