@@ -16,7 +16,7 @@ class WhatsAppService
             ]);
 
             $mensaje = "Viajes Roxana – Intranet de Padres\n\n";
-            $mensaje .= "👋 ¡Bienvenido";
+            $mensaje .= "👋 ¡Bienvenido!\n\n";
             $mensaje .= "👤 Usuario: {$name}\n";
             $mensaje .= "🔐 Contraseña: {$password}\n\n";
             $mensaje .= "📲 Ingresa aquí : grupoviajesroxana.com\n\n";
@@ -30,8 +30,7 @@ class WhatsAppService
             $curl = curl_init();
             $phoneWithCode = '51' . $phone;
             
-            // Usar la URL que funciona (necesitarás obtener tu ID único)
-            $instanceId = config('services.whatsapp.instance_id', 'NTE5NjExMTQ0MDQ='); // Tu ID único
+            $instanceId = config('services.whatsapp.instance_id', 'NTE5NjExMTQ0MDQ=');
             $apiUrl = "https://apiwsp.factiliza.com/v1/message/sendtext/{$instanceId}";
             
             Log::info("Preparando request de WhatsApp", [
@@ -40,44 +39,34 @@ class WhatsAppService
                 'api_url' => $apiUrl
             ]);
             
-            // Preparar el payload con encoding UTF-8
-            $payload = json_encode([
-                'number' => $phoneWithCode,
-                'text' => $mensaje
-            ], JSON_UNESCAPED_UNICODE);
-
-            Log::info("Payload WhatsApp", [
-                'payload' => $payload,
-                'json_last_error' => json_last_error_msg()
-            ]);
-
             curl_setopt_array($curl, [
                 CURLOPT_URL => $apiUrl,
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_ENCODING => "",
                 CURLOPT_MAXREDIRS => 10,
-                CURLOPT_TIMEOUT => 30,
+                CURLOPT_TIMEOUT => 60,
                 CURLOPT_CONNECTTIMEOUT => 30,
                 CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
                 CURLOPT_CUSTOMREQUEST => "POST",
-                CURLOPT_POSTFIELDS => $payload,
+                CURLOPT_POSTFIELDS => json_encode([
+                    'number' => $phoneWithCode,
+                    'text' => $mensaje
+                ]),
                 CURLOPT_HTTPHEADER => [
                     "Authorization: Bearer " . config('services.whatsapp.token', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzOTM1NCIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6ImNvbnN1bHRvciJ9.MrhLuClAq-NTpvXx_72Zw9kTOIEqMiSRWVzPfeF64Xg'),
-                    "Content-Type: application/json; charset=utf-8",
-                    "Accept: application/json",
-                    "Cache-Control: no-cache"
+                    "Content-Type: application/json"
                 ],
                 // Configuraciones SSL para producción
-                CURLOPT_SSL_VERIFYPEER => true,
-                CURLOPT_SSL_VERIFYHOST => 2,
-                CURLOPT_CAINFO => null, // Usar certificados del sistema
-                CURLOPT_USERAGENT => "ViajesRoxana/1.0 (Laravel)",
-                CURLOPT_FOLLOWLOCATION => true
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => false,
+                CURLOPT_SSLVERSION => CURL_SSLVERSION_DEFAULT,
+                CURLOPT_USERAGENT => "ViajesRoxana/1.0",
+                CURLOPT_FRESH_CONNECT => true,
+                CURLOPT_FORBID_REUSE => true,
             ]);
 
             $response = curl_exec($curl);
             $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-            $curlInfo = curl_getinfo($curl);
             $err = curl_error($curl);
             
             curl_close($curl);
@@ -85,14 +74,7 @@ class WhatsAppService
             Log::info("Respuesta de API WhatsApp", [
                 'http_code' => $httpCode,
                 'response' => $response,
-                'phone' => $phoneWithCode,
-                'curl_info' => [
-                    'total_time' => $curlInfo['total_time'] ?? null,
-                    'namelookup_time' => $curlInfo['namelookup_time'] ?? null,
-                    'connect_time' => $curlInfo['connect_time'] ?? null,
-                    'ssl_verify_result' => $curlInfo['ssl_verify_result'] ?? null,
-                    'content_type' => $curlInfo['content_type'] ?? null
-                ]
+                'phone' => $phoneWithCode
             ]);
 
             if ($err) {
@@ -148,8 +130,7 @@ class WhatsAppService
             $curl = curl_init();
             $phoneWithCode = '51' . $phone;
             
-            // Usar la URL que funciona (necesitarás obtener tu ID único)
-            $instanceId = config('services.whatsapp.instance_id', 'NTE5NjExMTQ0MDQ='); // Tu ID único
+            $instanceId = config('services.whatsapp.instance_id', 'NTE5NjExMTQ0MDQ=');
             $apiUrl = "https://apiwsp.factiliza.com/v1/message/sendtext/{$instanceId}";
             
             Log::info("Preparando request de WhatsApp trazabilidad", [
@@ -158,44 +139,34 @@ class WhatsAppService
                 'api_url' => $apiUrl
             ]);
             
-            // Preparar el payload con encoding UTF-8
-            $payload = json_encode([
-                'number' => $phoneWithCode,
-                'text' => $mensaje
-            ], JSON_UNESCAPED_UNICODE);
-
-            Log::info("Payload WhatsApp trazabilidad", [
-                'payload' => $payload,
-                'json_last_error' => json_last_error_msg()
-            ]);
-
             curl_setopt_array($curl, [
                 CURLOPT_URL => $apiUrl,
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_ENCODING => "",
                 CURLOPT_MAXREDIRS => 10,
-                CURLOPT_TIMEOUT => 30,
+                CURLOPT_TIMEOUT => 60,
                 CURLOPT_CONNECTTIMEOUT => 30,
                 CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
                 CURLOPT_CUSTOMREQUEST => "POST",
-                CURLOPT_POSTFIELDS => $payload,
+                CURLOPT_POSTFIELDS => json_encode([
+                    'number' => $phoneWithCode,
+                    'text' => $mensaje
+                ]),
                 CURLOPT_HTTPHEADER => [
                     "Authorization: Bearer " . config('services.whatsapp.token', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzOTM1NCIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6ImNvbnN1bHRvciJ9.MrhLuClAq-NTpvXx_72Zw9kTOIEqMiSRWVzPfeF64Xg'),
-                    "Content-Type: application/json; charset=utf-8",
-                    "Accept: application/json",
-                    "Cache-Control: no-cache"
+                    "Content-Type: application/json"
                 ],
                 // Configuraciones SSL para producción
-                CURLOPT_SSL_VERIFYPEER => true,
-                CURLOPT_SSL_VERIFYHOST => 2,
-                CURLOPT_CAINFO => null, // Usar certificados del sistema
-                CURLOPT_USERAGENT => "ViajesRoxana/1.0 (Laravel)",
-                CURLOPT_FOLLOWLOCATION => true
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => false,
+                CURLOPT_SSLVERSION => CURL_SSLVERSION_DEFAULT,
+                CURLOPT_USERAGENT => "ViajesRoxana/1.0",
+                CURLOPT_FRESH_CONNECT => true,
+                CURLOPT_FORBID_REUSE => true,
             ]);
 
             $response = curl_exec($curl);
             $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-            $curlInfo = curl_getinfo($curl);
             $err = curl_error($curl);
             
             curl_close($curl);
@@ -203,14 +174,7 @@ class WhatsAppService
             Log::info("Respuesta de API WhatsApp trazabilidad", [
                 'http_code' => $httpCode,
                 'response' => $response,
-                'phone' => $phoneWithCode,
-                'curl_info' => [
-                    'total_time' => $curlInfo['total_time'] ?? null,
-                    'namelookup_time' => $curlInfo['namelookup_time'] ?? null,
-                    'connect_time' => $curlInfo['connect_time'] ?? null,
-                    'ssl_verify_result' => $curlInfo['ssl_verify_result'] ?? null,
-                    'content_type' => $curlInfo['content_type'] ?? null
-                ]
+                'phone' => $phoneWithCode
             ]);
 
             if ($err) {

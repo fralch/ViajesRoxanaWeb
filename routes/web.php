@@ -22,6 +22,7 @@ use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
+use App\Services\WhatsAppService;
 
 Route::get('/', function () {
     $user = auth()->user();
@@ -51,6 +52,25 @@ Route::post('/check-user-exists', [InscripcionController::class, 'checkUserExist
 Route::get('/nfc/{dni_hijo}', [TrazabilidadController::class, 'confirmacionTrazabilidad'])
     ->name('trazabilidad.confirmacion')
     ->where('dni_hijo', '[0-9]+');
+
+// Ruta de prueba para WhatsApp
+Route::get('/probarwhatsapp/{numero}', function ($numero) {
+    $resultado = WhatsAppService::enviarMensajeTrazabilidad($numero, "🧪 Mensaje de prueba de WhatsApp\n\nEste es un mensaje de prueba para verificar que el servicio de WhatsApp está funcionando correctamente.\n\n✅ Si recibiste este mensaje, el servicio está operativo.");
+    
+    if ($resultado) {
+        return response()->json([
+            'success' => true,
+            'message' => 'Mensaje de WhatsApp enviado exitosamente al número: ' . $numero,
+            'timestamp' => now()
+        ]);
+    } else {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error al enviar el mensaje de WhatsApp al número: ' . $numero,
+            'timestamp' => now()
+        ], 500);
+    }
+})->where('numero', '[0-9]+');
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
