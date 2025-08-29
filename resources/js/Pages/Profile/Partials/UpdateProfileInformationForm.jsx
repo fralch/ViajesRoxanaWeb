@@ -4,7 +4,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Transition } from '@headlessui/react';
 import { Link, useForm, usePage } from '@inertiajs/react';
-import { UserIcon, EnvelopeIcon, CheckCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { UserIcon, EnvelopeIcon, PhoneIcon, CheckCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
 export default function UpdateProfileInformation({
     mustVerifyEmail,
@@ -16,6 +16,7 @@ export default function UpdateProfileInformation({
         useForm({
             name: user.name,
             email: user.email,
+            phone: user.phone || '',
         });
 
     const submit = (e) => {
@@ -95,6 +96,31 @@ export default function UpdateProfileInformation({
                             />
                         </div>
                         <InputError className="mt-2" message={errors.email} />
+                    </div>
+
+                    {/* Campo Celular */}
+                    <div className="space-y-2">
+                        <InputLabel 
+                            htmlFor="phone" 
+                            value="Número de celular"
+                            className="text-sm font-medium text-gray-700 flex items-center space-x-2"
+                        />
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <PhoneIcon className="h-5 w-5 text-gray-400" />
+                            </div>
+                            <TextInput
+                                id="phone"
+                                type="tel"
+                                className="pl-10 mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 transition-colors duration-200"
+                                value={data.phone}
+                                onChange={(e) => setData('phone', e.target.value)}
+                                required
+                                autoComplete="tel"
+                                placeholder="+56 9 1234 5678"
+                            />
+                        </div>
+                        <InputError className="mt-2" message={errors.phone} />
                     </div>
 
                     {/* Verificación de email mejorada */}
