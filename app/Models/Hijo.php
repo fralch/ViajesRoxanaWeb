@@ -48,6 +48,15 @@ class Hijo extends Model
         return $this->hasMany(NutricionFicha::class);
     }
 
+    protected static function booted()
+    {
+        static::deleting(function ($hijo) {
+            $hijo->inscripciones()->delete();
+            $hijo->saludFichas()->delete();
+            $hijo->nutricionFichas()->delete();
+        });
+    }
+
     // Accessor para asegurar que nums_emergencia siempre sea un array
     public function getNumsEmergenciaAttribute($value)
     {

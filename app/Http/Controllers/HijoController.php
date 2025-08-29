@@ -225,4 +225,37 @@ class HijoController extends Controller
 
         return response()->json($hijo);
     }
+
+    /**
+     * Delete a user (parent) and all their dependencies
+     */
+    public function destroyParent(User $user)
+    {
+        // Only admin can delete parents
+        if (!Auth::user()->is_admin) {
+            abort(403, 'No tienes permisos para eliminar padres.');
+        }
+
+        // Prevent deleting admin users
+        if ($user->is_admin) {
+            return Redirect::route('hijos.index')
+                          ->with('error', 'No se puede eliminar un usuario administrador.');
+        }
+
+        // Prevent self-deletion
+        if ($user->id === Auth::id()) {
+            return Redirect::route('hijos.index')
+                          ->with('error', 'No puedes eliminarte a ti mismo.');
+        }
+
+        try {
+            $user->delete(); // This will cascade delete all related data via the User model's booted method
+
+            return Redirect::route('hijos.index')
+                          ->with('success', 'Padre y todas sus dependencias eliminados exitosamente.');
+        } catch (\Exception $e) {
+            return Redirect::route('hijos.index')
+                          ->with('error', 'Error al eliminar el padre: ' . $e->getMessage());
+        }
+    }
 }

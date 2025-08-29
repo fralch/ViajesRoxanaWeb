@@ -67,4 +67,20 @@ class User extends Authenticatable
     {
         return $this->hasMany(Notificacion::class);
     }
+
+    protected static function booted()
+    {
+        static::deleting(function ($user) {
+            // Eliminar inscripciones asociadas directamente al usuario
+            $user->inscripciones()->delete();
+
+            // Eliminar notificaciones asociadas al usuario
+            $user->notificaciones()->delete();
+
+            // Eliminar hijos y sus datos relacionados
+            $user->hijos()->each(function ($hijo) {
+                $hijo->delete();
+            });
+        });
+    }
 }

@@ -59,6 +59,25 @@ export default function Index({ users, filters, isAdmin }) {
     }
   };
 
+  const confirmDeleteParent = async (user) => {
+    const result = await showDelete(
+      `¿Eliminar al padre "${user.name}"?`,
+      'Esta acción eliminará al padre y TODOS sus hijos, inscripciones y notificaciones PERMANENTEMENTE. Esta acción NO se puede deshacer.'
+    );
+    
+    if (result.isConfirmed) {
+      router.delete(route('hijos.destroy-parent', user.id), {
+        onSuccess: () => {
+          showSuccess('¡Eliminado!', 'El padre y todas sus dependencias han sido eliminados exitosamente.');
+        },
+        onError: (errors) => {
+          const errorMessage = errors?.message || 'No se pudo eliminar el padre. Intenta nuevamente.';
+          showError('Error', errorMessage);
+        }
+      });
+    }
+  };
+
   const getStatusBadge = (activo) => {
     return activo ? (
       <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
@@ -174,15 +193,28 @@ export default function Index({ users, filters, isAdmin }) {
                             <span className="text-sm text-gray-500">
                               {user.hijos?.length || 0} hijo{(user.hijos?.length || 0) !== 1 ? 's' : ''}
                             </span>
-                            <button
-                              onClick={() => toggleUserExpansion(user.id)}
-                              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                              title={expandedUsers.has(user.id) ? "Ocultar hijos" : "Ver hijos"}
-                            >
-                              <svg className={`w-5 h-5 transition-transform ${expandedUsers.has(user.id) ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                              </svg>
-                            </button>
+                            <div className="flex items-center gap-1">
+                              {isAdmin && (
+                                <button
+                                  onClick={() => confirmDeleteParent(user)}
+                                  className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                  title="Eliminar padre y todas sus dependencias"
+                                >
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
+                              )}
+                              <button
+                                onClick={() => toggleUserExpansion(user.id)}
+                                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                title={expandedUsers.has(user.id) ? "Ocultar hijos" : "Ver hijos"}
+                              >
+                                <svg className={`w-5 h-5 transition-transform ${expandedUsers.has(user.id) ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
