@@ -962,14 +962,35 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
                 )}
               </button>
 
-              {/* Mensaje legal */}
-              <p className="mt-3 text-[11px] leading-tight text-gray-500 text-center">
-                Protegemos tu información. Solo la utilizaremos para gestionar tus reservas y comunicarte
-                novedades del servicio.
-              </p>
+             {/* Términos y Condiciones */}
+              <div className="mt-2 text-center px-4">
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  Al enviar este formulario, aceptas nuestras{' '}
+                  <a
+                    target="_blank"
+                    href="https://viajesroxana.com/pdfs/politica-de-seguridad-datos.pdf"
+                    className="text-gray-700 underline hover:text-red-600 transition-colors duration-200"
+                    rel="noreferrer"
+                  >
+                    Políticas de Privacidad
+                  </a>{' '}
+                  y{' '}
+                  <a
+                    target="_blank"
+                    href="https://viajesroxana.com/pdfs/terminos-condiciones-intranet.pdf"
+                    className="text-gray-700 underline hover:text-red-600 transition-colors duration-200"
+                    rel="noreferrer"
+                  >
+                    Términos y Condiciones
+                  </a>
+                  .
+                </p>
+              </div>
             </div>
           </form>
         </Card>
+
+        
       </div>
     </div>
   );
