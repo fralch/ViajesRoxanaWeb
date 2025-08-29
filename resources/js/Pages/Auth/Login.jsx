@@ -173,7 +173,7 @@ export default function Login() {
             Protegido por reCAPTCHA, se aplica a las{' '}
             <a
               target="_blank"
-              href="https://viajesroxana.com/avisos-legales/politica-de-privacidad-y-seguridad/"
+              href="https://viajesroxana.com/pdfs/politica-de-seguridad-datos.pdf"
               className="text-gray-700 underline hover:text-red-600 transition-colors duration-200"
               rel="noreferrer"
             >
@@ -182,7 +182,7 @@ export default function Login() {
             y a los{' '}
             <a
               target="_blank"
-              href="https://viajesroxana.com/avisos-legales/terminos-y-condiciones-intranet/"
+              href="https://viajesroxana.com/pdfs/terminos-condiciones-intranet.pdf"
               className="text-gray-700 underline hover:text-red-600 transition-colors duration-200"
               rel="noreferrer"
             >

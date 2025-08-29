@@ -29,10 +29,17 @@ export default function PerfilHijo({ hijo }) {
     const handlePerfilSubmit = (e) => {
         e.preventDefault();
         postPerfil(route('perfil.hijo.update', hijo.id), {
-            onSuccess: () => {
+            transform: (data) => {
+                const { doc_tipo, ...updateData } = data;
+                return updateData;
+            },
+            onSuccess: (response) => {
+                console.log('OnSuccess called:', response);
+                
+                // Mostrar SweetAlert de confirmación siempre
                 Swal.fire({
                     title: '¡Perfil Guardado!',
-                    text: 'La información del perfil ha sido guardado correctamente.',
+                    text: 'La información del perfil ha sido guardada correctamente.',
                     icon: 'success',
                     confirmButtonText: 'Continuar',
                     confirmButtonColor: '#dc2626',
@@ -45,8 +52,33 @@ export default function PerfilHijo({ hijo }) {
                         popup: 'animate__animated animate__fadeOutUp'
                     }
                 });
+
+                // Actualizar los datos del formulario con los datos actualizados
+                if (response?.props?.flash?.hijo) {
+                    const hijoActualizado = response.props.flash.hijo;
+                    console.log('Hijo actualizado desde flash:', hijoActualizado);
+                    setPerfilData(prevData => ({
+                        ...prevData,
+                        nombres: hijoActualizado.nombres || prevData.nombres,
+                        doc_tipo: hijoActualizado.doc_tipo || prevData.doc_tipo,
+                        doc_numero: hijoActualizado.doc_numero || prevData.doc_numero,
+                        fecha_nacimiento: hijoActualizado.fecha_nacimiento || prevData.fecha_nacimiento,
+                        foto: hijoActualizado.foto || prevData.foto,
+                        pasatiempos: hijoActualizado.pasatiempos || prevData.pasatiempos,
+                        deportes: hijoActualizado.deportes || prevData.deportes,
+                        plato_favorito: hijoActualizado.plato_favorito || prevData.plato_favorito,
+                        color_favorito: hijoActualizado.color_favorito || prevData.color_favorito,
+                        informacion_adicional: hijoActualizado.informacion_adicional || prevData.informacion_adicional,
+                        nums_emergencia: Array.isArray(hijoActualizado.nums_emergencia) ? 
+                            hijoActualizado.nums_emergencia : 
+                            (hijoActualizado.nums_emergencia ? 
+                                JSON.parse(hijoActualizado.nums_emergencia) : 
+                                prevData.nums_emergencia)
+                    }));
+                }
             },
-            onError: () => {
+            onError: (errors) => {
+                console.log('OnError called:', errors);
                 Swal.fire({
                     title: 'Error al Guardar',
                     text: 'Hubo un problema al guardar la información. Por favor, verifica los datos e inténtalo nuevamente.',
@@ -54,6 +86,9 @@ export default function PerfilHijo({ hijo }) {
                     confirmButtonText: 'Entendido',
                     confirmButtonColor: '#dc2626'
                 });
+            },
+            onFinish: () => {
+                console.log('Request finished');
             }
         });
     };

@@ -15,8 +15,18 @@ class PerfilHijoController extends Controller
             abort(403, 'No tienes permisos para ver este perfil.');
         }
 
+        // Formatear datos para la vista
+        $hijoArray = $hijo->toArray();
+        
+        // Asegurar que fecha_nacimiento esté en formato Y-m-d para el input date
+        if ($hijo->fecha_nacimiento) {
+            $hijoArray['fecha_nacimiento'] = $hijo->fecha_nacimiento->format('Y-m-d');
+        }
+        
+        // nums_emergencia ya se maneja automáticamente por el cast del modelo
+
         return Inertia::render('PerfilHijo', [
-            'hijo' => $hijo
+            'hijo' => $hijoArray
         ]);
     }
 
@@ -29,7 +39,7 @@ class PerfilHijoController extends Controller
 
         $request->validate([
             'nombres' => 'required|string|max:255',
-            'doc_tipo' => 'required|string|in:CC,TI,RC,CE,PP',
+
             'doc_numero' => 'required|string|max:20',
             'fecha_nacimiento' => 'nullable|date|before_or_equal:today',
             'foto' => 'nullable|string',
@@ -42,8 +52,7 @@ class PerfilHijoController extends Controller
             'nums_emergencia.*' => 'required|string|regex:/^[\d\s\+\-\(\)]+$/|max:20'
         ], [
             'nombres.required' => 'El nombre es obligatorio',
-            'doc_tipo.required' => 'Debe seleccionar un tipo de documento',
-            'doc_tipo.in' => 'El tipo de documento seleccionado no es válido',
+
             'doc_numero.required' => 'El número de documento es obligatorio',
             'fecha_nacimiento.before_or_equal' => 'La fecha de nacimiento no puede ser futura',
             'nums_emergencia.max' => 'Máximo 5 números de emergencia permitidos',
@@ -53,7 +62,7 @@ class PerfilHijoController extends Controller
             'informacion_adicional.max' => 'La información adicional no puede exceder 1000 caracteres'
         ]);
 
-        $data = $request->all();
+        $data = $request->except(['doc_tipo']);
         
         // Convertir array de números de emergencia a JSON si existe
         if (isset($data['nums_emergencia'])) {
@@ -70,7 +79,19 @@ class PerfilHijoController extends Controller
         }
 
         $hijo->update($data);
+        
+        // Refrescar el modelo para obtener los datos actualizados de la base de datos
+        $hijo->refresh();
+        
+        // Parsear nums_emergencia para retornar como array
+        $hijoArray = $hijo->toArray();
+        if (!empty($hijoArray['nums_emergencia'])) {
+            $hijoArray['nums_emergencia'] = json_decode($hijoArray['nums_emergencia'], true);
+        }
 
-        return redirect()->back()->with('message', '✅ Perfil actualizado correctamente');
+        return redirect()->back()->with([
+            'message' => '✅ Perfil actualizado correctamente',
+            'hijo' => $hijoArray
+        ]);
     }
 }
