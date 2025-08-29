@@ -253,20 +253,13 @@ export default function PerfilHijo({ hijo }) {
 
                                         <div>
                                             <InputLabel htmlFor="doc_tipo" value="Tipo de Documento" className="text-gray-700 font-semibold" />
-                                            <select
+                                            <TextInput
                                                 id="doc_tipo"
-                                                className="mt-2 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-red-500 focus:border-red-500"
-                                                value={perfilData.doc_tipo}
-                                                onChange={(e) => setPerfilData('doc_tipo', e.target.value)}
-                                                required
-                                            >
-                                                <option value="">Seleccionar tipo</option>
-                                                <option value="CC">Cédula de Ciudadanía</option>
-                                                <option value="TI">Tarjeta de Identidad</option>
-                                                <option value="RC">Registro Civil</option>
-                                                <option value="CE">Cédula de Extranjería</option>
-                                                <option value="PP">Pasaporte</option>
-                                            </select>
+                                                type="text"
+                                                className="mt-2 block w-full rounded-xl border-gray-300 shadow-sm bg-gray-100"
+                                                value="DNI"
+                                                disabled
+                                            />
                                             <InputError message={erroresPerfil.doc_tipo} className="mt-2" />
                                         </div>
 

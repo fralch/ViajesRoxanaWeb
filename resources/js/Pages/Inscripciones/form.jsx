@@ -81,24 +81,53 @@ const SectionTitle = ({ children, subtitle }) => (
   </div>
 );
 
-const ChildCard = ({ index, child, updateChild, removeChild, canRemove }) => {
+// Helper que define si un hijo está completo con lo mínimo
+const isChildComplete = (c) => {
+  const nameOk =
+    !!c.name?.trim() &&
+    c.name.trim().length >= 3 &&
+    /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(c.name.trim());
+
+  const typeOk = !!c.docType && ["DNI", "Pasaporte", "C. E."].includes(c.docType);
+
+  const docOk =
+    !!c.docNumber?.trim() &&
+    c.docNumber.trim().length >= 8 &&
+    c.docNumber.trim().length <= 20;
+
+  return nameOk && typeOk && docOk;
+};
+
+const ChildCard = ({ index, child, updateChild, removeChild, canRemove, complete }) => {
   // Se deja por si luego deseas validar fechas u otros campos con la fecha actual
   useMemo(() => new Date().toISOString().slice(0, 10), []);
 
   return (
     <div className="mb-4 p-4 rounded-xl border border-gray-200 bg-gray-50/60">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-800">Hijo(a) </h3>
-        {canRemove && (
-          <button
-            type="button"
-            onClick={removeChild}
-            className="text-xs font-medium text-red-600 hover:text-red-700 focus:ring-2 focus:ring-red-500 rounded-lg px-2 py-1"
-            aria-label={`Eliminar hijo ${index + 1}`}
+        <h3 className="text-sm font-semibold text-gray-800">Hijo(a)</h3>
+        <div className="flex items-center gap-2">
+          <span
+            className={classNames(
+              "text-xs px-2 py-1 rounded-full border",
+              complete
+                ? "bg-green-50 text-green-700 border-green-200"
+                : "bg-amber-50 text-amber-700 border-amber-200"
+            )}
           >
-            Eliminar
-          </button>
-        )}
+            {complete ? "Completo" : "Incompleto"}
+          </span>
+          {canRemove && (
+            <button
+              type="button"
+              onClick={removeChild}
+              className="text-xs font-medium text-red-600 hover:text-red-700 focus:ring-2 focus:ring-red-500 rounded-lg px-2 py-1"
+              aria-label={`Eliminar hijo ${index + 1}`}
+            >
+              Eliminar
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -111,8 +140,6 @@ const ChildCard = ({ index, child, updateChild, removeChild, canRemove }) => {
           required
           error={child.errors?.name}
         />
-
-
 
         {/* Documento: select + número (lado a lado) */}
         <div className="grid grid-cols-2 gap-3">
@@ -130,6 +157,9 @@ const ChildCard = ({ index, child, updateChild, removeChild, canRemove }) => {
               <option>Pasaporte</option>
               <option>C. E.</option>
             </select>
+            {child.errors?.docType && (
+              <p role="alert" className="text-xs text-red-600 mt-1">{child.errors.docType}</p>
+            )}
           </div>
           <div>
             <TextField
@@ -159,8 +189,6 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
         name: "",
         docType: "DNI",
         docNumber: "",
-
-
         hobbies: "",
         sports: "",
         favoriteDish: "",
@@ -176,6 +204,12 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
   const [dniValidated, setDniValidated] = useState(false);
   const [dniLoading, setDniLoading] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
+
+  // Memo: ¿hay al menos un hijo completo?
+  const hasAtLeastOneCompleteChild = useMemo(
+    () => (data.children || []).some(isChildComplete),
+    [data.children]
+  );
 
   // Función para validar DNI - ÚNICA verificación
   const validateDNI = async (dni) => {
@@ -274,8 +308,7 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
         name: "",
         docType: "DNI",
         docNumber: "",
-
-
+        errors: {},
       },
     ]);
   };
@@ -293,46 +326,46 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
 
   const validateClient = () => {
     let ok = true;
-    const errors = {};
+    const localErrors = {};
 
     // Validación del nombre del tutor
     if (!data.parent_name?.trim()) {
-      errors.parent_name = "El nombre del tutor es obligatorio.";
+      localErrors.parent_name = "El nombre del tutor es obligatorio.";
       ok = false;
     } else if (data.parent_name.trim().length < 3) {
-      errors.parent_name = "El nombre del tutor debe tener al menos 3 caracteres.";
+      localErrors.parent_name = "El nombre del tutor debe tener al menos 3 caracteres.";
       ok = false;
     } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(data.parent_name.trim())) {
-      errors.parent_name = "El nombre del tutor solo puede contener letras y espacios.";
+      localErrors.parent_name = "El nombre del tutor solo puede contener letras y espacios.";
       ok = false;
     }
 
     // Validación del teléfono peruano (9 dígitos iniciando en 9)
     const cleanPhone = (data.parent_phone || "").replace(/\D/g, "");
     if (!cleanPhone) {
-      errors.parent_phone = "El celular es obligatorio.";
+      localErrors.parent_phone = "El celular es obligatorio.";
       ok = false;
     } else if (!/^9\d{8}$/.test(cleanPhone)) {
-      errors.parent_phone = "El celular debe ser un número peruano válido (9 dígitos empezando en 9).";
+      localErrors.parent_phone = "El celular debe ser un número peruano válido (9 dígitos empezando en 9).";
       ok = false;
     }
 
     // Validación del email
     if (!data.parent_email?.trim()) {
-      errors.parent_email = "El correo electrónico es obligatorio.";
+      localErrors.parent_email = "El correo electrónico es obligatorio.";
       ok = false;
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.parent_email.trim())) {
-      errors.parent_email = "El correo electrónico debe tener un formato válido.";
+      localErrors.parent_email = "El correo electrónico debe tener un formato válido.";
       ok = false;
     }
 
     // Validación del DNI
     const cleanDni = (data.parent_dni || "").replace(/\D/g, "");
     if (!cleanDni) {
-      errors.parent_dni = "El DNI es obligatorio.";
+      localErrors.parent_dni = "El DNI es obligatorio.";
       ok = false;
     } else if (!/^\d{8}$/.test(cleanDni)) {
-      errors.parent_dni = "El DNI debe tener exactamente 8 dígitos.";
+      localErrors.parent_dni = "El DNI debe tener exactamente 8 dígitos.";
       ok = false;
     }
 
@@ -340,13 +373,16 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
     const children = data.children.map((c) => ({ ...c, errors: {} }));
     
     if (data.children.length === 0) {
-      errors.children = "Debe registrar al menos un hijo.";
+      localErrors.children = "Debe registrar al menos un hijo.";
       ok = false;
     } else if (data.children.length > 5) {
-      errors.children = "No puede registrar más de 5 hijos a la vez.";
+      localErrors.children = "No puede registrar más de 5 hijos a la vez.";
       ok = false;
     }
 
+    // Verificar que al menos un hijo esté completamente lleno
+    let hasCompleteChild = false;
+    
     children.forEach((c, index) => {
       const e = {};
       
@@ -383,23 +419,32 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
         ok = false;
       }
 
+      // Verificar si este hijo está completamente lleno
+      if (isChildComplete(c) && Object.keys(e).length === 0) {
+        hasCompleteChild = true;
+      }
+
       c.errors = e;
     });
+
+    // Validar que al menos un hijo esté completamente lleno
+    if (data.children.length > 0 && !hasCompleteChild) {
+      localErrors.children = "Debe completar al menos los datos básicos de un hijo (nombre y documento).";
+      ok = false;
+    }
 
     // Verificar documentos duplicados
     const documentos = children.map(c => `${c.docType}-${c.docNumber?.trim()}`);
     const documentosUnicos = new Set(documentos);
     if (documentos.length !== documentosUnicos.size) {
-      errors.children = "No puede registrar hijos con el mismo tipo y número de documento.";
+      localErrors.children = "No puede registrar hijos con el mismo tipo y número de documento.";
       ok = false;
     }
 
     setData("children", children);
 
-    // Si hay errores generales, añadirlos al estado de errores
-    if (Object.keys(errors).length > 0) {
-      // Aquí podrías manejar los errores generales si tu componente los soporta
-      console.log("Errores de validación:", errors);
+    if (Object.keys(localErrors).length > 0) {
+      console.log("Errores de validación:", localErrors);
     }
 
     return ok;
@@ -419,6 +464,11 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
       return;
     }
 
+    if (!hasAtLeastOneCompleteChild) {
+      showWarning('Hijos incompletos', 'Debes completar al menos un hijo (nombre, tipo y número de documento).');
+      return;
+    }
+
     // Determinar la URL según si es inscripción específica o formulario general
     const submitUrl = paquete && grupo 
       ? `/paquete/${paquete.id}/grupo/${grupo.id}/form`
@@ -432,7 +482,6 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
           '¡Inscripción exitosa!', 
           'Los datos se han guardado correctamente. Recibirás un correo con los detalles.'
         ).then(() => {
-          // Redirigir al login después de cerrar el sweet alert
           router.visit('/login');
         });
         
@@ -446,7 +495,6 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
             name: "", 
             docType: "DNI", 
             docNumber: "",
-
             hobbies: "",
             sports: "",
             favoriteDish: "",
@@ -459,9 +507,9 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
         setDniValidated(false);
         setShowUserExistsWarning(false);
         setExistingUserData(null);
+        setConsentChecked(false);
       },
       onError: (errors) => {
-        // Mostrar errores específicos
         if (errors.capacity) {
           showError('Sin cupos disponibles', errors.capacity);
         } else if (errors.children) {
@@ -478,7 +526,6 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50 via-orange-50 to-amber-50 flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-3xl">
-
         <Card>
           <form onSubmit={handleSubmit} noValidate>
             {/* Logo */}
@@ -576,41 +623,29 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
                     </div>
                   </div>
                 )}
-                
-                {/* <div className="flex items-center justify-between p-3 bg-white/60 rounded-lg border border-blue-100">
-                  <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    <span className="text-sm font-medium text-gray-700">Lugares disponibles</span>
-                  </div>
-                  <span className="text-lg font-bold text-green-600">{capacidadDisponible}</span>
-                </div> */}
               </div>
             )}
 
-            {/* Mensajes flash ahora manejados por SweetAlert */}
-
-           {/* Datos del padre/madre/tutor */}
+            {/* Datos del padre/madre/tutor */}
             <section className="mb-8">
-            <SectionTitle subtitle="Usaremos estos datos para crear tu cuenta.">
+              <SectionTitle subtitle="Usaremos estos datos para crear tu cuenta.">
                 Datos del padre
-            </SectionTitle>
+              </SectionTitle>
 
-            <div className="grid grid-cols-1 gap-4">
-                {/* Nombre ocupa todo el ancho */}
+              <div className="grid grid-cols-1 gap-4">
+                {/* Nombre */}
                 <TextField
-                id="parent_name"
-                label="Nombre completo"
-                value={data.parent_name}
-                onChange={(e) => setData("parent_name", e.target.value)}
-                placeholder="Nombre y apellidos"
-                required
-                autoComplete="name"
-                error={errors.parent_name}
+                  id="parent_name"
+                  label="Nombre completo"
+                  value={data.parent_name}
+                  onChange={(e) => setData("parent_name", e.target.value)}
+                  placeholder="Nombre y apellidos"
+                  required
+                  autoComplete="name"
+                  error={errors.parent_name}
                 />
 
-                {/* DNI ocupa todo el ancho */}
+                {/* DNI */}
                 <div className="space-y-1">
                   <label htmlFor="parent_dni" className={labelStyles}>
                     DNI
@@ -623,7 +658,6 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
                       onChange={(e) => {
                         const value = e.target.value.replace(/[^0-9]/g, "");
                         setData("parent_dni", value);
-                        // Reset validación cuando se cambia
                         if (value.length !== 8) {
                           setDniValidated(false);
                         }
@@ -692,14 +726,14 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
                   </div>
                 )}
 
-                {/* Celular + Correo en la misma fila en PC */}
+                {/* Celular + Correo */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <TextField
+                  <TextField
                     id="parent_phone"
                     label="Celular"
                     value={data.parent_phone}
                     onChange={(e) =>
-                    setData("parent_phone", e.target.value.replace(/[^0-9]/g, ""))
+                      setData("parent_phone", e.target.value.replace(/[^0-9]/g, ""))
                     }
                     placeholder={dniValidated ? "9XXXXXXXX" : "Primero complete el DNI"}
                     required
@@ -709,9 +743,9 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
                     describedby="phone_help"
                     error={errors.parent_phone}
                     disabled={!dniValidated}
-                />
+                  />
 
-                <TextField
+                  <TextField
                     id="parent_email"
                     label="Correo"
                     type="email"
@@ -722,9 +756,9 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
                     autoComplete="email"
                     error={errors.parent_email}
                     disabled={!dniValidated}
-                />
+                  />
                 </div>
-            </div>
+              </div>
             </section>
 
             {/* Advertencia de usuario existente */}
@@ -809,19 +843,24 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
               </section>
             )}
 
-
             {/* Hijos */}
-            <section className={classNames(
-              "mb-8 transition-opacity",
-              !dniValidated && "opacity-50 pointer-events-none"
-            )}>
-              <SectionTitle subtitle={
-                dniValidated 
-                  ? "Añade tantos menores como necesites. El número del tutor será usado como contacto de emergencia."
-                  : "Complete y valide el DNI del tutor para habilitar esta sección."
-              }>
+            <section
+              className={classNames(
+                "mb-8 transition-opacity",
+                !dniValidated && "opacity-50 pointer-events-none"
+              )}
+            >
+              <SectionTitle
+                subtitle={
+                  dniValidated
+                    ? "Debe completar al menos un hijo para poder enviar el formulario. El número del tutor será usado como contacto de emergencia."
+                    : "Complete y valide el DNI del tutor para habilitar esta sección."
+                }
+              >
                 Datos de hijo(s)
               </SectionTitle>
+
+            
 
               {!dniValidated && (
                 <div className=" bg-gray-50 border border-gray-200 rounded-xl"></div>
@@ -835,6 +874,7 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
                   updateChild={updateChild}
                   removeChild={() => removeChild(index)}
                   canRemove={data.children.length > 1}
+                  complete={isChildComplete(child)}
                 />
               ))}
 
@@ -847,6 +887,13 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
                   <span aria-hidden>＋</span> Agregar hijo
                 </button>
               </div>
+
+              {/* Mostrar error si no hay hijos completados (de validación del servidor/cliente) */}
+              {errors.children && (
+                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl">
+                  <p className="text-sm text-red-600 font-medium">{errors.children}</p>
+                </div>
+              )}
             </section>
 
             {/* Consentimiento y políticas */}
@@ -871,11 +918,12 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
             <div className="sticky bottom-0 pt-4 bg-gradient-to-t from-white/80 to-transparent">
               <button
                 type="submit"
-                disabled={processing || !dniValidated || !consentChecked}
+                disabled={processing || !dniValidated || !consentChecked || !hasAtLeastOneCompleteChild}
                 className={classNames(
                   "w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-semibold text-white",
                   "bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-300",
-                  (processing || !dniValidated || !consentChecked) && "opacity-70 cursor-not-allowed"
+                  (processing || !dniValidated || !consentChecked || !hasAtLeastOneCompleteChild) &&
+                    "opacity-70 cursor-not-allowed"
                 )}
               >
                 {processing ? (
@@ -907,6 +955,8 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
                   <>Complete el DNI para continuar</>
                 ) : !consentChecked ? (
                   <>Acepte los términos para continuar</>
+                ) : !hasAtLeastOneCompleteChild ? (
+                  <>Complete al menos un hijo</>
                 ) : (
                   <>Enviar datos</>
                 )}
