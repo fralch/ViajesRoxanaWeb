@@ -629,7 +629,7 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
             {/* Datos del padre/madre/tutor */}
             <section className="mb-8">
               <SectionTitle subtitle="Usaremos estos datos para crear tu cuenta.">
-                Datos del padre
+               Datos del apoderado
               </SectionTitle>
 
               <div className="grid grid-cols-1 gap-4">
@@ -853,7 +853,7 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
               <SectionTitle
                 subtitle={
                   dniValidated
-                    ? "Debe completar al menos un hijo para poder enviar el formulario. El número del tutor será usado como contacto de emergencia."
+                    ? "Debe completar los datos de su hijo para poder inscribirse correctamente. El numero del apoderado será usado como contacto de emergencia."
                     : "Complete y valide el DNI del tutor para habilitar esta sección."
                 }
               >
@@ -908,8 +908,7 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
                   className="mt-1 h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
                 />
                 <label htmlFor="consent" className="text-sm text-gray-700">
-                  Confirmo que los datos ingresados son correctos y autorizo el uso para gestionar los
-                  servicios de viaje. <span className="text-gray-500">(Obligatorio)</span>
+                  Declaro que los datos proporcionados son verídicos y autorizo su uso exclusivo para la gestión del viaje escolar contratado. <span className="text-gray-500">(Obligatorio)</span>
                 </label>
               </div>
             </section>
