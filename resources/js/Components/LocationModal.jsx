@@ -109,7 +109,7 @@ export default function LocationModal({
       longitude: lastLocation.longitude,
       latitude: lastLocation.latitude,
       title: `Ubicación de ${childName}`,
-      description: currentAddress,
+      description: lastLocation.descripcion || currentAddress,
       color: '#EF4444',
       icon: '📍'
     }] : []
@@ -213,7 +213,10 @@ export default function LocationModal({
               </svg>
             </div>
             <div>
-              <h2 className="text-xl md:text-2xl font-bold text-gray-900">Ubicación de {childName} </h2>
+              <h2 className="text-xl md:text-2xl font-bold text-gray-900">Ubicación de {childName}</h2>
+              {lastLocation?.descripcion && (
+                <p className="text-sm text-gray-600 mt-1">{lastLocation.descripcion}</p>
+              )}
             </div>
           </div>
 
@@ -280,17 +283,48 @@ export default function LocationModal({
 
           </div>
 
-          {/* Estado de conexión discreto */}
-          <div className="absolute bottom-6 left-6 z-10">
-            <div className="px-3 py-2 rounded-lg bg-white/90 backdrop-blur-sm border border-gray-200 shadow-md">
-              <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${lastLocation ? 'bg-green-500' : 'bg-gray-400'}`} />
-                <span className="text-xs font-medium text-gray-700">
-                  {lastLocation ? 'Conectado' : 'Sin datos'}
-                </span>
+          {/* Información de ubicación */}
+          {lastLocation && (
+            <div className="absolute bottom-6 left-6 z-10 max-w-xs">
+              <div className="px-4 py-3 rounded-xl bg-white/95 backdrop-blur-sm border border-gray-200 shadow-lg">
+                <div className="flex items-start gap-3">
+                  <div className={`w-2 h-2 rounded-full mt-1.5 ${lastLocation ? 'bg-green-500' : 'bg-gray-400'}`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-medium text-gray-900 mb-1">
+                      {lastLocation ? 'Última ubicación' : 'Sin datos'}
+                    </div>
+                    {lastLocation.descripcion && (
+                      <div className="text-xs text-gray-700 font-medium mb-1">
+                        {lastLocation.descripcion}
+                      </div>
+                    )}
+                    {currentAddress && (
+                      <div className="text-xs text-gray-600 truncate">
+                        {currentAddress}
+                      </div>
+                    )}
+                    {lastUpdate && (
+                      <div className="text-xs text-gray-500 mt-1">
+                        {lastUpdate.toLocaleTimeString()}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          )}
+
+          {/* Estado de conexión discreto para cuando no hay ubicación */}
+          {!lastLocation && (
+            <div className="absolute bottom-6 left-6 z-10">
+              <div className="px-3 py-2 rounded-lg bg-white/90 backdrop-blur-sm border border-gray-200 shadow-md">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-gray-400" />
+                  <span className="text-xs font-medium text-gray-700">Sin datos</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Mensaje de error flotante */}
           {locationError && (
