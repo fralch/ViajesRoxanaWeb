@@ -75,7 +75,18 @@ class HijoController extends Controller
      */
     public function create()
     {
-        return Inertia::render('Hijos/Create');
+        $users = null;
+        
+        // Si es admin, obtener todos los usuarios para el selector
+        if (Auth::user()->is_admin) {
+            $users = User::select('id', 'name', 'email')
+                        ->orderBy('name')
+                        ->get();
+        }
+        
+        return Inertia::render('Hijos/Create', [
+            'users' => $users
+        ]);
     }
 
     /**
@@ -130,8 +141,23 @@ class HijoController extends Controller
      */
     public function edit(Hijo $hijo)
     {
+        // Verificar permisos
+        if (!Auth::user()->is_admin && $hijo->user_id !== Auth::id()) {
+            abort(403, 'No tienes permisos para editar este hijo.');
+        }
+        
+        $users = null;
+        
+        // Si es admin, obtener todos los usuarios para el selector
+        if (Auth::user()->is_admin) {
+            $users = User::select('id', 'name', 'email')
+                        ->orderBy('name')
+                        ->get();
+        }
+        
         return Inertia::render('Hijos/Edit', [
-            'hijo' => $hijo
+            'hijo' => $hijo,
+            'users' => $users
         ]);
     }
 
@@ -148,18 +174,14 @@ class HijoController extends Controller
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
             'nombres' => 'required|string|max:255',
-            'doc_tipo' => 'required|in:CC,TI,RC,CE',
             'doc_numero' => 'required|string|max:20|unique:hijos,doc_numero,' . $hijo->id,
             'nums_emergencia' => 'required|array|min:1',
             'nums_emergencia.*' => 'required|string|max:20',
-            'fecha_nacimiento' => 'required|date|before:today',
-            'foto' => 'nullable|string',
-            'pasatiempos' => 'nullable|string',
-            'deportes' => 'nullable|string',
-            'plato_favorito' => 'nullable|string|max:255',
-            'color_favorito' => 'nullable|string|max:100',
-            'informacion_adicional' => 'nullable|string'
+            'fecha_nacimiento' => 'required|date|before:today'
         ]);
+        
+        // El tipo de documento no se puede cambiar, mantener el actual
+        $validated['doc_tipo'] = $hijo->doc_tipo;
         
         // Si no es admin, mantener el usuario actual
         if (!Auth::user()->is_admin) {
