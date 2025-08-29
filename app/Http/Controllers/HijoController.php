@@ -99,7 +99,7 @@ class HijoController extends Controller
             'nombres' => 'required|string|max:255',
             'doc_tipo' => 'required|in:CC,TI,RC,CE',
             'doc_numero' => 'required|string|max:20|unique:hijos,doc_numero',
-            'nums_emergencia' => 'required|array|min:1',
+            'nums_emergencia' => 'nullable|array|max:5',
             'nums_emergencia.*' => 'required|string|max:20',
             'fecha_nacimiento' => 'required|date|before:today',
             'foto' => 'nullable|string',
@@ -175,7 +175,7 @@ class HijoController extends Controller
             'user_id' => 'required|exists:users,id',
             'nombres' => 'required|string|max:255',
             'doc_numero' => 'required|string|max:20|unique:hijos,doc_numero,' . $hijo->id,
-            'nums_emergencia' => 'required|array|min:1',
+            'nums_emergencia' => 'nullable|array|max:5',
             'nums_emergencia.*' => 'required|string|max:20',
             'fecha_nacimiento' => 'required|date|before:today'
         ]);

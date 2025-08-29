@@ -113,7 +113,7 @@ export default function Show({ hijo }) {
                     </div>
                   )}
 
-                  {hijo.nums_emergencia && hijo.nums_emergencia.length > 0 && (
+                  {hijo.nums_emergencia && Array.isArray(hijo.nums_emergencia) && hijo.nums_emergencia.length > 0 && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Números de emergencia</label>
                       <div className="mt-1 space-y-1">

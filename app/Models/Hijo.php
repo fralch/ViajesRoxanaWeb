@@ -47,4 +47,19 @@ class Hijo extends Model
     {
         return $this->hasMany(NutricionFicha::class);
     }
+
+    // Accessor para asegurar que nums_emergencia siempre sea un array
+    public function getNumsEmergenciaAttribute($value)
+    {
+        if (is_null($value) || $value === '') {
+            return [];
+        }
+        
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            return is_array($decoded) ? $decoded : [];
+        }
+        
+        return is_array($value) ? $value : [];
+    }
 }
