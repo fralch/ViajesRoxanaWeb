@@ -30,12 +30,14 @@ class StoreInscripcionFormRequest extends FormRequest
             'parent_phone' => [
                 'required',
                 'string',
-                'regex:/^9\d{8}$/'
+                'regex:/^9\d{8}$/',
+                'unique:users,phone'
             ],
             'parent_email' => [
                 'required',
                 'email',
-                'max:255'
+                'max:255',
+                'unique:users,email'
             ],
             'parent_dni' => [
                 'required',
@@ -80,8 +82,10 @@ class StoreInscripcionFormRequest extends FormRequest
             'parent_name.regex' => 'El nombre del tutor solo puede contener letras y espacios.',
             'parent_phone.required' => 'El celular es obligatorio.',
             'parent_phone.regex' => 'El celular debe ser un número peruano válido (9 dígitos empezando en 9).',
+            'parent_phone.unique' => 'Este número de celular ya está registrado.',
             'parent_email.required' => 'El correo electrónico es obligatorio.',
             'parent_email.email' => 'El correo electrónico debe tener un formato válido.',
+            'parent_email.unique' => 'Este correo electrónico ya está registrado.',
             'parent_dni.required' => 'El DNI es obligatorio.',
             'parent_dni.regex' => 'El DNI debe tener exactamente 8 dígitos.',
             'children.required' => 'Debe registrar al menos un hijo.',

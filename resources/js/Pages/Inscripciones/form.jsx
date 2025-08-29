@@ -512,6 +512,10 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
       onError: (errors) => {
         if (errors.capacity) {
           showError('Sin cupos disponibles', errors.capacity);
+        } else if (errors.parent_email) {
+          showError('Correo electrónico duplicado', errors.parent_email);
+        } else if (errors.parent_phone) {
+          showError('Teléfono duplicado', errors.parent_phone);
         } else if (errors.children) {
           showError('Error en datos de hijos', errors.children);
         } else if (Object.keys(errors).length > 0) {
