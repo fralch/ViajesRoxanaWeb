@@ -19,7 +19,7 @@ class WhatsAppService
             $mensaje .= "👋 ¡Bienvenido!\n\n";
             $mensaje .= "👤 Usuario: {$name}\n";
             $mensaje .= "🔐 Contraseña: {$password}\n\n";
-            $mensaje .= "📲 Ingresa aquí : grupoviajesroxana.com\n\n";
+            $mensaje .= "📲 Ingresa aquí : https://grupoviajesroxana.com \n\n";
             $mensaje .= "👉 Con tu cuenta podrás:\n\n";
             $mensaje .= "Ver la información y el itinerario de tu hijo.\n";
             $mensaje .= "* Acceder a comunicados y novedades del viaje.\n";

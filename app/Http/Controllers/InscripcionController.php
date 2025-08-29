@@ -298,13 +298,26 @@ class InscripcionController extends Controller
 
         // Nota: Solo verificamos por DNI del padre. Los hijos pueden tener documentos duplicados entre diferentes padres.
 
-        DB::transaction(function () use ($validated, $paquete, $grupo) {
-            // Buscar usuario existente SOLO por DNI
+        try {
+            DB::transaction(function () use ($validated, $paquete, $grupo) {
+            // Buscar usuario existente por DNI
             $user = User::where('dni', $validated['parent_dni'])->first();
             
             if (!$user) {
+                // Verificar si ya existe un usuario con el mismo email o teléfono
+                $existingUserByEmail = User::where('email', $validated['parent_email'])->first();
+                $existingUserByPhone = User::where('phone', $validated['parent_phone'])->first();
+                
+                if ($existingUserByEmail) {
+                    throw new \Exception('email_exists');
+                }
+                
+                if ($existingUserByPhone) {
+                    throw new \Exception('phone_exists');
+                }
+                
                 // Crear contraseña con DNI
-                $password =$validated['parent_dni'];
+                $password = $validated['parent_dni'];
                 
                 $user = User::create([
                     'name' => $validated['parent_name'],
@@ -370,10 +383,26 @@ class InscripcionController extends Controller
                     ]);
                 }
             }
-        });
+            });
 
-        return redirect()->route('inscripcion.form', [$paquete->id, $grupo->id])
-            ->with('success', 'Inscripción realizada exitosamente. Recibirás un correo con los detalles.');
+            return redirect()->route('inscripcion.form', [$paquete->id, $grupo->id])
+                ->with('success', 'Inscripción realizada exitosamente. Recibirás un correo con los detalles.');
+    } catch (\Exception $e) {
+        if ($e->getMessage() === 'email_exists') {
+            return back()->withErrors([
+                'parent_email' => 'Ya existe un usuario registrado con este correo electrónico.'
+            ]);
+        }
+        
+        if ($e->getMessage() === 'phone_exists') {
+            return back()->withErrors([
+                'parent_phone' => 'Ya existe un usuario registrado con este número de teléfono.'
+            ]);
+        }
+        
+        // Re-lanzar la excepción si no es una de las que manejamos
+        throw $e;
+    }
     }
 
 
