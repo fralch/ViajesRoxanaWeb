@@ -49,7 +49,9 @@ class TrazabilidadController extends Controller
     public function guardarMensaje(Request $request, $grupoId)
     {
         $validated = $request->validate([
-            'descripcion' => 'required|string|max:500'
+            'descripcion' => 'required|string|max:500',
+            'latitud' => 'required|numeric|between:-90,90',
+            'longitud' => 'required|numeric|between:-180,180'
         ]);
 
         try {
@@ -75,8 +77,8 @@ class TrazabilidadController extends Controller
                     'grupo_id' => $grupo->id,
                     'hijo_id' => $inscripcion->hijo->id,
                     'descripcion' => $validated['descripcion'],
-                    'latitud' => '0', // Sin ubicación inicial
-                    'longitud' => '0', // Sin ubicación inicial
+                    'latitud' => $validated['latitud'],
+                    'longitud' => $validated['longitud'],
                     'created_at' => now(),
                     'updated_at' => now()
                 ];
@@ -103,6 +105,8 @@ class TrazabilidadController extends Controller
             \Log::error('Error al guardar mensaje de trazabilidad: ' . $e->getMessage(), [
                 'grupo_id' => $grupoId,
                 'descripcion' => $validated['descripcion'],
+                'latitud' => $validated['latitud'] ?? 'no_provided',
+                'longitud' => $validated['longitud'] ?? 'no_provided',
                 'trace' => $e->getTraceAsString()
             ]);
             
