@@ -23,7 +23,7 @@ export default function PerfilHijo({ hijo }) {
         plato_favorito: hijo?.plato_favorito || '',
         color_favorito: hijo?.color_favorito || '',
         informacion_adicional: hijo?.informacion_adicional || '',
-        nums_emergencia: Array.isArray(hijo?.nums_emergencia) ? hijo.nums_emergencia : (hijo?.nums_emergencia ? JSON.parse(hijo.nums_emergencia) : [])
+        nums_emergencia: Array.isArray(hijo?.nums_emergencia) ? hijo.nums_emergencia : []
     });
 
     const handlePerfilSubmit = (e) => {
@@ -71,20 +71,55 @@ export default function PerfilHijo({ hijo }) {
                         informacion_adicional: hijoActualizado.informacion_adicional || prevData.informacion_adicional,
                         nums_emergencia: Array.isArray(hijoActualizado.nums_emergencia) ? 
                             hijoActualizado.nums_emergencia : 
-                            (hijoActualizado.nums_emergencia ? 
-                                JSON.parse(hijoActualizado.nums_emergencia) : 
-                                prevData.nums_emergencia)
+                            prevData.nums_emergencia
                     }));
                 }
             },
             onError: (errors) => {
                 console.log('OnError called:', errors);
+                
+                // Mapear nombres de campos a etiquetas legibles
+                const fieldLabels = {
+                    nombres: 'Nombres Completos',
+                    doc_numero: 'Número de Documento',
+                    fecha_nacimiento: 'Fecha de Nacimiento',
+                    pasatiempos: 'Pasatiempos Favoritos',
+                    deportes: 'Deportes que Practica',
+                    plato_favorito: 'Plato Favorito',
+                    color_favorito: 'Color Favorito',
+                    informacion_adicional: 'Información Adicional',
+                    nums_emergencia: 'Números de Emergencia',
+                    foto: 'Foto de Perfil'
+                };
+                
+                // Construir mensaje de error detallado
+                let errorMessage = 'Se encontraron los siguientes errores:\n\n';
+                let hasErrors = false;
+                
+                Object.keys(errors).forEach(field => {
+                    if (errors[field]) {
+                        hasErrors = true;
+                        // Manejar errores de arrays (ej: nums_emergencia.0, nums_emergencia.1)
+                        const baseField = field.split('.')[0];
+                        const fieldLabel = fieldLabels[baseField] || fieldLabels[field] || field;
+                        const errorText = Array.isArray(errors[field]) ? errors[field][0] : errors[field];
+                        errorMessage += `• ${fieldLabel}: ${errorText}\n`;
+                    }
+                });
+                
+                if (!hasErrors) {
+                    errorMessage = 'Hubo un problema al guardar la información. Por favor, verifica los datos e inténtalo nuevamente.';
+                }
+                
                 Swal.fire({
                     title: 'Error al Guardar',
-                    text: 'Hubo un problema al guardar la información. Por favor, verifica los datos e inténtalo nuevamente.',
+                    text: errorMessage,
                     icon: 'error',
                     confirmButtonText: 'Entendido',
-                    confirmButtonColor: '#dc2626'
+                    confirmButtonColor: '#dc2626',
+                    customClass: {
+                        popup: 'text-left'
+                    }
                 });
             },
             onFinish: () => {
@@ -94,7 +129,9 @@ export default function PerfilHijo({ hijo }) {
     };
 
     const addEmergencyNumber = () => {
-        setPerfilData('nums_emergencia', [...perfilData.nums_emergencia, '']);
+        if (perfilData.nums_emergencia.length < 2) {
+            setPerfilData('nums_emergencia', [...perfilData.nums_emergencia, '']);
+        }
     };
 
     const updateEmergencyNumber = (index, value) => {
@@ -391,11 +428,23 @@ export default function PerfilHijo({ hijo }) {
                                         <SecondaryButton 
                                             type="button" 
                                             onClick={addEmergencyNumber}
-                                            className="ml-auto text-sm"
+                                            disabled={perfilData.nums_emergencia.length >= 2}
+                                            className={`ml-auto text-sm ${
+                                                perfilData.nums_emergencia.length >= 2 
+                                                    ? 'opacity-50 cursor-not-allowed' 
+                                                    : ''
+                                            }`}
                                         >
-                                            + Agregar Número
+                                            {perfilData.nums_emergencia.length >= 2 
+                                                ? 'Máximo 2 números' 
+                                                : '+ Agregar Número'
+                                            }
                                         </SecondaryButton>
                                     </h4>
+                                    
+                                    <p className="text-sm text-gray-600 mb-4">
+                                        Puedes agregar hasta 2 números de contacto para emergencias.
+                                    </p>
                                     
                                     <div className="bg-red-50 p-6 rounded-2xl">
                                         <div className="space-y-4">

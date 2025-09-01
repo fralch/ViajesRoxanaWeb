@@ -48,15 +48,15 @@ class PerfilHijoController extends Controller
             'plato_favorito' => 'nullable|string|max:200',
             'color_favorito' => 'nullable|string|max:100',
             'informacion_adicional' => 'nullable|string|max:1000',
-            'nums_emergencia' => 'nullable|array|max:5',
+            'nums_emergencia' => 'nullable|array|max:2',
             'nums_emergencia.*' => 'required|string|regex:/^[\d\s\+\-\(\)]+$/|max:20'
         ], [
             'nombres.required' => 'El nombre es obligatorio',
 
             'doc_numero.required' => 'El número de documento es obligatorio',
             'fecha_nacimiento.before_or_equal' => 'La fecha de nacimiento no puede ser futura',
-            'nums_emergencia.max' => 'Máximo 5 números de emergencia permitidos',
-            'nums_emergencia.*.regex' => 'Los números de teléfono solo pueden contener dígitos, espacios y símbolos +, -, (, )',
+            'nums_emergencia.max' => 'Máximo 2 números de emergencia permitidos',
+            'nums_emergencia.*.regex' => 'Los números de emergencia solo admiten números',
             'pasatiempos.max' => 'Los pasatiempos no pueden exceder 500 caracteres',
             'deportes.max' => 'Los deportes no pueden exceder 500 caracteres',
             'informacion_adicional.max' => 'La información adicional no puede exceder 1000 caracteres'
@@ -64,18 +64,18 @@ class PerfilHijoController extends Controller
 
         $data = $request->except(['doc_tipo']);
         
-        // Convertir array de números de emergencia a JSON si existe
+        // Filtrar números de emergencia vacíos si existen
         if (isset($data['nums_emergencia'])) {
             // Filtrar números vacíos y limpiar espacios
             $data['nums_emergencia'] = array_filter($data['nums_emergencia'], function($num) {
                 return !empty(trim($num));
             });
             
-            // Reindexar array y convertir a JSON
-            $data['nums_emergencia'] = json_encode(array_values($data['nums_emergencia']));
+            // Reindexar array para evitar índices faltantes
+            $data['nums_emergencia'] = array_values($data['nums_emergencia']);
         } else {
             // Si no hay números, guardar array vacío
-            $data['nums_emergencia'] = json_encode([]);
+            $data['nums_emergencia'] = [];
         }
 
         $hijo->update($data);
@@ -83,11 +83,8 @@ class PerfilHijoController extends Controller
         // Refrescar el modelo para obtener los datos actualizados de la base de datos
         $hijo->refresh();
         
-        // Parsear nums_emergencia para retornar como array
+        // El cast automático del modelo ya maneja la conversión a array
         $hijoArray = $hijo->toArray();
-        if (!empty($hijoArray['nums_emergencia'])) {
-            $hijoArray['nums_emergencia'] = json_decode($hijoArray['nums_emergencia'], true);
-        }
 
         return redirect()->back()->with([
             'message' => '✅ Perfil actualizado correctamente',

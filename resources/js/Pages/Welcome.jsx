@@ -540,8 +540,8 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                                     </h1>
                                     
                                     <p className="text-xl lg:text-2xl text-gray-700 leading-relaxed max-w-2xl">
-                                        Bienvenido a tu <span className="font-semibold text-red-600">portal personal</span> de Viajes Roxana. 
-                                        Gestiona tu perfil, rastrea ubicaciones y mantente conectado con nosotros.
+                                        Bienvenido a tu <span className="font-semibold text-red-600">portal de apoderado</span>. <br />
+                                        Aquí accedes a la información y al viaje de tu hijo(a).
                                     </p>
 
                                    
@@ -666,7 +666,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                 {/* Services Grid mejorada */}
                 <section className="mx-auto max-w-7xl px-6 pb-20">
                     <div className="text-center mb-16">
-                        <h2 className="text-4xl font-bold text-gray-900 mb-4">Tus Servicios</h2>
+                        <h2 className="text-4xl font-bold text-gray-900 mb-4">Servicios de <span className="text-red-600">{selectedChild?.nombres || "hijo"}</span></h2>
                         <p className="text-xl text-gray-600 max-w-2xl mx-auto">
                             Accede rápidamente a todas las funciones disponibles para hacer tu experiencia más cómoda
                         </p>
@@ -675,7 +675,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                     <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                         <ServiceCard
                             icon="/imgs/perfilvr.png"
-                            title={selectedChild ? `Perfil ${selectedChild.nombres}` : "Perfil hijo"}
+                            title={selectedChild ? `Perfil` : "Perfil hijo"}
                             description="Gestiona tus datos personales, ficha médica y nutricional de forma segura."
                             link={selectedChild ? route('perfil.hijo', selectedChild.id) : "#"}
                             color="red"
@@ -689,7 +689,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                 </svg>
                             }
-                            title={selectedChild ? `Ubicación ${selectedChild.nombres}` : "Ubicación"}
+                            title={selectedChild ? `Ubicación` : "Ubicación"}
                             description="Rastrea la ubicación de tu hijo  durante el viaje con GPS de precisión."
                             onClick={() => setShowLocationModal(true)}
                             color="orange"
