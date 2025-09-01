@@ -49,7 +49,9 @@ class TrazabilidadController extends Controller
     public function guardarMensaje(Request $request, $grupoId)
     {
         $validated = $request->validate([
-            'descripcion' => 'required|string|max:500'
+            'descripcion' => 'required|string|max:500',
+            'latitud' => 'required|numeric|between:-90,90',
+            'longitud' => 'required|numeric|between:-180,180'
         ]);
 
         try {
@@ -75,8 +77,8 @@ class TrazabilidadController extends Controller
                     'grupo_id' => $grupo->id,
                     'hijo_id' => $inscripcion->hijo->id,
                     'descripcion' => $validated['descripcion'],
-                    'latitud' => '0', // Sin ubicación inicial
-                    'longitud' => '0', // Sin ubicación inicial
+                    'latitud' => $validated['latitud'],
+                    'longitud' => $validated['longitud'],
                     'created_at' => now(),
                     'updated_at' => now()
                 ];
@@ -103,6 +105,8 @@ class TrazabilidadController extends Controller
             \Log::error('Error al guardar mensaje de trazabilidad: ' . $e->getMessage(), [
                 'grupo_id' => $grupoId,
                 'descripcion' => $validated['descripcion'],
+                'latitud' => $validated['latitud'] ?? 'no_provided',
+                'longitud' => $validated['longitud'] ?? 'no_provided',
                 'trace' => $e->getTraceAsString()
             ]);
             
@@ -250,10 +254,45 @@ class TrazabilidadController extends Controller
                 abort(404, 'No se encontró grupo activo para este niño en la fecha actual');
             }
 
-            // Obtener coordenadas desde la solicitud (enviadas por JavaScript del frontend)
-            $latitud = request()->input('lat', 0);
-            $longitud = request()->input('lng', 0);
+            // Obtener descripción desde la solicitud si se proporciona
             $descripcion = request()->input('descripcion', '');
+            
+            // SIEMPRE buscar la ubicación más reciente de la tabla trazabilidad para este hijo y grupo
+            $ubicacionReciente = Trazabilidad::where('hijo_id', $hijo->id)
+                ->where('grupo_id', $grupo->id)
+                ->where(function($query) {
+                    $query->where('latitud', '!=', '0')
+                          ->where('latitud', '!=', 0)
+                          ->where('longitud', '!=', '0')
+                          ->where('longitud', '!=', 0);
+                })
+                ->orderBy('created_at', 'desc')
+                ->first();
+            
+            // Usar coordenadas de la tabla trazabilidad si están disponibles
+            if ($ubicacionReciente) {
+                $latitud = $ubicacionReciente->latitud;
+                $longitud = $ubicacionReciente->longitud;
+                
+                \Log::info('Usando ubicación de tabla trazabilidad', [
+                    'latitud' => $latitud,
+                    'longitud' => $longitud,
+                    'dni_hijo' => $dni_hijo,
+                    'grupo_id' => $grupo->id,
+                    'registro_fecha' => $ubicacionReciente->created_at,
+                    'registro_id' => $ubicacionReciente->id
+                ]);
+            } else {
+                // Si no hay coordenadas en la tabla, usar valores por defecto
+                $latitud = 0;
+                $longitud = 0;
+                
+                \Log::warning('No se encontró ubicación en tabla trazabilidad', [
+                    'dni_hijo' => $dni_hijo,
+                    'grupo_id' => $grupo->id,
+                    'hijo_id' => $hijo->id
+                ]);
+            }
 
             // Obtener el último mensaje (más reciente) de la tabla trazabilidad para este grupo
             if (empty($descripcion)) {
@@ -275,33 +314,76 @@ class TrazabilidadController extends Controller
 
             // Crear mensaje completo con información de ubicación para WhatsApp
             $mensajeWhatsApp = "Sr(a) {$padre->name}, {$descripcion} con su hijo(a) {$hijo->nombres}";
-            if ($latitud != 0 && $longitud != 0) {
-                $mensajeWhatsApp .= "\n\n📍 Ubicación en tiempo real: https://maps.google.com/maps?q={$latitud},{$longitud}";
+            
+            // Incluir ubicación si está disponible en la tabla trazabilidad
+            if ($latitud != 0 && $longitud != 0 && $latitud != '0' && $longitud != '0') {
+                $mensajeWhatsApp .= "\n\n📍 Ubicación registrada: https://maps.google.com/maps?q={$latitud},{$longitud}";
                 $mensajeWhatsApp .= "\nCoordenadas: Lat {$latitud}, Lng {$longitud}";
+                
+                if ($ubicacionReciente) {
+                    $mensajeWhatsApp .= "\n⏱️ Registrado: " . $ubicacionReciente->created_at->format('d/m/Y H:i:s');
+                }
+                
+                // Log para confirmar que se incluye la ubicación
+                \Log::info('Ubicación incluida en mensaje WhatsApp desde tabla trazabilidad', [
+                    'latitud' => $latitud,
+                    'longitud' => $longitud,
+                    'dni_hijo' => $dni_hijo,
+                    'grupo_id' => $grupo->id,
+                    'registro_id' => $ubicacionReciente ? $ubicacionReciente->id : null
+                ]);
+            } else {
+                // Log cuando no se incluye ubicación
+                \Log::warning('Ubicación no incluida en mensaje WhatsApp', [
+                    'latitud' => $latitud,
+                    'longitud' => $longitud,
+                    'dni_hijo' => $dni_hijo,
+                    'grupo_id' => $grupo->id,
+                    'razon' => 'No se encontraron coordenadas válidas en tabla trazabilidad'
+                ]);
             }
+            
             $mensajeWhatsApp .= "\n\n🌎 Grupo: {$grupo->nombre}";
             $mensajeWhatsApp .= "\n⏰ Fecha y hora: " . now('America/Lima')->format('d/m/Y H:i:s');
             $mensajeWhatsApp .= "\n\n Sistema de Trazabilidad - Viajes Roxana";
 
+            // Para el nuevo registro, usar coordenadas del request si están disponibles, sino usar las de la tabla
+            $latitudNuevoRegistro = request()->input('lat', 0);
+            $longitudNuevoRegistro = request()->input('lng', 0);
+            
+            // Si no hay coordenadas nuevas, usar las encontradas en la tabla
+            if (($latitudNuevoRegistro == 0 || $latitudNuevoRegistro == '0') && ($longitudNuevoRegistro == 0 || $longitudNuevoRegistro == '0')) {
+                $latitudNuevoRegistro = $latitud;
+                $longitudNuevoRegistro = $longitud;
+            }
+            
             // Registrar la trazabilidad automáticamente
             $trazabilidad = Trazabilidad::create([
                 'paquete_id' => $grupo->paquete_id,
                 'grupo_id' => $grupo->id,
                 'hijo_id' => $hijo->id,
                 'descripcion' => $descripcion,
-                'latitud' => (string)$latitud,
-                'longitud' => (string)$longitud,
+                'latitud' => (string)$latitudNuevoRegistro,
+                'longitud' => (string)$longitudNuevoRegistro,
             ]);
 
-            // Crear notificación en la tabla notificaciones para envío por WhatsApp
+            // Crear notificación en la tabla notificaciones para envío por WhatsApp (solo descripción)
             $notificacion = Notificacion::create([
                 'hijo_id' => $hijo->id,
                 'user_id' => $padre->id,
-                'mensaje' => $mensajeWhatsApp,
+                'mensaje' => $descripcion,
                 'celular' => $padre->phone,
                 'estado' => 'pendiente'
             ]);
 
+            // Log del mensaje completo antes de enviarlo
+            \Log::info('Enviando mensaje WhatsApp trazabilidad', [
+                'phone' => $padre->phone,
+                'mensaje_completo' => $mensajeWhatsApp,
+                'longitud_mensaje' => strlen($mensajeWhatsApp),
+                'dni_hijo' => $dni_hijo
+            ]);
+            
             // Enviar WhatsApp directamente
             $whatsappEnviado = WhatsAppService::enviarMensajeTrazabilidad($padre->phone, $mensajeWhatsApp);
             

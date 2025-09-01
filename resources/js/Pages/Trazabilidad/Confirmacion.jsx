@@ -173,7 +173,7 @@ export default function Confirmacion({ hijo, padre, mensaje, grupo, ubicacion })
                     <div className="flex-1">
                       <p className="text-sm font-medium text-green-900 mb-1">Ubicación GPS capturada:</p>
                       <p className="text-xs text-green-700 mb-2">
-                        Lat: {location.latitud.toFixed(6)}, Lng: {location.longitud.toFixed(6)}
+                        Lat: {parseFloat(location.latitud).toFixed(6)}, Lng: {parseFloat(location.longitud).toFixed(6)}
                       </p>
                       <a 
                         href={`https://maps.google.com/maps?q=${location.latitud},${location.longitud}`}

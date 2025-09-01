@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Hijo;
 use App\Models\Geolocalizacion;
+use App\Models\Trazabilidad;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -23,8 +24,8 @@ class HijoLocationController extends Controller
         }
 
         try {
-            // Obtener la última ubicación registrada
-            $lastLocation = Geolocalizacion::where('hijo_id', $hijo->id)
+            // Obtener la última ubicación registrada desde la tabla Trazabilidad
+            $lastLocation = Trazabilidad::where('hijo_id', $hijo->id)
                 ->with(['paquete:id,nombre,destino'])
                 ->orderBy('created_at', 'desc')
                 ->first();
@@ -45,6 +46,7 @@ class HijoLocationController extends Controller
                 'location' => [
                     'latitude' => (float) $lastLocation->latitud,
                     'longitude' => (float) $lastLocation->longitud,
+                    'descripcion' => $lastLocation->descripcion,
                     'timestamp' => $lastLocation->created_at->toISOString(),
                     'formatted_time' => $lastLocation->created_at->format('Y-m-d H:i:s'),
                     'minutes_ago' => $lastLocation->created_at->diffInMinutes(now()),

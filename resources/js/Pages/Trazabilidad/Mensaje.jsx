@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Head, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -11,9 +11,13 @@ import Swal from 'sweetalert2';
 export default function Mensaje({ auth, grupo, errors = {} }) {
   const [data, setData] = useState({
     descripcion: '',
-    grupo_id: grupo?.id || ''
+    grupo_id: grupo?.id || '',
+    latitud: null,
+    longitud: null
   });
   const [processing, setProcessing] = useState(false);
+  const [geoloading, setGeoloading] = useState(false);
+  const [geoError, setGeoError] = useState(null);
 
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString('es-ES', {
@@ -22,6 +26,53 @@ export default function Mensaje({ auth, grupo, errors = {} }) {
       year: 'numeric'
     });
   };
+
+  const getGeolocation = () => {
+    if (!navigator.geolocation) {
+      setGeoError('Geolocalización no soportada por este navegador');
+      return;
+    }
+
+    setGeoloading(true);
+    setGeoError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setData(prev => ({
+          ...prev,
+          latitud: position.coords.latitude,
+          longitud: position.coords.longitude
+        }));
+        setGeoloading(false);
+      },
+      (error) => {
+        let errorMessage = 'Error obteniendo ubicación';
+        switch(error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = 'Permiso de ubicación denegado';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = 'Ubicación no disponible';
+            break;
+          case error.TIMEOUT:
+            errorMessage = 'Tiempo agotado obteniendo ubicación';
+            break;
+        }
+        setGeoError(errorMessage);
+        setGeoloading(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 60000
+      }
+    );
+  };
+
+  // Pedir geolocalización automáticamente al cargar el componente
+  useEffect(() => {
+    getGeolocation();
+  }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -36,11 +87,23 @@ export default function Mensaje({ auth, grupo, errors = {} }) {
       return;
     }
 
+    if (!data.latitud || !data.longitud) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Ubicación requerida',
+        text: 'Por favor, obtén tu ubicación antes de enviar el mensaje.',
+        confirmButtonColor: '#059669'
+      });
+      return;
+    }
+
     setProcessing(true);
     
     // Enviar mensaje al backend para guardarlo en la tabla trazabilidad para todos los hijos del grupo
     router.post(`/trazabilidad/mensaje/${grupo.id}`, {
-      descripcion: data.descripcion
+      descripcion: data.descripcion,
+      latitud: data.latitud,
+      longitud: data.longitud
     }, {
       onError: (errors) => {
         console.error('Error al guardar mensaje:', errors);
@@ -177,6 +240,78 @@ export default function Mensaje({ auth, grupo, errors = {} }) {
             </div>
           </div>
 
+          {/* Sección de Geolocalización */}
+          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 mb-6 lg:mb-8">
+            <div className="flex items-center mb-4">
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold">Ubicación GPS</h3>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between">
+              <div className="mb-4 sm:mb-0 flex-1">
+                {data.latitud && data.longitud ? (
+                  <div className="flex items-center text-green-700">
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span className="font-medium">Ubicación obtenida</span>
+                    <span className="ml-2 text-sm text-gray-600">
+                      ({data.latitud.toFixed(6)}, {data.longitud.toFixed(6)})
+                    </span>
+                  </div>
+                ) : geoError ? (
+                  <div className="flex items-center text-red-600">
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                    <span className="font-medium">{geoError}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center text-orange-600">
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.084 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                    </svg>
+                    <span className="font-medium">Ubicación requerida para continuar</span>
+                  </div>
+                )}
+              </div>
+              
+              <button
+                type="button"
+                onClick={getGeolocation}
+                disabled={geoloading}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-colors duration-200"
+              >
+                {geoloading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Obteniendo...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    Obtener Ubicación
+                  </>
+                )}
+              </button>
+            </div>
+            
+            {geoError && (
+              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-700 text-sm">
+                  {geoError}. Por favor, permite el acceso a la ubicación en tu navegador e intenta nuevamente.
+                </p>
+              </div>
+            )}
+          </div>
+
           {/* Descripción del proceso */}
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 lg:p-8 mb-6 lg:mb-8">
             <div className="flex items-start">
@@ -225,7 +360,7 @@ export default function Mensaje({ auth, grupo, errors = {} }) {
                   
                   <PrimaryButton 
                     type="submit" 
-                    disabled={processing || !data.descripcion.trim()}
+                    disabled={processing || !data.descripcion.trim() || !data.latitud || !data.longitud}
                     className="flex-1 justify-center py-4 text-base bg-green-600 hover:bg-green-700 focus:bg-green-700 active:bg-green-900"
                   >
                     {processing ? (
