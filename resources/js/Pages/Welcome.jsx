@@ -737,7 +737,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                                 </p>
                                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                                     <a 
-                                        href="https://wa.me/51961114404?text=Hola,%20me%20gustaría%20obtener%20más%20información"
+                                        href="https://wa.me/51988868250?text=Hola,%20me%20gustaría%20obtener%20más%20información"
                                         target="_blank"
                                         rel="noopener noreferrer" 
                                         className="bg-white text-red-600 px-8 py-3 rounded-2xl font-semibold hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 inline-block"
@@ -745,7 +745,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                                         Chat en vivo
                                     </a>
                                     <a 
-                                        href="tel:961610362"
+                                        href="tel:988868250"
                                         className="border-2 border-white text-white px-8 py-3 rounded-2xl font-semibold hover:bg-white hover:text-red-600 transition-all duration-200 inline-flex items-center gap-2"
                                     >
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
