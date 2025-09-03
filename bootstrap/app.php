@@ -17,6 +17,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
         
+        // Configure API middleware
+        $middleware->api(prepend: [
+            \Illuminate\Session\Middleware\StartSession::class,
+        ]);
+        
         // Exclude API routes from CSRF verification
         $middleware->validateCsrfTokens(except: [
             'api/*',

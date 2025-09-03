@@ -31,8 +31,8 @@ Route::prefix('v1')->group(function () {
     Route::get('/nfc/{dni_hijo}', [TrazabilidadController::class, 'confirmacionTrazabilidad'])
         ->where('dni_hijo', '[0-9]+');
     
-    // Protected routes (require authentication)
-    Route::middleware('auth:sanctum')->group(function () {
+    // Protected routes (require authentication) - using web guard for testing
+    Route::middleware('auth:web')->group(function () {
         // Auth user info and logout
         Route::get('/user', function (Request $request) {
             return $request->user()->load(['hijos.inscripciones.grupo.paquete']);
