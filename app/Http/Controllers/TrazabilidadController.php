@@ -220,6 +220,66 @@ class TrazabilidadController extends Controller
     }
 
     /**
+     * Mostrar pre-confirmación de trazabilidad por DNI del hijo
+     */
+    public function preConfirmacionTrazabilidad($dni_hijo)
+    {
+        try {
+            // Buscar el hijo por DNI
+            $hijo = Hijo::where('doc_numero', $dni_hijo)->first();
+            
+            if (!$hijo) {
+                abort(404, 'Niño no encontrado');
+            }
+
+            // Obtener el padre del hijo
+            $padre = $hijo->user;
+            
+            if (!$padre) {
+                abort(404, 'Padre no encontrado para este niño');
+            }
+
+            // Buscar el grupo activo según la fecha actual
+            $grupo = Grupo::whereHas('inscripciones', function($query) use ($hijo) {
+                    $query->where('hijo_id', $hijo->id);
+                })
+                ->whereDate('fecha_inicio', '<=', Carbon::today())
+                ->whereDate('fecha_fin', '>=', Carbon::today())
+                ->with('paquete')
+                ->first();
+
+            if (!$grupo) {
+                abort(404, 'No se encontró grupo activo para este niño en la fecha actual');
+            }
+
+            return Inertia::render('Trazabilidad/PreConfirmacion', [
+                'hijo' => [
+                    'id' => $hijo->id,
+                    'nombres' => $hijo->nombres,
+                    'apellidos' => $hijo->apellidos,
+                    'doc_numero' => $hijo->doc_numero,
+                ],
+                'padre' => [
+                    'id' => $padre->id,
+                    'nombres' => $padre->name,
+                    'telefono' => $padre->phone,
+                    'email' => $padre->email,
+                ],
+                'grupo' => $grupo,
+            ]);
+
+        } catch (\Exception $e) {
+            // Log del error para debugging
+            \Log::error('Error en preConfirmacionTrazabilidad: ' . $e->getMessage(), [
+                'dni_hijo' => $dni_hijo,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            abort(500, 'Error interno del servidor: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Mostrar confirmación de trazabilidad por DNI del hijo
      */
     public function confirmacionTrazabilidad($dni_hijo)
@@ -313,7 +373,7 @@ class TrazabilidadController extends Controller
             }
 
             // Crear mensaje completo con información de ubicación para WhatsApp
-            $mensajeWhatsApp = "Sr(a) {$padre->name}, {$descripcion} con su hijo(a) {$hijo->nombres}";
+            $mensajeWhatsApp = "Sr(a) {$padre->name}, su hijo(a) {$hijo->nombres} {$descripcion}";
             
             // Incluir ubicación si está disponible en la tabla trazabilidad
             if ($latitud != 0 && $longitud != 0 && $latitud != '0' && $longitud != '0') {
