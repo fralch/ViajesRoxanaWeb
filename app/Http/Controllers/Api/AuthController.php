@@ -26,7 +26,7 @@ class AuthController extends Controller
             $user = $request->user();
             
             // For testing without database, create a simple token
-            $token = 'test_token_' . base64_encode($user->email . ':' . now()->timestamp);
+            $token = 'token_' . base64_encode($user->email . ':' . now()->timestamp);
             
             return response()->json([
                 'success' => true,
