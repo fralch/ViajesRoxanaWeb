@@ -46,7 +46,7 @@ export default function PreConfirmacion({ hijo, padre, grupo }) {
           {/* Tarjeta principal */}
           <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
             {/* Header */}
-            <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 text-center">
+            <div className="bg-gradient-to-r from-red-500 to-red-600 p-6 text-center" style={{background: 'linear-gradient(to right, #d52e27, #b91c1c)'}}>
               <div className="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -55,7 +55,7 @@ export default function PreConfirmacion({ hijo, padre, grupo }) {
               <h1 className="text-2xl font-bold text-white mb-2">
                 Confirmar Trazabilidad
               </h1>
-              <p className="text-blue-100 text-sm">
+              <p className="text-red-100 text-sm">
                 Verificar datos antes de enviar
               </p>
             </div>
@@ -64,8 +64,8 @@ export default function PreConfirmacion({ hijo, padre, grupo }) {
             <div className="p-6 space-y-6">
               {/* Información del niño */}
               <div className="text-center">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                   </svg>
                 </div>
@@ -74,18 +74,18 @@ export default function PreConfirmacion({ hijo, padre, grupo }) {
               </div>
 
               {/* Información del grupo */}
-              <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4">
                 <div className="flex items-center">
-                  <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
-                    <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center mr-3">
+                    <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                     </svg>
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-indigo-900">Grupo:</p>
-                    <p className="text-lg font-semibold text-indigo-700">{grupo?.nombre || 'Nombre del Grupo'}</p>
+                    <p className="text-sm font-medium text-red-900">Grupo:</p>
+                    <p className="text-lg font-semibold text-red-700">{grupo?.nombre || 'Nombre del Grupo'}</p>
                     {grupo?.paquete && (
-                      <p className="text-sm text-indigo-600">{grupo.paquete.nombre} - {grupo.paquete.destino}</p>
+                      <p className="text-sm text-red-600">{grupo.paquete.nombre} - {grupo.paquete.destino}</p>
                     )}
                   </div>
                 </div>
@@ -112,7 +112,20 @@ export default function PreConfirmacion({ hijo, padre, grupo }) {
                 <button 
                   onClick={handleConfirmarEnvio}
                   disabled={loading}
-                  className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-4 px-6 rounded-xl font-semibold text-lg shadow-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                  className="w-full text-white py-4 px-6 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                  style={{
+                    background: loading ? '#9ca3af' : 'linear-gradient(to right, #d52e27, #b91c1c)'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!loading) {
+                      e.target.style.background = 'linear-gradient(to right, #b91c1c, #991b1b)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!loading) {
+                      e.target.style.background = 'linear-gradient(to right, #d52e27, #b91c1c)';
+                    }
+                  }}
                 >
                   {loading ? (
                     <>
