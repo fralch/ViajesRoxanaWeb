@@ -373,7 +373,7 @@ class TrazabilidadController extends Controller
             }
 
             // Crear mensaje completo con información de ubicación para WhatsApp
-            $mensajeWhatsApp = "Sr(a) {$padre->name}, {$descripcion} con su hijo(a) {$hijo->nombres}";
+            $mensajeWhatsApp = "Sr(a) {$padre->name}, su hijo(a) {$hijo->nombres} {$descripcion}";
             
             // Incluir ubicación si está disponible en la tabla trazabilidad
             if ($latitud != 0 && $longitud != 0 && $latitud != '0' && $longitud != '0') {
