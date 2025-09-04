@@ -40,7 +40,13 @@ Route::prefix('v1')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         
         // Children (hijos) management
-        Route::apiResource('hijos', HijoController::class);
+        Route::apiResource('hijos', HijoController::class)->names([
+            'index' => 'api.hijos.index',
+            'store' => 'api.hijos.store',
+            'show' => 'api.hijos.show',
+            'update' => 'api.hijos.update',
+            'destroy' => 'api.hijos.destroy'
+        ]);
         Route::delete('/hijos/parent/{user}', [HijoController::class, 'destroyParent']);
         Route::get('/hijos/by-dni/{dni}', [HijoController::class, 'getHijoByDni']);
         
