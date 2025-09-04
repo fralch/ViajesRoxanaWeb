@@ -48,8 +48,13 @@ Route::post('/paquete/{paquete}/grupo/{grupo}/form', [InscripcionController::cla
 // Ruta para verificar si existe un usuario
 Route::post('/check-user-exists', [InscripcionController::class, 'checkUserExists'])->name('check.user.exists');
 
-// Ruta pública para confirmación de trazabilidad por DNI (NFC)
-Route::get('/nfc/{dni_hijo}', [TrazabilidadController::class, 'confirmacionTrazabilidad'])
+// Ruta pública para pre-confirmación de trazabilidad por DNI (NFC)
+Route::get('/nfc/{dni_hijo}', [TrazabilidadController::class, 'preConfirmacionTrazabilidad'])
+    ->name('trazabilidad.preconfirmacion')
+    ->where('dni_hijo', '[0-9]+');
+
+// Ruta pública para confirmación final de trazabilidad por DNI (NFC)
+Route::get('/nfc/{dni_hijo}/confirmar', [TrazabilidadController::class, 'confirmacionTrazabilidad'])
     ->name('trazabilidad.confirmacion')
     ->where('dni_hijo', '[0-9]+');
 
