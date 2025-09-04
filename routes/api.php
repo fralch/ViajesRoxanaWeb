@@ -13,65 +13,100 @@ use App\Http\Controllers\Api\NotificacionController;
 
 Route::prefix('v1')->group(function () {
     // Authentication routes (no auth required)
-    Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
-    Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+    Route::post('/endpoint-login', [AuthController::class, 'login']);
+    Route::post('/endpoint-register', [AuthController::class, 'register']);
+    Route::post('/endpoint-forgot-password', [AuthController::class, 'forgotPassword']);
+    Route::post('/endpoint-reset-password', [AuthController::class, 'resetPassword']);
     
     // Public routes
-    Route::get('/paquetes', [PaqueteController::class, 'index']);
-    Route::get('/paquetes/{paquete}', [PaqueteController::class, 'show']);
-    Route::get('/paquetes/{paquete}/grupos', [GrupoController::class, 'getByPaquete']);
+    Route::get('/endpoint-paquetes', [PaqueteController::class, 'index']);
+    Route::get('/endpoint-paquetes/{paquete}', [PaqueteController::class, 'show']);
+    Route::get('/endpoint-paquetes/{paquete}/grupos', [GrupoController::class, 'getByPaquete']);
     
     // Public inscription form routes
-    Route::post('/paquete/{paquete}/grupo/{grupo}/inscripcion', [InscripcionController::class, 'store']);
-    Route::post('/check-user-exists', [InscripcionController::class, 'checkUserExists']);
+    Route::post('/endpoint-paquete/{paquete}/grupo/{grupo}/inscripcion', [InscripcionController::class, 'store']);
+    Route::post('/endpoint-check-user-exists', [InscripcionController::class, 'checkUserExists']);
     
     // Public NFC route for tracking confirmation
-    Route::get('/nfc/{dni_hijo}', [TrazabilidadController::class, 'confirmacionTrazabilidad'])
+    Route::get('/endpoint-nfc/{dni_hijo}', [TrazabilidadController::class, 'confirmacionTrazabilidad'])
         ->where('dni_hijo', '[0-9]+');
     
     // Protected routes (require authentication) - using web guard for testing
     Route::middleware('auth:web')->group(function () {
         // Auth user info and logout
-        Route::get('/user', function (Request $request) {
+        Route::get('/endpoint-user', function (Request $request) {
             return $request->user()->load(['hijos.inscripciones.grupo.paquete']);
         });
-        Route::post('/logout', [AuthController::class, 'logout']);
+        Route::post('/endpoint-logout', [AuthController::class, 'logout']);
         
         // Children (hijos) management
-        Route::apiResource('hijos', HijoController::class)->names([
-            'index' => 'api.hijos.index',
-            'store' => 'api.hijos.store',
-            'show' => 'api.hijos.show',
-            'update' => 'api.hijos.update',
-            'destroy' => 'api.hijos.destroy'
+        Route::apiResource('endpoint-hijos', HijoController::class)->names([
+            'index' => 'api.endpoint-hijos.index',
+            'store' => 'api.endpoint-hijos.store',
+            'show' => 'api.endpoint-hijos.show',
+            'update' => 'api.endpoint-hijos.update',
+            'destroy' => 'api.endpoint-hijos.destroy'
         ]);
-        Route::delete('/hijos/parent/{user}', [HijoController::class, 'destroyParent']);
-        Route::get('/hijos/by-dni/{dni}', [HijoController::class, 'getHijoByDni']);
+        Route::delete('/endpoint-hijos/{user}', [HijoController::class, 'destroyParent']);
+        Route::get('/endpoint-hijos/by-dni/{dni}', [HijoController::class, 'getHijoByDni']);
         
         // Packages and groups management
-        Route::apiResource('paquetes', PaqueteController::class)->except(['index', 'show']);
-        Route::apiResource('grupos', GrupoController::class);
+        Route::apiResource('endpoint-paquetes', PaqueteController::class)->except(['index', 'show'])->names([
+            'store' => 'api.endpoint-paquetes.store',
+            'show' => 'api.endpoint-paquetes.show',
+            'update' => 'api.endpoint-paquetes.update',
+            'destroy' => 'api.endpoint-paquetes.destroy'
+        ]);
+        Route::apiResource('endpoint-grupos', GrupoController::class)->names([
+            'index' => 'api.endpoint-grupos.index',
+            'store' => 'api.endpoint-grupos.store',
+            'show' => 'api.endpoint-grupos.show',
+            'update' => 'api.endpoint-grupos.update',
+            'destroy' => 'api.endpoint-grupos.destroy'
+        ]);
         
         // Inscriptions management
-        Route::apiResource('inscripciones', InscripcionController::class);
+        Route::apiResource('endpoint-inscripciones', InscripcionController::class)->names([
+            'index' => 'api.endpoint-inscripciones.index',
+            'store' => 'api.endpoint-inscripciones.store',
+            'show' => 'api.endpoint-inscripciones.show',
+            'update' => 'api.endpoint-inscripciones.update',
+            'destroy' => 'api.endpoint-inscripciones.destroy'
+        ]);
         
         // Geolocation
-        Route::apiResource('geolocalizacion', GeolocalizacionController::class);
-        Route::get('/geolocalizacion/{grupo}/history', [GeolocalizacionController::class, 'getGroupHistory']);
+        Route::apiResource('endpoint-geolocalizacion', GeolocalizacionController::class)->names([
+            'index' => 'api.endpoint-geolocalizacion.index',
+            'store' => 'api.endpoint-geolocalizacion.store',
+            'show' => 'api.endpoint-geolocalizacion.show',
+            'update' => 'api.endpoint-geolocalizacion.update',
+            'destroy' => 'api.endpoint-geolocalizacion.destroy'
+        ]);
+        Route::get('/endpoint-geolocalizacion/{grupo}/history', [GeolocalizacionController::class, 'getGroupHistory']);
         
         // Tracking (Trazabilidad)
-        Route::apiResource('trazabilidad', TrazabilidadController::class);
-        Route::get('/trazabilidad/{grupo}/hijos', [TrazabilidadController::class, 'obtenerHijosGrupo']);
-        Route::post('/trazabilidad/procesar-escaneo', [TrazabilidadController::class, 'procesarEscaneo']);
-        Route::post('/trazabilidad/mensaje/{grupo}', [TrazabilidadController::class, 'guardarMensaje']);
+        Route::apiResource('endpoint-trazabilidad', TrazabilidadController::class)->names([
+            'index' => 'api.endpoint-trazabilidad.index',
+            'store' => 'api.endpoint-trazabilidad.store',
+            'show' => 'api.endpoint-trazabilidad.show',
+            'update' => 'api.endpoint-trazabilidad.update',
+            'destroy' => 'api.endpoint-trazabilidad.destroy'
+        ]);
+        Route::get('/endpoint-trazabilidad/{grupo}/hijos', [TrazabilidadController::class, 'obtenerHijosGrupo']);
+        Route::post('/endpoint-trazabilidad/procesar-escaneo', [TrazabilidadController::class, 'procesarEscaneo']);
+        Route::post('/endpoint-trazabilidad/mensaje/{grupo}', [TrazabilidadController::class, 'guardarMensaje']);
         
         // Notifications
-        Route::apiResource('notificaciones', NotificacionController::class);
+        Route::apiResource('endpoint-notificaciones', NotificacionController::class)->names([
+            'index' => 'api.endpoint-notificaciones.index',
+            'store' => 'api.endpoint-notificaciones.store',
+            'show' => 'api.endpoint-notificaciones.show',
+            'update' => 'api.endpoint-notificaciones.update',
+            'destroy' => 'api.endpoint-notificaciones.destroy'
+        ]);
         
         // Child location tracking
-        Route::prefix('hijo-location')->group(function () {
+        Route::prefix('endpoint-hijo-location')->group(function () {
             Route::get('/{hijo}/last', [\App\Http\Controllers\HijoLocationController::class, 'getLastLocation']);
             Route::get('/{hijo}/history', [\App\Http\Controllers\HijoLocationController::class, 'getLocationHistory']);
             Route::get('/{hijo}/stats', [\App\Http\Controllers\HijoLocationController::class, 'getLocationStats']);
@@ -79,7 +114,7 @@ Route::prefix('v1')->group(function () {
         });
         
         // Mapbox integration
-        Route::prefix('mapbox')->group(function () {
+        Route::prefix('endpoint-mapbox')->group(function () {
             Route::get('/token', [\App\Http\Controllers\MapboxController::class, 'getMapboxToken']);
             Route::post('/reverse-geocode', [\App\Http\Controllers\MapboxController::class, 'reverseGeocode']);
             Route::post('/search-places', [\App\Http\Controllers\MapboxController::class, 'searchPlaces']);
