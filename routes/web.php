@@ -131,6 +131,7 @@ Route::middleware('auth')->group(function () {
     // Rutas para envío masivo de mensajes
     Route::get('/send-message/bulk', [SendMessageController::class, 'bulkMessage'])->name('send-message.bulk');
     Route::post('/send-message/bulk/send', [SendMessageController::class, 'sendBulkMessage'])->name('send-message.bulk.send');
+    Route::post('/send-message/bulk/users-by-groups', [SendMessageController::class, 'getUsersByGroups'])->name('send-message.bulk.users-by-groups');
 
     // Rutas para perfil del hijo
     Route::get('/perfil/hijo/{hijo}', [PerfilHijoController::class, 'show'])->name('perfil.hijo');
