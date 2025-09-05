@@ -13,7 +13,7 @@ use App\Http\Controllers\GeolocalizacionController;
 use App\Http\Controllers\TrazabilidadController;
 use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\PerfilHijoController;
-use App\Http\Controllers\WhatsAppController;
+use App\Http\Controllers\SendMessageController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
@@ -128,9 +128,9 @@ Route::middleware('auth')->group(function () {
     
     Route::resource('notificaciones', NotificacionController::class)->parameters(['notificaciones' => 'notificacion']);
 
-    // Rutas para WhatsApp bulk messaging
-    Route::get('/whatsapp/bulk', [WhatsAppController::class, 'bulkMessage'])->name('whatsapp.bulk');
-    Route::post('/whatsapp/bulk/send', [WhatsAppController::class, 'sendBulkMessage'])->name('whatsapp.bulk.send');
+    // Rutas para envío masivo de mensajes
+    Route::get('/send-message/bulk', [SendMessageController::class, 'bulkMessage'])->name('send-message.bulk');
+    Route::post('/send-message/bulk/send', [SendMessageController::class, 'sendBulkMessage'])->name('send-message.bulk.send');
 
     // Rutas para perfil del hijo
     Route::get('/perfil/hijo/{hijo}', [PerfilHijoController::class, 'show'])->name('perfil.hijo');

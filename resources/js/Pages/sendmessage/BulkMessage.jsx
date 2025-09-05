@@ -14,21 +14,21 @@ export default function BulkMessage() {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        post(route('whatsapp.bulk.send'));
+        post(route('send-message.bulk.send'));
     };
 
     return (
         <AuthenticatedLayout
-            header="Envío Masivo de WhatsApp"
+            header="Envío Masivo de Mensajes"
         >
-            <Head title="WhatsApp Masivo" />
+            <Head title="Envío Masivo" />
 
             <div className="py-8">
                 <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
                     {/* Header */}
                     <div className="mb-8">
-                        <h1 className="text-3xl font-bold text-gray-900 mb-2">📱 Envío Masivo de WhatsApp</h1>
-                        <p className="text-gray-600">Envía mensajes de WhatsApp a múltiples números de teléfono</p>
+                        <h1 className="text-3xl font-bold text-gray-900 mb-2">📱 Envío Masivo de Mensajes</h1>
+                        <p className="text-gray-600">Envía mensajes a múltiples números de teléfono</p>
                     </div>
 
                     {/* Main Form */}

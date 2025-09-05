@@ -6,11 +6,11 @@ use Illuminate\Http\Request;
 use App\Services\WhatsAppService;
 use Inertia\Inertia;
 
-class WhatsAppController extends Controller
+class SendMessageController extends Controller
 {
     public function bulkMessage()
     {
-        return Inertia::render('WhatsApp/BulkMessage');
+        return Inertia::render('sendmessage/BulkMessage');
     }
 
     public function sendBulkMessage(Request $request)
