@@ -135,6 +135,12 @@ export default function Dashboard() {
                                 href={route('notificaciones.index')}
                                 icon={<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5-5-5h5v-5a1 1 0 011-1h2a1 1 0 011 1v5z" /></svg>}
                             />
+                            <QuickActionCard 
+                                title="Envío Masivo"
+                                description="Enviar mensajes masivos"
+                                href={route('send-message.bulk')}
+                                icon={<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>}
+                            />
                         </div>
                     </div>
 

@@ -13,6 +13,7 @@ use App\Http\Controllers\GeolocalizacionController;
 use App\Http\Controllers\TrazabilidadController;
 use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\PerfilHijoController;
+use App\Http\Controllers\SendMessageController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
@@ -131,6 +132,11 @@ Route::middleware('auth')->group(function () {
     Route::get('trazabilidad/{grupo}/hijos', [TrazabilidadController::class, 'obtenerHijosGrupo'])->name('trazabilidad.hijos-grupo');
     
     Route::resource('notificaciones', NotificacionController::class)->parameters(['notificaciones' => 'notificacion']);
+
+    // Rutas para envío masivo de mensajes
+    Route::get('/send-message/bulk', [SendMessageController::class, 'bulkMessage'])->name('send-message.bulk');
+    Route::post('/send-message/bulk/send', [SendMessageController::class, 'sendBulkMessage'])->name('send-message.bulk.send');
+    Route::post('/send-message/bulk/users-by-groups', [SendMessageController::class, 'getUsersByGroups'])->name('send-message.bulk.users-by-groups');
 
     // Rutas para perfil del hijo
     Route::get('/perfil/hijo/{hijo}', [PerfilHijoController::class, 'show'])->name('perfil.hijo');
