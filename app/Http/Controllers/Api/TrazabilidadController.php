@@ -75,51 +75,7 @@ class TrazabilidadController extends Controller
         ]);
     }
 
-    public function obtenerHijosGrupo(Grupo $grupo): JsonResponse
-    {
-        $hijos = $grupo->inscripciones()->with('hijo')->get()->pluck('hijo');
 
-        return response()->json([
-            'success' => true,
-            'data' => $hijos
-        ]);
-    }
-
-    public function procesarEscaneo(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'grupo_id' => 'required|exists:grupos,id',
-            'dni_hijo' => 'required|string',
-            'ubicacion' => 'required|string|max:255',
-            'latitud' => 'nullable|numeric',
-            'longitud' => 'nullable|numeric',
-            'mensaje' => 'nullable|string',
-        ]);
-
-        $hijo = Hijo::where('doc_numero', $validated['dni_hijo'])->first();
-
-        if (!$hijo) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Child not found with this document number'
-            ], 404);
-        }
-
-        $trazabilidad = Trazabilidad::create([
-            'grupo_id' => $validated['grupo_id'],
-            'hijo_id' => $hijo->id,
-            'ubicacion' => $validated['ubicacion'],
-            'latitud' => $validated['latitud'] ?? null,
-            'longitud' => $validated['longitud'] ?? null,
-            'mensaje' => $validated['mensaje'] ?? null,
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Tracking record created successfully',
-            'data' => $trazabilidad->load(['hijo', 'grupo'])
-        ], 201);
-    }
 
     public function guardarMensaje(Request $request, Grupo $grupo): JsonResponse
     {
@@ -152,30 +108,5 @@ class TrazabilidadController extends Controller
         ], 201);
     }
 
-    public function confirmacionTrazabilidad($dni_hijo): JsonResponse
-    {
-        $hijo = Hijo::where('doc_numero', $dni_hijo)->first();
 
-        if (!$hijo) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Child not found'
-            ], 404);
-        }
-
-        // Get latest tracking records for this child
-        $trazabilidades = Trazabilidad::where('hijo_id', $hijo->id)
-            ->with(['grupo.paquete'])
-            ->orderBy('created_at', 'desc')
-            ->limit(10)
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'hijo' => $hijo,
-                'trazabilidades' => $trazabilidades
-            ]
-        ]);
-    }
 }
