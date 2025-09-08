@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\HijoController;
 use App\Http\Controllers\Api\GeolocalizacionController;
 use App\Http\Controllers\Api\TrazabilidadController;
 use App\Http\Controllers\Api\HijoLocationController;
+use App\Http\Controllers\Api\NotificacionController;
 
 Route::prefix('v1')->group(function () {
     // Authentication routes (no auth required)
@@ -31,4 +32,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/endpoint/hijo-location/{hijo}/last', [HijoLocationController::class, 'getLastLocation']);
     Route::get('/endpoint/hijo-location/{hijo}/history', [HijoLocationController::class, 'getLocationHistory']);
     Route::get('/endpoint/hijo-location/{hijo}/stats', [HijoLocationController::class, 'getLocationStats']);
+
+       Route::get('/endpoint/user/notificaciones/{dni}', [NotificacionController::class, 'index']);
 });
+
