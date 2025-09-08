@@ -143,7 +143,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/perfil/hijo/{hijo}/update', [PerfilHijoController::class, 'update'])->name('perfil.hijo.update');
     
     // Rutas API para Mapbox - COMENTADAS TEMPORALMENTE (MapboxController no existe)
-  
+    /*
     Route::prefix('api/mapbox')->group(function () {
         Route::get('/token', [App\Http\Controllers\MapboxController::class, 'getMapboxToken'])->name('mapbox.token');
         Route::post('/reverse-geocode', [App\Http\Controllers\MapboxController::class, 'reverseGeocode'])->name('mapbox.reverse-geocode');
@@ -151,15 +151,21 @@ Route::middleware('auth')->group(function () {
         Route::post('/calculate-distance', [App\Http\Controllers\MapboxController::class, 'calculateDistance'])->name('mapbox.calculate-distance');
         Route::post('/get-route', [App\Http\Controllers\MapboxController::class, 'getRoute'])->name('mapbox.get-route');
     });
-  
+    */
     
     // Rutas API para ubicación de hijos
     Route::prefix('api/hijo-location')->group(function () {
-        Route::get('/{hijo}/last', [App\Http\Controllers\HijoLocationController::class, 'getLastLocation'])->name('hijo.location.last');
-        Route::get('/{hijo}/history', [App\Http\Controllers\HijoLocationController::class, 'getLocationHistory'])->name('hijo.location.history');
-        Route::get('/{hijo}/stats', [App\Http\Controllers\HijoLocationController::class, 'getLocationStats'])->name('hijo.location.stats');
-        Route::post('/{hijo}/simulate', [App\Http\Controllers\HijoLocationController::class, 'simulateLocationUpdate'])->name('hijo.location.simulate');
+        Route::get('/{hijo:id}/last', [App\Http\Controllers\HijoLocationController::class, 'getLastLocation'])->name('hijo.location.last');
+        Route::get('/{hijo:id}/history', [App\Http\Controllers\HijoLocationController::class, 'getLocationHistory'])->name('hijo.location.history');
+        Route::get('/{hijo:id}/stats', [App\Http\Controllers\HijoLocationController::class, 'getLocationStats'])->name('hijo.location.stats');
+        Route::post('/{hijo:id}/simulate', [App\Http\Controllers\HijoLocationController::class, 'simulateLocationUpdate'])->name('hijo.location.simulate');
     });
+
+    // Rutas web para ubicación de hijos (para componentes frontend)
+    Route::get('/hijo-location/{hijo:id}/last', [App\Http\Controllers\HijoLocationController::class, 'getLastLocation'])->name('web.hijo.location.last');
+    Route::get('/hijo-location/{hijo:id}/history', [App\Http\Controllers\HijoLocationController::class, 'getLocationHistory'])->name('web.hijo.location.history');
+    Route::get('/hijo-location/{hijo:id}/stats', [App\Http\Controllers\HijoLocationController::class, 'getLocationStats'])->name('web.hijo.location.stats');
+    Route::post('/hijo-location/{hijo:id}/simulate', [App\Http\Controllers\HijoLocationController::class, 'simulateLocationUpdate'])->name('web.hijo.location.simulate');
 
     Route::get('/api/hijos/by-dni/{dni}', [HijoController::class, 'getHijoByDni']);
 

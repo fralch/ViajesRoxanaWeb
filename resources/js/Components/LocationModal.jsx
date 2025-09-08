@@ -67,7 +67,7 @@ export default function LocationModal({
     setLocationLoading(true);
     setLocationError(null);
     try {
-      const response = await fetch(`/api/hijo-location/${selectedChild.id}/last`, {
+      const response = await fetch(`/hijo-location/${selectedChild.id}/last`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
