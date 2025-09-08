@@ -132,6 +132,14 @@ export default function LocationModal({
 }) {
   const childName = selectedChild?.nombres || 'Tu hijo';
   const [mapCenterOverride, setMapCenterOverride] = useState(null);
+  const [activeTab, setActiveTab] = useState('map'); // 'map' o 'live'
+
+  // Detectar si hay URL en la descripción para mostrar pestañas
+  const liveUrl = useMemo(() => {
+    return lastLocation?.descripcion ? detectURL(lastLocation.descripcion) : null;
+  }, [lastLocation?.descripcion]);
+
+  const showTabs = Boolean(liveUrl);
 
   // Función para crear fecha local sin problemas de zona horaria
   const createLocalDate = (dateString) => {
@@ -315,109 +323,223 @@ export default function LocationModal({
       
       <div className={modalClasses}>
         {/* Header compacto - ~10% */}
-        <div className="flex-shrink-0 flex items-center justify-between p-4 md:p-6 border-b border-gray-100">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-xl md:text-2xl font-bold text-gray-900">Ubicación de {childName}</h2>
-              {lastLocation?.descripcion && (
-                <div className="mt-2">
-                  {(() => {
-                    const url = detectURL(lastLocation.descripcion);
-                    const textWithoutURL = getTextWithoutURL(lastLocation.descripcion);
-                    
-                    return (
-                      <div className="flex flex-col gap-2">
-                        {textWithoutURL && (
-                          <p className="text-sm text-gray-600">{textWithoutURL}</p>
-                        )}
-                        {url && (
-                          <div className="flex items-center gap-2">
-                            <RealTimeButton url={url} size="normal" />
-                            <div className="hidden sm:block">
-                              <div className="flex items-center gap-1 px-2 py-1 bg-green-50 border border-green-200 rounded-md">
-                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                <span className="text-xs font-medium text-green-700">En vivo</span>
+        <div className="flex-shrink-0 border-b border-gray-100">
+          <div className="flex items-center justify-between p-4 md:p-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-xl md:text-2xl font-bold text-gray-900">Ubicación de {childName}</h2>
+                {lastLocation?.descripcion && (
+                  <div className="mt-2">
+                    {(() => {
+                      const url = detectURL(lastLocation.descripcion);
+                      const textWithoutURL = getTextWithoutURL(lastLocation.descripcion);
+                      
+                      return (
+                        <div className="flex flex-col gap-2">
+                          {textWithoutURL && (
+                            <p className="text-sm text-gray-600">{textWithoutURL}</p>
+                          )}
+                          {url && !showTabs && (
+                            <div className="flex items-center gap-2">
+                              <RealTimeButton url={url} size="normal" />
+                              <div className="hidden sm:block">
+                                <div className="flex items-center gap-1 px-2 py-1 bg-green-50 border border-green-200 rounded-md">
+                                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                  <span className="text-xs font-medium text-green-700">En vivo</span>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()
-                  }
-                </div>
-              )}
+                          )}
+                        </div>
+                      );
+                    })()
+                    }
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={onClose}
+                className="inline-flex items-center justify-center h-10 w-10 rounded-xl text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                title="Cerrar"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={onClose}
-              className="inline-flex items-center justify-center h-10 w-10 rounded-xl text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-              title="Cerrar"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
+          {/* Pestañas - Solo mostrar si hay URL en vivo */}
+          {showTabs && (
+            <div className="px-4 md:px-6">
+              <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+                <button
+                  onClick={() => setActiveTab('map')}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                    activeTab === 'map'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                  </svg>
+                  Mapa Local
+                </button>
+                <button
+                  onClick={() => setActiveTab('live')}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                    activeTab === 'live'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18l8.5-5L5 8v10z" />
+                    </svg>
+                  </div>
+                  Tiempo Real
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* MAPA - ~90% del espacio */}
+        {/* CONTENIDO - ~90% del espacio */}
         <div className={mapContainerClasses}>
-          <div className="absolute inset-0 p-3">
-            <div className="h-full w-full rounded-2xl overflow-hidden shadow-lg ring-1 ring-black/10">
-              <ErrorBoundary>
-                <InteractiveMap
-                  latitude={mapCenterOverride?.lat ?? initialLat}
-                  longitude={mapCenterOverride?.lng ?? initialLng}
-                  zoom={initialZoom}
-                  height="100%"
-                  markers={markers}
-                  showControls={true}
-                  className="!h-full w-full"
-                  onMarkerClick={(marker) => {
-                    console.log('Marcador clickeado:', marker);
-                  }}
-                />
-              </ErrorBoundary>
+          {/* Pestaña del Mapa Local */}
+          {(!showTabs || activeTab === 'map') && (
+            <div className="absolute inset-0 p-3">
+              <div className="h-full w-full rounded-2xl overflow-hidden shadow-lg ring-1 ring-black/10">
+                <ErrorBoundary>
+                  <InteractiveMap
+                    latitude={mapCenterOverride?.lat ?? initialLat}
+                    longitude={mapCenterOverride?.lng ?? initialLng}
+                    zoom={initialZoom}
+                    height="100%"
+                    markers={markers}
+                    showControls={true}
+                    className="!h-full w-full"
+                    onMarkerClick={(marker) => {
+                      console.log('Marcador clickeado:', marker);
+                    }}
+                  />
+                </ErrorBoundary>
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Controles flotantes mejorados */}
-          <div className="absolute top-6 right-6 flex flex-col gap-3 z-10">
-            {(!lastLocation || locationLoading) && (
-              <button
-                onClick={handleRefreshLocation}
-                disabled={locationLoading}
-                className="px-4 py-2.5 rounded-xl bg-white/95 backdrop-blur-sm border border-gray-200 shadow-lg hover:bg-white hover:shadow-xl disabled:opacity-60 transition-all duration-200"
-                title="Refrescar ubicación"
-              >
-                {locationLoading ? (
-                  <span className="inline-flex items-center gap-2 text-sm font-medium">
-                    <span className="animate-spin h-4 w-4 border-2 border-gray-300 border-t-blue-600 rounded-full" />
-                    Cargando
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-2 text-sm font-medium">
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M4 4v6h6M20 20v-6h-6M5 19a9 9 0 0014-7 9 9 0 00-9-9" />
-                    </svg>
-                    Refrescar
-                  </span>
-                )}
-              </button>
-            )}
-          </div>
+          {/* Pestaña del Mapa en Tiempo Real */}
+          {showTabs && activeTab === 'live' && liveUrl && (
+            <div className="absolute inset-0 p-3">
+              <div className="h-full w-full rounded-2xl overflow-hidden shadow-lg ring-1 ring-black/10 bg-white">
+                <div className="h-full w-full relative">
+                  {/* Header del iframe con indicador en vivo */}
+                  <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                      <span className="text-sm font-medium">Transmisión en Tiempo Real</span>
+                    </div>
+                    <a 
+                      href={liveUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-white/80 hover:text-white transition-colors"
+                      title="Abrir en nueva ventana"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </a>
+                  </div>
+                  
+                  {/* Iframe del mapa en tiempo real */}
+                  <iframe
+                    src={liveUrl}
+                    className="w-full h-full border-0 pt-10"
+                    title={`Mapa en tiempo real de ${childName}`}
+                    allow="geolocation; fullscreen"
+                    loading="lazy"
+                    onLoad={() => {
+                      // Ocultar overlay de carga cuando el iframe se haya cargado
+                      const loadingOverlay = document.getElementById('iframe-loading');
+                      if (loadingOverlay) {
+                        loadingOverlay.style.display = 'none';
+                      }
+                    }}
+                    onError={(e) => {
+                      console.error('Error cargando iframe:', e);
+                      // Mostrar mensaje de error en lugar del overlay de carga
+                      const loadingOverlay = document.getElementById('iframe-loading');
+                      if (loadingOverlay) {
+                        loadingOverlay.innerHTML = `
+                          <div class="text-center">
+                            <svg class="w-12 h-12 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <p class="text-gray-600 text-sm mb-2">Error al cargar el mapa en tiempo real</p>
+                            <a href="${liveUrl}" target="_blank" rel="noopener noreferrer" class="text-red-600 hover:text-red-700 text-sm underline">
+                              Abrir en nueva ventana
+                            </a>
+                          </div>
+                        `;
+                      }
+                    }}
+                  />
+                  
+                  {/* Overlay de carga */}
+                  <div className="absolute inset-0 bg-gray-50 flex items-center justify-center" id="iframe-loading">
+                    <div className="text-center">
+                      <div className="animate-spin h-8 w-8 border-4 border-red-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                      <p className="text-gray-600 text-sm">Cargando mapa en tiempo real...</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
-          {/* Información de ubicación */}
-          {lastLocation && (
+          {/* Controles flotantes mejorados - Solo en pestaña de mapa local */}
+          {(!showTabs || activeTab === 'map') && (
+            <div className="absolute top-6 right-6 flex flex-col gap-3 z-10">
+              {(!lastLocation || locationLoading) && (
+                <button
+                  onClick={handleRefreshLocation}
+                  disabled={locationLoading}
+                  className="px-4 py-2.5 rounded-xl bg-white/95 backdrop-blur-sm border border-gray-200 shadow-lg hover:bg-white hover:shadow-xl disabled:opacity-60 transition-all duration-200"
+                  title="Refrescar ubicación"
+                >
+                  {locationLoading ? (
+                    <span className="inline-flex items-center gap-2 text-sm font-medium">
+                      <span className="animate-spin h-4 w-4 border-2 border-gray-300 border-t-blue-600 rounded-full" />
+                      Cargando
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-2 text-sm font-medium">
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M4 4v6h6M20 20v-6h-6M5 19a9 9 0 0014-7 9 9 0 00-9-9" />
+                      </svg>
+                      Refrescar
+                    </span>
+                  )}
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Información de ubicación - Solo en pestaña de mapa local */}
+          {(!showTabs || activeTab === 'map') && lastLocation && (
             <div className="absolute bottom-6 left-6 z-10 max-w-xs">
               <div className="px-4 py-3 rounded-xl bg-white/95 backdrop-blur-sm border border-gray-200 shadow-lg">
                 <div className="flex items-start gap-3">
@@ -439,7 +561,7 @@ export default function LocationModal({
                                   {textWithoutURL}
                                 </div>
                               )}
-                              {url && (
+                              {url && !showTabs && (
                                 <RealTimeButton url={url} size="small" className="self-start" />
                               )}
                             </div>
@@ -464,8 +586,8 @@ export default function LocationModal({
             </div>
           )}
 
-          {/* Estado de conexión discreto para cuando no hay ubicación */}
-          {!lastLocation && (
+          {/* Estado de conexión discreto para cuando no hay ubicación - Solo en pestaña de mapa local */}
+          {(!showTabs || activeTab === 'map') && !lastLocation && (
             <div className="absolute bottom-6 left-6 z-10">
               <div className="px-3 py-2 rounded-lg bg-white/90 backdrop-blur-sm border border-gray-200 shadow-md">
                 <div className="flex items-center gap-2">
