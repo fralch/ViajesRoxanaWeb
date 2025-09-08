@@ -14,14 +14,8 @@ class TrazabilidadController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        // Show all tracking data (no authentication required)
         $query = Trazabilidad::with(['hijo', 'grupo']);
-
-        if (!Auth::user()->is_admin) {
-            // Only show tracking for user's children
-            $query->whereHas('hijo', function($q) {
-                $q->where('user_id', Auth::id());
-            });
-        }
 
         if ($request->has('grupo_id')) {
             $query->where('grupo_id', $request->grupo_id);
@@ -61,14 +55,7 @@ class TrazabilidadController extends Controller
 
     public function show(Trazabilidad $trazabilidad): JsonResponse
     {
-        // Check permissions
-        if (!Auth::user()->is_admin && $trazabilidad->hijo->user_id !== Auth::id()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized access'
-            ], 403);
-        }
-
+        // No authentication required - show any tracking record
         return response()->json([
             'success' => true,
             'data' => $trazabilidad->load(['hijo', 'grupo'])

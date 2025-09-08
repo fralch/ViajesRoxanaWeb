@@ -28,6 +28,14 @@ class Hijo extends Model
         'fecha_nacimiento' => 'date'
     ];
 
+    /**
+     * Get the route key for the model.
+     */
+    public function getRouteKeyName()
+    {
+        return 'doc_numero';
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
