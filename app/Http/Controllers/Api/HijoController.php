@@ -13,30 +13,7 @@ class HijoController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $user = Auth::user();
-        
-        // If not admin, show only their own children
-        if (!$user->is_admin) {
-            $hijos = $user->hijos()->with(['inscripciones.grupo.paquete']);
-            
-            if ($request->has('search') && $request->search) {
-                $search = $request->search;
-                $hijos->where(function($query) use ($search) {
-                    $query->where('nombres', 'like', "%{$search}%")
-                          ->orWhere('doc_numero', 'like', "%{$search}%");
-                });
-            }
-            
-            $hijos = $hijos->orderBy('nombres')->get();
-            
-            return response()->json([
-                'success' => true,
-                'data' => $hijos,
-                'is_admin' => false
-            ]);
-        }
-        
-        // For admin, show all children with their users
+        // Show all children with their users (no authentication required)
         $query = Hijo::with(['user', 'inscripciones.grupo.paquete']);
         
         if ($request->has('search') && $request->search) {
@@ -55,8 +32,7 @@ class HijoController extends Controller
         
         return response()->json([
             'success' => true,
-            'data' => $hijos,
-            'is_admin' => true
+            'data' => $hijos
         ]);
     }
 
@@ -94,14 +70,7 @@ class HijoController extends Controller
 
     public function show(Hijo $hijo): JsonResponse
     {
-        // Check permissions
-        if (!Auth::user()->is_admin && $hijo->user_id !== Auth::id()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized access to this child'
-            ], 403);
-        }
-        
+        // No authentication required - show any child
         return response()->json([
             'success' => true,
             'data' => $hijo->load(['user', 'inscripciones.grupo.paquete'])
