@@ -4,6 +4,117 @@ import ErrorBoundary from '@/Components/ErrorBoundary';
 import mapboxService from '@/services/mapboxService';
 import { formatDateSafe } from '@/utils/dateUtils';
 
+// Función helper para detectar URLs en texto
+const detectURL = (text) => {
+  if (!text) return null;
+  
+  // Primero buscar URLs completas con protocolo
+  let urlRegex = /(https?:\/\/[^\s<>"']+)/gi;
+  let match = text.match(urlRegex);
+  
+  // Si no encuentra, buscar dominios que parezcan URLs (ej: webrunnertrackgps.com/...)
+  if (!match) {
+    urlRegex = /([a-zA-Z0-9-]+\.[a-zA-Z]{2,}[^\s<>"']*)/gi;
+    match = text.match(urlRegex);
+    if (match) {
+      // Agregar https:// si no tiene protocolo
+      match[0] = match[0].startsWith('http') ? match[0] : 'https://' + match[0];
+    }
+  }
+  
+  return match ? match[0] : null;
+};
+
+// Función helper para extraer texto sin URL
+const getTextWithoutURL = (text) => {
+  if (!text) return '';
+  
+  // Remover URLs completas con protocolo
+  let urlRegex = /(https?:\/\/[^\s<>"']+)/gi;
+  let cleanText = text.replace(urlRegex, '').trim();
+  
+  // Remover también dominios que parezcan URLs
+  urlRegex = /([a-zA-Z0-9-]+\.[a-zA-Z]{2,}[^\s<>"']*)/gi;
+  cleanText = cleanText.replace(urlRegex, '').trim();
+  
+  return cleanText;
+};
+
+// Componente mejorado para el botón de tiempo real
+const RealTimeButton = ({ url, size = 'normal', className = '' }) => {
+  const [isPressed, setIsPressed] = useState(false);
+  
+  const sizeClasses = {
+    small: 'px-2 py-1 text-xs gap-1.5',
+    normal: 'px-3 py-1.5 text-xs gap-2',
+    large: 'px-4 py-2 text-sm gap-2'
+  };
+  
+  const iconSizes = {
+    small: 'w-2.5 h-2.5',
+    normal: 'w-3 h-3', 
+    large: 'w-4 h-4'
+  };
+
+  return (
+    <a 
+      href={url} 
+      target="_blank" 
+      rel="noopener noreferrer"
+      className={`
+        inline-flex items-center justify-center font-medium text-white 
+        bg-gradient-to-r from-red-500 to-red-600 
+        hover:from-red-600 hover:to-red-700 
+        active:from-red-700 active:to-red-800
+        rounded-lg shadow-md hover:shadow-lg
+        transform transition-all duration-200 ease-in-out
+        hover:scale-105 active:scale-95
+        focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1
+        ${sizeClasses[size]}
+        ${isPressed ? 'scale-95' : ''}
+        ${className}
+      `}
+      onMouseDown={() => setIsPressed(true)}
+      onMouseUp={() => setIsPressed(false)}
+      onMouseLeave={() => setIsPressed(false)}
+      title="Ver ubicación en tiempo real en nueva ventana"
+      aria-label="Ver transmisión en tiempo real"
+    >
+      {/* Ícono de transmisión en vivo */}
+      <svg 
+        className={`${iconSizes[size]} animate-pulse`} 
+        fill="currentColor" 
+        viewBox="0 0 24 24"
+      >
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M12 1C5.925 1 1 5.925 1 12s4.925 11 11 11 11-4.925 11-11S18.075 1 12 1zm0 18c-3.86 0-7-3.14-7-7s3.14-7 7-7 7 3.14 7 7-3.14 7-7 7z" 
+              fillOpacity="0.3"/>
+      </svg>
+      
+      <span>Ver en tiempo real</span>
+      
+      {/* Ícono de enlace externo pequeño */}
+      <svg 
+        className={`${iconSizes[size]} opacity-70`} 
+        fill="none" 
+        stroke="currentColor" 
+        viewBox="0 0 24 24"
+      >
+        <path 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          strokeWidth={2.5} 
+          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" 
+        />
+      </svg>
+      
+      {/* Efecto de brillo */}
+      <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-transparent via-white to-transparent opacity-0 hover:opacity-20 transition-opacity duration-300 transform -skew-x-12" />
+    </a>
+  );
+};
+
 export default function LocationModal({ 
   isOpen, 
   onClose, 
@@ -215,7 +326,32 @@ export default function LocationModal({
             <div>
               <h2 className="text-xl md:text-2xl font-bold text-gray-900">Ubicación de {childName}</h2>
               {lastLocation?.descripcion && (
-                <p className="text-sm text-gray-600 mt-1">{lastLocation.descripcion}</p>
+                <div className="mt-2">
+                  {(() => {
+                    const url = detectURL(lastLocation.descripcion);
+                    const textWithoutURL = getTextWithoutURL(lastLocation.descripcion);
+                    
+                    return (
+                      <div className="flex flex-col gap-2">
+                        {textWithoutURL && (
+                          <p className="text-sm text-gray-600">{textWithoutURL}</p>
+                        )}
+                        {url && (
+                          <div className="flex items-center gap-2">
+                            <RealTimeButton url={url} size="normal" />
+                            <div className="hidden sm:block">
+                              <div className="flex items-center gap-1 px-2 py-1 bg-green-50 border border-green-200 rounded-md">
+                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                <span className="text-xs font-medium text-green-700">En vivo</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()
+                  }
+                </div>
               )}
             </div>
           </div>
@@ -278,9 +414,6 @@ export default function LocationModal({
                 )}
               </button>
             )}
-
-           
-
           </div>
 
           {/* Información de ubicación */}
@@ -294,8 +427,25 @@ export default function LocationModal({
                       {lastLocation ? 'Última ubicación' : 'Sin datos'}
                     </div>
                     {lastLocation.descripcion && (
-                      <div className="text-xs text-gray-700 font-medium mb-1">
-                        {lastLocation.descripcion}
+                      <div className="mb-2">
+                        {(() => {
+                          const url = detectURL(lastLocation.descripcion);
+                          const textWithoutURL = getTextWithoutURL(lastLocation.descripcion);
+                          
+                          return (
+                            <div className="flex flex-col gap-1.5">
+                              {textWithoutURL && (
+                                <div className="text-xs text-gray-700 font-medium">
+                                  {textWithoutURL}
+                                </div>
+                              )}
+                              {url && (
+                                <RealTimeButton url={url} size="small" className="self-start" />
+                              )}
+                            </div>
+                          );
+                        })()
+                        }
                       </div>
                     )}
                     {currentAddress && (
