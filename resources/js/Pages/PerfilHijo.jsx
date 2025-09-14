@@ -28,7 +28,7 @@ export default function PerfilHijo({ hijo }) {
 
     const handlePerfilSubmit = (e) => {
         e.preventDefault();
-        postPerfil(route('perfil.hijo.update', hijo.id), {
+        postPerfil(route('perfil.hijo.update', hijo.doc_numero), {
             transform: (data) => {
                 const { doc_tipo, ...updateData } = data;
                 return updateData;
