@@ -29,18 +29,30 @@ class GeolocalizacionController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'grupo_id' => 'required|exists:grupos,id',
+            'paquete_id' => 'nullable|exists:paquetes,id',
+            'hijo_id' => 'required|exists:hijos,id',
             'latitud' => 'required|numeric',
             'longitud' => 'required|numeric',
-            'ubicacion_nombre' => 'nullable|string|max:255',
         ]);
+
+        // Check current count for this hijo_id
+        $currentCount = Geolocalizacion::where('hijo_id', $validated['hijo_id'])->count();
+
+        // If we have 10 or more records, delete the oldest ones to make room
+        if ($currentCount >= 10) {
+            $recordsToDelete = $currentCount - 9; // Keep 9, so we can add 1 more
+            Geolocalizacion::where('hijo_id', $validated['hijo_id'])
+                ->orderBy('created_at', 'asc')
+                ->limit($recordsToDelete)
+                ->delete();
+        }
 
         $geolocalizacion = Geolocalizacion::create($validated);
 
         return response()->json([
             'success' => true,
             'message' => 'Location saved successfully',
-            'data' => $geolocalizacion->load('grupo')
+            'data' => $geolocalizacion->load(['paquete', 'hijo'])
         ], 201);
     }
 

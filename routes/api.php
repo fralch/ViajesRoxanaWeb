@@ -20,8 +20,9 @@ Route::prefix('v1')->group(function () {
     Route::get('/endpoint/hijos/{hijo}', [HijoController::class, 'show']);
     Route::get('/endpoint/hijos/by-dni/{dni}', [HijoController::class, 'getHijoByDni']);
 
-    // Geolocation - only read operations
+    // Geolocation operations
     Route::get('/endpoint/geolocalizacion', [GeolocalizacionController::class, 'index']);
+    Route::post('/endpoint/geolocalizacion', [GeolocalizacionController::class, 'store']);
     Route::get('/endpoint/geolocalizacion/{geolocalizacion}', [GeolocalizacionController::class, 'show']);
     Route::get('/endpoint/geolocalizacion/{grupo}/history', [GeolocalizacionController::class, 'getGroupHistory']);
 
