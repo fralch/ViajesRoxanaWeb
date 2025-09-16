@@ -13,6 +13,7 @@ class Hijo extends Model
         'nombres',
         'doc_tipo',
         'doc_numero',
+        'password_hijo',
         'nums_emergencia',
         'fecha_nacimiento',
         'foto',

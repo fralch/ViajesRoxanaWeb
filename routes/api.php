@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\NotificacionController;
 Route::prefix('v1')->group(function () {
     // Authentication routes (no auth required)
     Route::post('/endpoint/login', [AuthController::class, 'login']);
+    Route::post('/endpoint/hijo-login', [AuthController::class, 'hijoLogin']);
 
     // Simplified routes (no authentication required, read-only)
     
