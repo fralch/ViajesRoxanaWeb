@@ -8,6 +8,7 @@ use App\Models\Grupo;
 use App\Models\Hijo;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Carbon\Carbon;
 
 class GeolocalizacionController extends Controller
 {
@@ -49,12 +50,31 @@ class GeolocalizacionController extends Controller
         // Use the actual hijo ID for the database
         $hijoId = $hijo->id;
 
-        // Get paquete_id from the hijo's most recent group inscription
+        // Get paquete_id from the hijo's group closest to current Lima date
         $paqueteId = $validated['paquete_id'] ?? null;
         if (!$paqueteId && $hijo->inscripciones->isNotEmpty()) {
-            // Get the most recent inscription by created_at
-            $latestInscripcion = $hijo->inscripciones->sortByDesc('created_at')->first();
-            $paqueteId = $latestInscripcion->grupo->paquete_id ?? null;
+            // Get current date in Lima timezone
+            $currentDateLima = Carbon::now('America/Lima')->toDateString();
+
+            // Find the group with date closest to today
+            $closestInscripcion = null;
+            $minDateDiff = null;
+
+            foreach ($hijo->inscripciones as $inscripcion) {
+                $grupo = $inscripcion->grupo;
+                if (!$grupo) continue;
+
+                // Calculate difference between group start date and current date
+                $groupStartDate = Carbon::parse($grupo->fecha_inicio);
+                $dateDiff = abs($groupStartDate->diffInDays(Carbon::parse($currentDateLima)));
+
+                if ($minDateDiff === null || $dateDiff < $minDateDiff) {
+                    $minDateDiff = $dateDiff;
+                    $closestInscripcion = $inscripcion;
+                }
+            }
+
+            $paqueteId = $closestInscripcion->grupo->paquete_id ?? null;
         }
 
         if (!$paqueteId) {
