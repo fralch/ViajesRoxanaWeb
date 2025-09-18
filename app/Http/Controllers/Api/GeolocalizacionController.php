@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Geolocalizacion;
 use App\Models\Grupo;
 use App\Models\Hijo;
+use App\Services\GeolocalizacionRedisService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Carbon\Carbon;
@@ -28,7 +29,7 @@ class GeolocalizacionController extends Controller
         ]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, GeolocalizacionRedisService $redisService): JsonResponse
     {
         $validated = $request->validate([
             'paquete_id' => 'nullable|exists:paquetes,id',
@@ -47,7 +48,7 @@ class GeolocalizacionController extends Controller
             ], 404);
         }
 
-        // Use the actual hijo ID for the database
+        // Use the actual hijo ID for Redis
         $hijoId = $hijo->id;
 
         // Get paquete_id from the hijo's group closest to current Lima date
@@ -84,29 +85,26 @@ class GeolocalizacionController extends Controller
             ], 400);
         }
 
-        // Optimized cleanup: use subquery to avoid counting all records
-        $recordsToKeep = 9;
-        Geolocalizacion::where('hijo_id', $hijoId)
-            ->whereNotIn('id', function($query) use ($hijoId, $recordsToKeep) {
-                $query->select('id')
-                    ->from('geolocalizacion')
-                    ->where('hijo_id', $hijoId)
-                    ->orderBy('created_at', 'desc')
-                    ->limit($recordsToKeep);
-            })
-            ->delete();
-
-        $geolocalizacion = Geolocalizacion::create([
-            'paquete_id' => $paqueteId,
-            'hijo_id' => $hijoId,
-            'latitud' => $validated['latitud'],
-            'longitud' => $validated['longitud'],
-        ]);
+        // Store in Redis for real-time access (much faster than DB)
+        $locationData = $redisService->storeLocation(
+            $hijoId,
+            $validated['latitud'],
+            $validated['longitud'],
+            $paqueteId
+        );
 
         return response()->json([
             'success' => true,
-            'message' => 'Location saved successfully',
-            'data' => $geolocalizacion->load(['paquete', 'hijo'])
+            'message' => 'Location saved successfully in Redis',
+            'data' => [
+                'hijo_id' => $hijoId,
+                'doc_numero' => $validated['hijo_id'],
+                'paquete_id' => $paqueteId,
+                'latitud' => $validated['latitud'],
+                'longitud' => $validated['longitud'],
+                'timestamp' => $locationData['timestamp'],
+                'stored_in' => 'redis'
+            ]
         ], 201);
     }
 
@@ -130,13 +128,29 @@ class GeolocalizacionController extends Controller
         ]);
     }
 
-    public function getLocationByHijo(Request $request): JsonResponse
+    public function getLocationByHijo(Request $request, GeolocalizacionRedisService $redisService): JsonResponse
     {
         $validated = $request->validate([
             'hijo_id' => 'required|string',
         ]);
 
-        // Optimized: Use join instead of separate queries
+        // First, try to get from Redis (real-time data)
+        $redisLocation = $redisService->getLocationsByDocNumber($validated['hijo_id']);
+
+        if ($redisLocation) {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'geolocalizacion' => $redisLocation,
+                    'is_recent' => $redisLocation['is_recent'],
+                    'last_update' => $redisLocation['last_update'],
+                    'minutes_ago' => $redisLocation['minutes_ago'],
+                    'source' => 'redis'
+                ]
+            ]);
+        }
+
+        // Fallback to database if not in Redis
         $geolocalizacion = Geolocalizacion::select('geolocalizacion.*')
             ->join('hijos', 'hijos.id', '=', 'geolocalizacion.hijo_id')
             ->where('hijos.doc_numero', $validated['hijo_id'])
@@ -153,7 +167,7 @@ class GeolocalizacionController extends Controller
 
         // Check if the location is recent (within last 5 minutes)
         $minutesAgo = Carbon::parse($geolocalizacion->created_at)
-            ->diffInMinutes(Carbon::now());
+            ->diffInMinutes(Carbon::now('America/Lima'));
         $isRecent = $minutesAgo <= 5;
 
         return response()->json([
@@ -162,7 +176,44 @@ class GeolocalizacionController extends Controller
                 'geolocalizacion' => $geolocalizacion,
                 'is_recent' => $isRecent,
                 'last_update' => $geolocalizacion->created_at,
-                'minutes_ago' => $minutesAgo
+                'minutes_ago' => $minutesAgo,
+                'source' => 'database'
+            ]
+        ]);
+    }
+
+    public function getLocationHistory(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'hijo_id' => 'required|string',
+            'limit' => 'nullable|integer|min:1|max:100'
+        ]);
+
+        $limit = $validated['limit'] ?? 30;
+
+        // Get historical data from database only
+        $history = Geolocalizacion::select('geolocalizacion.*')
+            ->join('hijos', 'hijos.id', '=', 'geolocalizacion.hijo_id')
+            ->where('hijos.doc_numero', $validated['hijo_id'])
+            ->with(['paquete', 'hijo'])
+            ->orderBy('geolocalizacion.created_at', 'desc')
+            ->limit($limit)
+            ->get();
+
+        if ($history->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No historical location data found for this hijo'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'history' => $history,
+                'count' => $history->count(),
+                'limit' => $limit,
+                'source' => 'database_history'
             ]
         ]);
     }
