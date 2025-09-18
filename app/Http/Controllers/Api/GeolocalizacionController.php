@@ -145,7 +145,8 @@ class GeolocalizacionController extends Controller
                     'is_recent' => $redisLocation['is_recent'],
                     'last_update' => $redisLocation['last_update'],
                     'minutes_ago' => $redisLocation['minutes_ago'],
-                    'source' => 'redis'
+                    'source' => 'redis',
+                    'hijo' => $redisLocation['hijo'] ?? null
                 ]
             ]);
         }
@@ -177,7 +178,12 @@ class GeolocalizacionController extends Controller
                 'is_recent' => $isRecent,
                 'last_update' => $geolocalizacion->created_at,
                 'minutes_ago' => $minutesAgo,
-                'source' => 'database'
+                'source' => 'database',
+                'hijo' => [
+                    'nombres' => $geolocalizacion->hijo->nombres,
+                    'doc_tipo' => $geolocalizacion->hijo->doc_tipo,
+                    'doc_numero' => $geolocalizacion->hijo->doc_numero
+                ]
             ]
         ]);
     }

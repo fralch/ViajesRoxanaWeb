@@ -83,6 +83,17 @@ class GeolocalizacionRedisService
             return null;
         }
 
-        return $this->getLocation($hijo->id);
+        $locationData = $this->getLocation($hijo->id);
+        
+        if ($locationData) {
+            // Add hijo data to the response
+            $locationData['hijo'] = [
+                'nombres' => $hijo->nombres,
+                'doc_tipo' => $hijo->doc_tipo,
+                'doc_numero' => $hijo->doc_numero
+            ];
+        }
+
+        return $locationData;
     }
 }
