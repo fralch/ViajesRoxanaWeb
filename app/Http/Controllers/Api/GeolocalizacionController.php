@@ -84,17 +84,17 @@ class GeolocalizacionController extends Controller
             ], 400);
         }
 
-        // Check current count for this hijo_id
-        $currentCount = Geolocalizacion::where('hijo_id', $hijoId)->count();
-
-        // If we have 10 or more records, delete the oldest ones to make room
-        if ($currentCount >= 10) {
-            $recordsToDelete = $currentCount - 9; // Keep 9, so we can add 1 more
-            Geolocalizacion::where('hijo_id', $hijoId)
-                ->orderBy('created_at', 'asc')
-                ->limit($recordsToDelete)
-                ->delete();
-        }
+        // Optimized cleanup: use subquery to avoid counting all records
+        $recordsToKeep = 9;
+        Geolocalizacion::where('hijo_id', $hijoId)
+            ->whereNotIn('id', function($query) use ($hijoId, $recordsToKeep) {
+                $query->select('id')
+                    ->from('geolocalizacion')
+                    ->where('hijo_id', $hijoId)
+                    ->orderBy('created_at', 'desc')
+                    ->limit($recordsToKeep);
+            })
+            ->delete();
 
         $geolocalizacion = Geolocalizacion::create([
             'paquete_id' => $paqueteId,
@@ -127,6 +127,43 @@ class GeolocalizacionController extends Controller
         return response()->json([
             'success' => true,
             'data' => $history
+        ]);
+    }
+
+    public function getLocationByHijo(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'hijo_id' => 'required|string',
+        ]);
+
+        // Optimized: Use join instead of separate queries
+        $geolocalizacion = Geolocalizacion::select('geolocalizacion.*')
+            ->join('hijos', 'hijos.id', '=', 'geolocalizacion.hijo_id')
+            ->where('hijos.doc_numero', $validated['hijo_id'])
+            ->with(['paquete', 'hijo'])
+            ->orderBy('geolocalizacion.created_at', 'desc')
+            ->first();
+
+        if (!$geolocalizacion) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No location data found for this hijo or hijo not found'
+            ], 404);
+        }
+
+        // Check if the location is recent (within last 5 minutes)
+        $minutesAgo = Carbon::parse($geolocalizacion->created_at)
+            ->diffInMinutes(Carbon::now());
+        $isRecent = $minutesAgo <= 5;
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'geolocalizacion' => $geolocalizacion,
+                'is_recent' => $isRecent,
+                'last_update' => $geolocalizacion->created_at,
+                'minutes_ago' => $minutesAgo
+            ]
         ]);
     }
 }

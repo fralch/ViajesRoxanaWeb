@@ -25,6 +25,7 @@ Route::prefix('v1')->group(function () {
     Route::post('/endpoint/geolocalizacion', [GeolocalizacionController::class, 'store']);
     Route::get('/endpoint/geolocalizacion/{geolocalizacion}', [GeolocalizacionController::class, 'show']);
     Route::get('/endpoint/geolocalizacion/{grupo}/history', [GeolocalizacionController::class, 'getGroupHistory']);
+    Route::get('/endpoint/geolocalizacion/hijo/location', [GeolocalizacionController::class, 'getLocationByHijo']);
 
     // Tracking (Trazabilidad) - only read operations
     Route::get('/endpoint/trazabilidad', [TrazabilidadController::class, 'index']);
