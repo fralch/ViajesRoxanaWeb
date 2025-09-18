@@ -44,8 +44,6 @@ class HijoLocationController extends Controller
             return response()->json([
                 'success' => true,
                 'location' => [
-                    'latitude' => (float) $lastLocation->latitud,
-                    'longitude' => (float) $lastLocation->longitud,
                     'descripcion' => $lastLocation->descripcion,
                     'timestamp' => $lastLocation->created_at->toISOString(),
                     'formatted_time' => $lastLocation->created_at->format('Y-m-d H:i:s'),
