@@ -14,6 +14,7 @@ use App\Http\Controllers\TrazabilidadController;
 use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\PerfilHijoController;
 use App\Http\Controllers\SendMessageController;
+use App\Http\Controllers\EquipajeController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
@@ -114,6 +115,7 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('hijos', HijoController::class);
     Route::delete('/hijos/parent/{user}', [HijoController::class, 'destroyParent'])->name('hijos.destroy-parent');
+    Route::resource('equipaje', EquipajeController::class);
     Route::resource('paquetes', PaqueteController::class);
     Route::resource('grupos', GrupoController::class);
     Route::resource('inscripciones', InscripcionController::class)->parameters(['inscripciones' => 'inscripcion']);

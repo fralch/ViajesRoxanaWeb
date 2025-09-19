@@ -710,7 +710,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                             title="Equipaje"
                             description="Registra y consulta el equipaje para tus próximos destinos de manera digital."
                             color="green"
-                            status="disabled"
+                            link={route('equipaje.index')}
                         />
 
                         <ServiceCard

@@ -57,12 +57,18 @@ class Hijo extends Model
         return $this->hasMany(NutricionFicha::class);
     }
 
+    public function equipajes()
+    {
+        return $this->hasMany(Equipaje::class);
+    }
+
     protected static function booted()
     {
         static::deleting(function ($hijo) {
             $hijo->inscripciones()->delete();
             $hijo->saludFichas()->delete();
             $hijo->nutricionFichas()->delete();
+            $hijo->equipajes()->delete();
         });
     }
 
