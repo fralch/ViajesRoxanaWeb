@@ -43,18 +43,17 @@ export default function FichaNutricional({ nutricionFicha, hijo, onSubmitSuccess
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid gap-6 md:grid-cols-2 bg-orange-50 p-6 rounded-2xl">
                     <div>
-                        <InputLabel htmlFor="restricciones" value="Restricciones Alimentarias" className="text-gray-700 font-semibold" />
+                        <InputLabel htmlFor="intolerancias" value="Intolerancias Alimentarias" className="text-gray-700 font-semibold" />
                         <textarea
-                            id="restricciones"
+                            id="intolerancias"
                             className="mt-2 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-orange-500 focus:border-orange-500"
                             rows="3"
-                            value={data.restricciones}
-                            onChange={(e) => setData('restricciones', e.target.value)}
-                            placeholder="Describe cualquier restricción alimentaria..."
+                            value={data.intolerancias}
+                            onChange={(e) => setData('intolerancias', e.target.value)}
+                            placeholder="Intolerancias conocidas (lactosa, gluten, etc.)..."
                         />
-                        <InputError message={errors.restricciones} className="mt-2" />
+                        <InputError message={errors.intolerancias} className="mt-2" />
                     </div>
-
                     <div>
                         <InputLabel htmlFor="preferencias" value="Preferencias Alimentarias" className="text-gray-700 font-semibold" />
                         <textarea
@@ -80,21 +79,7 @@ export default function FichaNutricional({ nutricionFicha, hijo, onSubmitSuccess
                         />
                         <InputError message={errors.alergias_alimentarias} className="mt-2" />
                     </div>
-
                     <div>
-                        <InputLabel htmlFor="intolerancias" value="Intolerancias Alimentarias" className="text-gray-700 font-semibold" />
-                        <textarea
-                            id="intolerancias"
-                            className="mt-2 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-orange-500 focus:border-orange-500"
-                            rows="3"
-                            value={data.intolerancias}
-                            onChange={(e) => setData('intolerancias', e.target.value)}
-                            placeholder="Intolerancias conocidas (lactosa, gluten, etc.)..."
-                        />
-                        <InputError message={errors.intolerancias} className="mt-2" />
-                    </div>
-
-                    <div className="md:col-span-2">
                         <InputLabel htmlFor="otras_notas" value="Otras Notas Nutricionales" className="text-gray-700 font-semibold" />
                         <textarea
                             id="otras_notas"
@@ -106,6 +91,10 @@ export default function FichaNutricional({ nutricionFicha, hijo, onSubmitSuccess
                         />
                         <InputError message={errors.otras_notas} className="mt-2" />
                     </div>
+                    
+
+                   
+                    
                 </div>
 
                 <div className="flex justify-end pt-4">

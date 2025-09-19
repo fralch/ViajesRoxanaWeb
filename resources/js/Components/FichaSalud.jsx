@@ -52,7 +52,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                             rows="3"
                             value={data.alergias}
                             onChange={(e) => setData('alergias', e.target.value)}
-                            placeholder="Describe cualquier alergia conocida..."
+                            placeholder="Describe cualquier alergia a medicamentos conocida..."
                         />
                         <InputError message={errors.alergias} className="mt-2" />
                     </div>
@@ -70,44 +70,9 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                         <InputError message={errors.medicamentos} className="mt-2" />
                     </div>
 
-                    <div>
-                        <InputLabel htmlFor="seguros" value="Seguros Médicos" className="text-gray-700 font-semibold" />
-                        <TextInput
-                            id="seguros"
-                            type="text"
-                            className="mt-2 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-red-500 focus:border-red-500"
-                            value={data.seguros}
-                            onChange={(e) => setData('seguros', e.target.value)}
-                            placeholder="Nombre del seguro médico..."
-                        />
-                        <InputError message={errors.seguros} className="mt-2" />
-                    </div>
 
-                    <div>
-                        <InputLabel htmlFor="emergencia_contacto" value="Contacto de Emergencia Médica" className="text-gray-700 font-semibold" />
-                        <TextInput
-                            id="emergencia_contacto"
-                            type="text"
-                            className="mt-2 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-red-500 focus:border-red-500"
-                            value={data.emergencia_contacto}
-                            onChange={(e) => setData('emergencia_contacto', e.target.value)}
-                            placeholder="Nombre del contacto médico..."
-                        />
-                        <InputError message={errors.emergencia_contacto} className="mt-2" />
-                    </div>
-
-                    <div>
-                        <InputLabel htmlFor="emergencia_telefono" value="Teléfono de Emergencia Médica" className="text-gray-700 font-semibold" />
-                        <TextInput
-                            id="emergencia_telefono"
-                            type="text"
-                            className="mt-2 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-red-500 focus:border-red-500"
-                            value={data.emergencia_telefono}
-                            onChange={(e) => setData('emergencia_telefono', e.target.value)}
-                            placeholder="Teléfono del contacto médico..."
-                        />
-                        <InputError message={errors.emergencia_telefono} className="mt-2" />
-                    </div>
+                    
+                    
 
                     <div className="md:col-span-2">
                         <InputLabel htmlFor="observaciones" value="Observaciones Médicas" className="text-gray-700 font-semibold" />
