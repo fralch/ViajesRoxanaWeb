@@ -1,5 +1,5 @@
 import { Head, useForm, usePage, Link } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -21,13 +21,60 @@ export default function PerfilHijo({ hijo, saludFicha, nutricionFicha }) {
         doc_numero: hijo?.doc_numero || '',
         fecha_nacimiento: hijo?.fecha_nacimiento || '',
         foto: hijo?.foto || '',
-        pasatiempos: hijo?.pasatiempos || '',
-        deportes: hijo?.deportes || '',
-        plato_favorito: hijo?.plato_favorito || '',
-        color_favorito: hijo?.color_favorito || '',
         informacion_adicional: hijo?.informacion_adicional || '',
         nums_emergencia: Array.isArray(hijo?.nums_emergencia) ? hijo.nums_emergencia : [],
     });
+
+    const profileCompletion = useMemo(() => {
+        // Campos del perfil personal
+        const perfilFieldsData = {
+            'Nombres Completos': perfilData.nombres,
+            'Número de Documento': perfilData.doc_numero,
+            'Fecha de Nacimiento': perfilData.fecha_nacimiento,
+            'Información Adicional': perfilData.informacion_adicional,
+        };
+
+        // Números de emergencia (hasta 2)
+        const emergencyNumbers = Array.isArray(perfilData.nums_emergencia) ? perfilData.nums_emergencia : [];
+        if (emergencyNumbers.length > 0) {
+            emergencyNumbers.forEach((num, index) => {
+                perfilFieldsData[`Contacto de Emergencia ${index + 1}`] = num;
+            });
+        }
+
+        // Campos de salud (solo los que realmente existen en el formulario)
+        const saludFieldsData = saludFicha ? {
+            'Alergias Médicas': saludFicha.alergias,
+            'Medicamentos': saludFicha.medicamentos,
+            'Observaciones Médicas': saludFicha.observaciones,
+        } : {};
+
+        // Campos nutricionales (corregidos según el formulario actual)
+        const nutricionFieldsData = nutricionFicha ? {
+            'Intolerancias Alimentarias': nutricionFicha.intolerancias,
+            'Preferencias Alimentarias': nutricionFicha.preferencias,
+            'Alergias Alimentarias': nutricionFicha.alergias_alimentarias,
+            'Otras Notas Nutricionales': nutricionFicha.otras_notas,
+        } : {};
+
+        // Combinar todos los campos
+        const allFieldsData = { ...perfilFieldsData, ...saludFieldsData, ...nutricionFieldsData };
+        
+        // Calcular campos completados
+        const totalFields = Object.keys(allFieldsData).length;
+        const filledFields = Object.values(allFieldsData).filter(field => field && String(field).trim() !== '').length;
+        
+        return {
+            percentage: totalFields > 0 ? (filledFields / totalFields) * 100 : 0,
+            totalFields,
+            filledFields,
+            missingFields: Object.entries(allFieldsData)
+                .filter(([key, value]) => !value || String(value).trim() === '')
+                .map(([key]) => key)
+        };
+    }, [perfilData, saludFicha, nutricionFicha]);
+
+    const [showMissingFields, setShowMissingFields] = useState(false);
 
     const handlePerfilSubmit = (e) => {
         e.preventDefault();
@@ -67,10 +114,6 @@ export default function PerfilHijo({ hijo, saludFicha, nutricionFicha }) {
                         doc_numero: hijoActualizado.doc_numero || prevData.doc_numero,
                         fecha_nacimiento: hijoActualizado.fecha_nacimiento || prevData.fecha_nacimiento,
                         foto: hijoActualizado.foto || prevData.foto,
-                        pasatiempos: hijoActualizado.pasatiempos || prevData.pasatiempos,
-                        deportes: hijoActualizado.deportes || prevData.deportes,
-                        plato_favorito: hijoActualizado.plato_favorito || prevData.plato_favorito,
-                        color_favorito: hijoActualizado.color_favorito || prevData.color_favorito,
                         informacion_adicional: hijoActualizado.informacion_adicional || prevData.informacion_adicional,
                         nums_emergencia: Array.isArray(hijoActualizado.nums_emergencia) ? 
                             hijoActualizado.nums_emergencia : 
@@ -86,10 +129,6 @@ export default function PerfilHijo({ hijo, saludFicha, nutricionFicha }) {
                     nombres: 'Nombres Completos',
                     doc_numero: 'Número de Documento',
                     fecha_nacimiento: 'Fecha de Nacimiento',
-                    pasatiempos: 'Pasatiempos Favoritos',
-                    deportes: 'Deportes que Practica',
-                    plato_favorito: 'Plato Favorito',
-                    color_favorito: 'Color Favorito',
                     informacion_adicional: 'Información Adicional',
                     nums_emergencia: 'Números de Emergencia',
                     foto: 'Foto de Perfil'
@@ -267,6 +306,59 @@ export default function PerfilHijo({ hijo, saludFicha, nutricionFicha }) {
                         </div>
                     </div>
 
+                    {/* Profile Completion Progress */}
+                    <div className="mb-8">
+                        <h3 className="text-lg font-semibold text-gray-800 mb-3">Progreso del Perfil</h3>
+                        <div className="bg-white p-4 rounded-2xl shadow-md">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-medium text-gray-600">Perfil Completado</span>
+                                <span className="text-sm font-bold text-red-600">{`${Math.round(profileCompletion.percentage)}%`}</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2.5 mb-3">
+                                <div 
+                                    className="bg-gradient-to-r from-red-500 to-red-600 h-2.5 rounded-full transition-all duration-500"
+                                    style={{ width: `${profileCompletion.percentage}%` }}
+                                ></div>
+                            </div>
+                            
+                            {/* Progress Details */}
+                            <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                                <span>{profileCompletion.filledFields} de {profileCompletion.totalFields} campos completados</span>
+                                {profileCompletion.missingFields.length > 0 && (
+                                    <button
+                                        onClick={() => setShowMissingFields(!showMissingFields)}
+                                        className="flex items-center gap-1 text-red-600 hover:text-red-700 transition-colors"
+                                    >
+                                        <span>Ver campos faltantes</span>
+                                        <svg 
+                                            className={`w-3 h-3 transition-transform ${showMissingFields ? 'rotate-180' : ''}`} 
+                                            fill="none" 
+                                            stroke="currentColor" 
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Missing Fields Collapsible Section */}
+                            {showMissingFields && profileCompletion.missingFields.length > 0 && (
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-3 animate-fadeIn">
+                                    <h4 className="text-sm font-semibold text-red-800 mb-2">Campos por completar:</h4>
+                                    <ul className="space-y-1">
+                                        {profileCompletion.missingFields.map((field, index) => (
+                                            <li key={index} className="flex items-center gap-2 text-xs text-red-700">
+                                                <div className="w-1.5 h-1.5 bg-red-400 rounded-full"></div>
+                                                {field}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
                     {/* Main Content Card */}
                     <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
 
@@ -401,72 +493,6 @@ export default function PerfilHijo({ hijo, saludFicha, nutricionFicha }) {
                                                 required
                                             />
                                             <InputError message={erroresPerfil.doc_numero} className="mt-2" />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Gustos e Intereses */}
-                                <div>
-                                    <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                                        <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
-                                            <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                            </svg>
-                                        </div>
-                                        Gustos e Intereses
-                                    </h4>
-                                    
-                                    <div className="grid gap-6 md:grid-cols-2 bg-green-50 p-6 rounded-2xl">
-                                        <div>
-                                            <InputLabel htmlFor="pasatiempos" value="Pasatiempos Favoritos" className="text-gray-700 font-semibold" />
-                                            <TextInput
-                                                id="pasatiempos"
-                                                type="text"
-                                                className="mt-2 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500"
-                                                value={perfilData.pasatiempos}
-                                                onChange={(e) => setPerfilData('pasatiempos', e.target.value)}
-                                                placeholder="Ej: Leer, jugar videojuegos, dibujar"
-                                            />
-                                            <InputError message={erroresPerfil.pasatiempos} className="mt-2" />
-                                        </div>
-
-                                        <div>
-                                            <InputLabel htmlFor="deportes" value="Deportes que Practica" className="text-gray-700 font-semibold" />
-                                            <TextInput
-                                                id="deportes"
-                                                type="text"
-                                                className="mt-2 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500"
-                                                value={perfilData.deportes}
-                                                onChange={(e) => setPerfilData('deportes', e.target.value)}
-                                                placeholder="Ej: Fútbol, natación, tenis"
-                                            />
-                                            <InputError message={erroresPerfil.deportes} className="mt-2" />
-                                        </div>
-
-                                        <div>
-                                            <InputLabel htmlFor="plato_favorito" value="Plato Favorito" className="text-gray-700 font-semibold" />
-                                            <TextInput
-                                                id="plato_favorito"
-                                                type="text"
-                                                className="mt-2 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500"
-                                                value={perfilData.plato_favorito}
-                                                onChange={(e) => setPerfilData('plato_favorito', e.target.value)}
-                                                placeholder="Ej: Pizza, hamburguesas, pasta"
-                                            />
-                                            <InputError message={erroresPerfil.plato_favorito} className="mt-2" />
-                                        </div>
-
-                                        <div>
-                                            <InputLabel htmlFor="color_favorito" value="Color Favorito" className="text-gray-700 font-semibold" />
-                                            <TextInput
-                                                id="color_favorito"
-                                                type="text"
-                                                className="mt-2 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500"
-                                                value={perfilData.color_favorito}
-                                                onChange={(e) => setPerfilData('color_favorito', e.target.value)}
-                                                placeholder="Ej: Azul, rojo, verde"
-                                            />
-                                            <InputError message={erroresPerfil.color_favorito} className="mt-2" />
                                         </div>
                                     </div>
                                 </div>

@@ -31,8 +31,8 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-3 mb-6">
-                <div className="w-8 h-8 bg-red-100 rounded-xl flex items-center justify-center">
-                    <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-8 h-8 bg-green-100 rounded-xl flex items-center justify-center">
+                    <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                     </svg>
                 </div>
@@ -43,7 +43,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid gap-6 md:grid-cols-2 bg-red-50 p-6 rounded-2xl">
+                <div className="grid gap-6 md:grid-cols-2 bg-green-50 p-6 rounded-2xl mb-6">
                     <div>
                         <InputLabel htmlFor="alergias" value="Alergias" className="text-gray-700 font-semibold" />
                         <textarea
