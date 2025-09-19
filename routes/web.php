@@ -141,6 +141,16 @@ Route::middleware('auth')->group(function () {
     // Rutas para perfil del hijo
     Route::get('/perfil/hijo/{hijo}', [PerfilHijoController::class, 'show'])->name('perfil.hijo');
     Route::post('/perfil/hijo/{hijo}/update', [PerfilHijoController::class, 'update'])->name('perfil.hijo.update');
+
+    // Rutas para ficha de salud usando PerfilHijoController
+    Route::post('/perfil/hijo/{hijo}/salud', [PerfilHijoController::class, 'storeSaludFicha'])->name('salud.ficha.store');
+    Route::put('/perfil/hijo/{hijo}/salud', [PerfilHijoController::class, 'updateSaludFicha'])->name('salud.ficha.update');
+    Route::delete('/perfil/hijo/{hijo}/salud', [PerfilHijoController::class, 'destroySaludFicha'])->name('salud.ficha.destroy');
+
+    // Rutas para ficha nutricional usando PerfilHijoController
+    Route::post('/perfil/hijo/{hijo}/nutricion', [PerfilHijoController::class, 'storeNutricionFicha'])->name('nutricion.ficha.store');
+    Route::put('/perfil/hijo/{hijo}/nutricion', [PerfilHijoController::class, 'updateNutricionFicha'])->name('nutricion.ficha.update');
+    Route::delete('/perfil/hijo/{hijo}/nutricion', [PerfilHijoController::class, 'destroyNutricionFicha'])->name('nutricion.ficha.destroy');
     
     // Rutas API para Mapbox - COMENTADAS TEMPORALMENTE (MapboxController no existe)
     /*

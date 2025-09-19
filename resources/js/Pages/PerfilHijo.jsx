@@ -1,16 +1,19 @@
 import { Head, useForm, usePage, Link } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import SecondaryButton from '@/Components/SecondaryButton';
+import FichaSalud from '@/Components/FichaSalud';
+import FichaNutricional from '@/Components/FichaNutricional';
 import Swal from 'sweetalert2';
 
-export default function PerfilHijo({ hijo }) {
+export default function PerfilHijo({ hijo, saludFicha, nutricionFicha }) {
     const { flash } = usePage().props;
     const [photoPreview, setPhotoPreview] = useState(null);
+    const [activeTab, setActiveTab] = useState('perfil');
 
     const { data: perfilData, setData: setPerfilData, post: postPerfil, processing: processingPerfil, errors: erroresPerfil } = useForm({
         nombres: hijo?.nombres || '',
@@ -18,13 +21,60 @@ export default function PerfilHijo({ hijo }) {
         doc_numero: hijo?.doc_numero || '',
         fecha_nacimiento: hijo?.fecha_nacimiento || '',
         foto: hijo?.foto || '',
-        pasatiempos: hijo?.pasatiempos || '',
-        deportes: hijo?.deportes || '',
-        plato_favorito: hijo?.plato_favorito || '',
-        color_favorito: hijo?.color_favorito || '',
         informacion_adicional: hijo?.informacion_adicional || '',
-        nums_emergencia: Array.isArray(hijo?.nums_emergencia) ? hijo.nums_emergencia : []
+        nums_emergencia: Array.isArray(hijo?.nums_emergencia) ? hijo.nums_emergencia : [],
     });
+
+    const profileCompletion = useMemo(() => {
+        // Campos del perfil personal
+        const perfilFieldsData = {
+            'Nombres Completos': perfilData.nombres,
+            'Número de Documento': perfilData.doc_numero,
+            'Fecha de Nacimiento': perfilData.fecha_nacimiento,
+            'Información Adicional': perfilData.informacion_adicional,
+        };
+
+        // Números de emergencia (hasta 2)
+        const emergencyNumbers = Array.isArray(perfilData.nums_emergencia) ? perfilData.nums_emergencia : [];
+        if (emergencyNumbers.length > 0) {
+            emergencyNumbers.forEach((num, index) => {
+                perfilFieldsData[`Contacto de Emergencia ${index + 1}`] = num;
+            });
+        }
+
+        // Campos de salud (solo los que realmente existen en el formulario)
+        const saludFieldsData = saludFicha ? {
+            'Alergias Médicas': saludFicha.alergias,
+            'Medicamentos': saludFicha.medicamentos,
+            'Observaciones Médicas': saludFicha.observaciones,
+        } : {};
+
+        // Campos nutricionales (corregidos según el formulario actual)
+        const nutricionFieldsData = nutricionFicha ? {
+            'Intolerancias Alimentarias': nutricionFicha.intolerancias,
+            'Preferencias Alimentarias': nutricionFicha.preferencias,
+            'Alergias Alimentarias': nutricionFicha.alergias_alimentarias,
+            'Otras Notas Nutricionales': nutricionFicha.otras_notas,
+        } : {};
+
+        // Combinar todos los campos
+        const allFieldsData = { ...perfilFieldsData, ...saludFieldsData, ...nutricionFieldsData };
+        
+        // Calcular campos completados
+        const totalFields = Object.keys(allFieldsData).length;
+        const filledFields = Object.values(allFieldsData).filter(field => field && String(field).trim() !== '').length;
+        
+        return {
+            percentage: totalFields > 0 ? (filledFields / totalFields) * 100 : 0,
+            totalFields,
+            filledFields,
+            missingFields: Object.entries(allFieldsData)
+                .filter(([key, value]) => !value || String(value).trim() === '')
+                .map(([key]) => key)
+        };
+    }, [perfilData, saludFicha, nutricionFicha]);
+
+    const [showMissingFields, setShowMissingFields] = useState(false);
 
     const handlePerfilSubmit = (e) => {
         e.preventDefault();
@@ -64,10 +114,6 @@ export default function PerfilHijo({ hijo }) {
                         doc_numero: hijoActualizado.doc_numero || prevData.doc_numero,
                         fecha_nacimiento: hijoActualizado.fecha_nacimiento || prevData.fecha_nacimiento,
                         foto: hijoActualizado.foto || prevData.foto,
-                        pasatiempos: hijoActualizado.pasatiempos || prevData.pasatiempos,
-                        deportes: hijoActualizado.deportes || prevData.deportes,
-                        plato_favorito: hijoActualizado.plato_favorito || prevData.plato_favorito,
-                        color_favorito: hijoActualizado.color_favorito || prevData.color_favorito,
                         informacion_adicional: hijoActualizado.informacion_adicional || prevData.informacion_adicional,
                         nums_emergencia: Array.isArray(hijoActualizado.nums_emergencia) ? 
                             hijoActualizado.nums_emergencia : 
@@ -83,10 +129,6 @@ export default function PerfilHijo({ hijo }) {
                     nombres: 'Nombres Completos',
                     doc_numero: 'Número de Documento',
                     fecha_nacimiento: 'Fecha de Nacimiento',
-                    pasatiempos: 'Pasatiempos Favoritos',
-                    deportes: 'Deportes que Practica',
-                    plato_favorito: 'Plato Favorito',
-                    color_favorito: 'Color Favorito',
                     informacion_adicional: 'Información Adicional',
                     nums_emergencia: 'Números de Emergencia',
                     foto: 'Foto de Perfil'
@@ -211,7 +253,7 @@ export default function PerfilHijo({ hijo }) {
                             {/* Background Pattern */}
                             <div className="absolute inset-0 opacity-10">
                                 <div className="w-full h-full bg-repeat" style={{
-                                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='m36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='m36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
                                 }}></div>
                             </div>
                             
@@ -264,27 +306,132 @@ export default function PerfilHijo({ hijo }) {
                         </div>
                     </div>
 
-                    {/* Main Form Card */}
+                    {/* Profile Completion Progress */}
+                    <div className="mb-8">
+                        <h3 className="text-lg font-semibold text-gray-800 mb-3">Progreso del Perfil</h3>
+                        <div className="bg-white p-4 rounded-2xl shadow-md">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-medium text-gray-600">Perfil Completado</span>
+                                <span className="text-sm font-bold text-red-600">{`${Math.round(profileCompletion.percentage)}%`}</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2.5 mb-3">
+                                <div 
+                                    className="bg-gradient-to-r from-red-500 to-red-600 h-2.5 rounded-full transition-all duration-500"
+                                    style={{ width: `${profileCompletion.percentage}%` }}
+                                ></div>
+                            </div>
+                            
+                            {/* Progress Details */}
+                            <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                                <span>{profileCompletion.filledFields} de {profileCompletion.totalFields} campos completados</span>
+                                {profileCompletion.missingFields.length > 0 && (
+                                    <button
+                                        onClick={() => setShowMissingFields(!showMissingFields)}
+                                        className="flex items-center gap-1 text-red-600 hover:text-red-700 transition-colors"
+                                    >
+                                        <span>Ver campos faltantes</span>
+                                        <svg 
+                                            className={`w-3 h-3 transition-transform ${showMissingFields ? 'rotate-180' : ''}`} 
+                                            fill="none" 
+                                            stroke="currentColor" 
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Missing Fields Collapsible Section */}
+                            {showMissingFields && profileCompletion.missingFields.length > 0 && (
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-3 animate-fadeIn">
+                                    <h4 className="text-sm font-semibold text-red-800 mb-2">Campos por completar:</h4>
+                                    <ul className="space-y-1">
+                                        {profileCompletion.missingFields.map((field, index) => (
+                                            <li key={index} className="flex items-center gap-2 text-xs text-red-700">
+                                                <div className="w-1.5 h-1.5 bg-red-400 rounded-full"></div>
+                                                {field}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Main Content Card */}
                     <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
-                        
-                        {/* Form Header */}
+
+                        {/* Tabs Header */}
                         <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-8 py-6 border-b border-gray-200">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center">
-                                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                    </svg>
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center">
+                                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-gray-900">Información del Perfil</h3>
+                                        <p className="text-gray-600 text-sm">Gestiona toda la información de tu hijo</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 className="text-xl font-bold text-gray-900">Información Personal</h3>
-                                    <p className="text-gray-600 text-sm">Actualiza los datos personales y contactos de emergencia</p>
-                                </div>
+                            </div>
+
+                            {/* Tabs Navigation */}
+                            <div className="flex space-x-1">
+                                <button
+                                    onClick={() => setActiveTab('perfil')}
+                                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                                        activeTab === 'perfil'
+                                            ? 'bg-red-600 text-white shadow-lg'
+                                            : 'bg-white text-gray-600 hover:bg-gray-50'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                        Perfil Personal
+                                    </div>
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('salud')}
+                                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                                        activeTab === 'salud'
+                                            ? 'bg-red-600 text-white shadow-lg'
+                                            : 'bg-white text-gray-600 hover:bg-gray-50'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                        </svg>
+                                        Ficha de Salud
+                                    </div>
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('nutricion')}
+                                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                                        activeTab === 'nutricion'
+                                            ? 'bg-red-600 text-white shadow-lg'
+                                            : 'bg-white text-gray-600 hover:bg-gray-50'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
+                                        </svg>
+                                        Ficha Nutricional
+                                    </div>
+                                </button>
                             </div>
                         </div>
                         
-                        {/* Form Content */}
+                        {/* Tab Content */}
                         <div className="p-8">
-                            <form onSubmit={handlePerfilSubmit} className="space-y-8">
+                            {activeTab === 'perfil' && (
+                                <form onSubmit={handlePerfilSubmit} className="space-y-8">
                                 
                                 {/* Información Básica */}
                                 <div>
@@ -349,72 +496,6 @@ export default function PerfilHijo({ hijo }) {
                                         </div>
                                     </div>
                                 </div>
-
-                                {/* Gustos e Intereses */}
-                                {/* <div>
-                                    <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                                        <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
-                                            <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                            </svg>
-                                        </div>
-                                        Gustos e Intereses
-                                    </h4>
-                                    
-                                    <div className="grid gap-6 md:grid-cols-2 bg-green-50 p-6 rounded-2xl">
-                                        <div>
-                                            <InputLabel htmlFor="pasatiempos" value="Pasatiempos Favoritos" className="text-gray-700 font-semibold" />
-                                            <TextInput
-                                                id="pasatiempos"
-                                                type="text"
-                                                className="mt-2 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500"
-                                                value={perfilData.pasatiempos}
-                                                onChange={(e) => setPerfilData('pasatiempos', e.target.value)}
-                                                placeholder="Ej: Leer, jugar videojuegos, dibujar"
-                                            />
-                                            <InputError message={erroresPerfil.pasatiempos} className="mt-2" />
-                                        </div>
-
-                                        <div>
-                                            <InputLabel htmlFor="deportes" value="Deportes que Practica" className="text-gray-700 font-semibold" />
-                                            <TextInput
-                                                id="deportes"
-                                                type="text"
-                                                className="mt-2 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500"
-                                                value={perfilData.deportes}
-                                                onChange={(e) => setPerfilData('deportes', e.target.value)}
-                                                placeholder="Ej: Fútbol, natación, tenis"
-                                            />
-                                            <InputError message={erroresPerfil.deportes} className="mt-2" />
-                                        </div>
-
-                                        <div>
-                                            <InputLabel htmlFor="plato_favorito" value="Plato Favorito" className="text-gray-700 font-semibold" />
-                                            <TextInput
-                                                id="plato_favorito"
-                                                type="text"
-                                                className="mt-2 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500"
-                                                value={perfilData.plato_favorito}
-                                                onChange={(e) => setPerfilData('plato_favorito', e.target.value)}
-                                                placeholder="Ej: Pizza, hamburguesas, pasta"
-                                            />
-                                            <InputError message={erroresPerfil.plato_favorito} className="mt-2" />
-                                        </div>
-
-                                        <div>
-                                            <InputLabel htmlFor="color_favorito" value="Color Favorito" className="text-gray-700 font-semibold" />
-                                            <TextInput
-                                                id="color_favorito"
-                                                type="text"
-                                                className="mt-2 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500"
-                                                value={perfilData.color_favorito}
-                                                onChange={(e) => setPerfilData('color_favorito', e.target.value)}
-                                                placeholder="Ej: Azul, rojo, verde"
-                                            />
-                                            <InputError message={erroresPerfil.color_favorito} className="mt-2" />
-                                        </div>
-                                    </div>
-                                </div> */}
 
                                 {/* Contactos de Emergencia */}
                                 <div>
@@ -507,28 +588,66 @@ export default function PerfilHijo({ hijo }) {
                                     </div>
                                 </div>
 
-                                {/* Submit Button */}
-                                <div className="flex justify-end pt-6 border-t border-gray-200">
-                                    <PrimaryButton 
-                                        disabled={processingPerfil}
-                                        className="px-8 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-                                    >
-                                        {processingPerfil ? (
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                                Guardando...
-                                            </div>
-                                        ) : (
-                                            <div className="flex items-center gap-2">
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                </svg>
-                                                Guardar Perfil
-                                            </div>
-                                        )}
-                                    </PrimaryButton>
-                                </div>
-                            </form>
+
+                                    {/* Submit Button */}
+                                    <div className="flex justify-end pt-6 border-t border-gray-200">
+                                        <PrimaryButton
+                                            disabled={processingPerfil}
+                                            className="px-8 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                                        >
+                                            {processingPerfil ? (
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                    Guardando...
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-2">
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                    Guardar Perfil
+                                                </div>
+                                            )}
+                                        </PrimaryButton>
+                                    </div>
+                                </form>
+                            )}
+
+                            {activeTab === 'salud' && (
+                                <FichaSalud
+                                    saludFicha={saludFicha}
+                                    hijo={hijo}
+                                    onSubmitSuccess={(message) => {
+                                        Swal.fire({
+                                            title: '¡Éxito!',
+                                            text: message,
+                                            icon: 'success',
+                                            confirmButtonText: 'Continuar',
+                                            confirmButtonColor: '#dc2626',
+                                            timer: 3000,
+                                            timerProgressBar: true
+                                        });
+                                    }}
+                                />
+                            )}
+
+                            {activeTab === 'nutricion' && (
+                                <FichaNutricional
+                                    nutricionFicha={nutricionFicha}
+                                    hijo={hijo}
+                                    onSubmitSuccess={(message) => {
+                                        Swal.fire({
+                                            title: '¡Éxito!',
+                                            text: message,
+                                            icon: 'success',
+                                            confirmButtonText: 'Continuar',
+                                            confirmButtonColor: '#dc2626',
+                                            timer: 3000,
+                                            timerProgressBar: true
+                                        });
+                                    }}
+                                />
+                            )}
                         </div>
                     </div>
                 </div>
