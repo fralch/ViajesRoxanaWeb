@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Hijo;
 use App\Models\User;
+use App\Models\SaludFicha;
+use App\Models\NutricionFicha;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
@@ -257,5 +259,272 @@ class HijoController extends Controller
             return Redirect::route('hijos.index')
                           ->with('error', 'Error al eliminar el padre: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Show the child profile with health and nutrition records
+     */
+    public function perfil($docNumero)
+    {
+        $hijo = Hijo::where('doc_numero', $docNumero)->firstOrFail();
+
+        // Verificar permisos
+        if (!Auth::user()->is_admin && $hijo->user_id !== Auth::id()) {
+            abort(403, 'No tienes permisos para ver este perfil.');
+        }
+
+        // Cargar las fichas de salud y nutrición si existen
+        $saludFicha = SaludFicha::where('hijo_id', $hijo->id)->first();
+        $nutricionFicha = NutricionFicha::where('hijo_id', $hijo->id)->first();
+
+        return Inertia::render('PerfilHijo', [
+            'hijo' => $hijo,
+            'saludFicha' => $saludFicha,
+            'nutricionFicha' => $nutricionFicha
+        ]);
+    }
+
+    /**
+     * Update child profile (basic information)
+     */
+    public function updatePerfil(Request $request, $docNumero)
+    {
+        $hijo = Hijo::where('doc_numero', $docNumero)->firstOrFail();
+
+        // Verificar permisos
+        if (!Auth::user()->is_admin && $hijo->user_id !== Auth::id()) {
+            abort(403, 'No tienes permisos para editar este perfil.');
+        }
+
+        $validated = $request->validate([
+            'nombres' => 'required|string|max:255',
+            'doc_numero' => 'required|string|max:20|unique:hijos,doc_numero,' . $hijo->id,
+            'fecha_nacimiento' => 'nullable|date|before:today',
+            'foto' => 'nullable|string',
+            'pasatiempos' => 'nullable|string',
+            'deportes' => 'nullable|string',
+            'plato_favorito' => 'nullable|string|max:255',
+            'color_favorito' => 'nullable|string|max:100',
+            'informacion_adicional' => 'nullable|string',
+            'nums_emergencia' => 'nullable|array|max:2',
+            'nums_emergencia.*' => 'nullable|string|max:20'
+        ]);
+
+        $hijo->update($validated);
+
+        return Redirect::back()->with([
+            'message' => 'Perfil actualizado exitosamente.',
+            'hijo' => $hijo->fresh()
+        ]);
+    }
+
+    // ===========================================
+    // HEALTH RECORD (Ficha de Salud) CRUD
+    // ===========================================
+
+    /**
+     * Store or update health record
+     */
+    public function storeSaludFicha(Request $request, $docNumero)
+    {
+        $hijo = Hijo::where('doc_numero', $docNumero)->firstOrFail();
+
+        // Verificar permisos
+        if (!Auth::user()->is_admin && $hijo->user_id !== Auth::id()) {
+            abort(403, 'No tienes permisos para gestionar esta ficha.');
+        }
+
+        $validated = $request->validate([
+            'alergias' => 'nullable|string',
+            'medicamentos' => 'nullable|string',
+            'seguros' => 'nullable|string|max:255',
+            'emergencia_contacto' => 'nullable|string|max:255',
+            'emergencia_telefono' => 'nullable|string|max:20',
+            'observaciones' => 'nullable|string'
+        ]);
+
+        $validated['hijo_id'] = $hijo->id;
+
+        // Usar updateOrCreate para actualizar si existe o crear si no existe
+        SaludFicha::updateOrCreate(
+            ['hijo_id' => $hijo->id],
+            $validated
+        );
+
+        return Redirect::back()->with('message', 'Ficha de salud guardada exitosamente.');
+    }
+
+    /**
+     * Show health record
+     */
+    public function showSaludFicha($docNumero)
+    {
+        $hijo = Hijo::where('doc_numero', $docNumero)->firstOrFail();
+
+        // Verificar permisos
+        if (!Auth::user()->is_admin && $hijo->user_id !== Auth::id()) {
+            abort(403, 'No tienes permisos para ver esta ficha.');
+        }
+
+        $saludFicha = SaludFicha::where('hijo_id', $hijo->id)->first();
+
+        return response()->json([
+            'hijo' => $hijo,
+            'saludFicha' => $saludFicha
+        ]);
+    }
+
+    /**
+     * Update health record
+     */
+    public function updateSaludFicha(Request $request, $docNumero)
+    {
+        $hijo = Hijo::where('doc_numero', $docNumero)->firstOrFail();
+
+        // Verificar permisos
+        if (!Auth::user()->is_admin && $hijo->user_id !== Auth::id()) {
+            abort(403, 'No tienes permisos para editar esta ficha.');
+        }
+
+        $saludFicha = SaludFicha::where('hijo_id', $hijo->id)->firstOrFail();
+
+        $validated = $request->validate([
+            'alergias' => 'nullable|string',
+            'medicamentos' => 'nullable|string',
+            'seguros' => 'nullable|string|max:255',
+            'emergencia_contacto' => 'nullable|string|max:255',
+            'emergencia_telefono' => 'nullable|string|max:20',
+            'observaciones' => 'nullable|string'
+        ]);
+
+        $saludFicha->update($validated);
+
+        return Redirect::back()->with('message', 'Ficha de salud actualizada exitosamente.');
+    }
+
+    /**
+     * Delete health record
+     */
+    public function destroySaludFicha($docNumero)
+    {
+        $hijo = Hijo::where('doc_numero', $docNumero)->firstOrFail();
+
+        // Verificar permisos
+        if (!Auth::user()->is_admin && $hijo->user_id !== Auth::id()) {
+            abort(403, 'No tienes permisos para eliminar esta ficha.');
+        }
+
+        $saludFicha = SaludFicha::where('hijo_id', $hijo->id)->first();
+
+        if ($saludFicha) {
+            $saludFicha->delete();
+            return Redirect::back()->with('message', 'Ficha de salud eliminada exitosamente.');
+        }
+
+        return Redirect::back()->with('error', 'No se encontró la ficha de salud.');
+    }
+
+    // ===========================================
+    // NUTRITION RECORD (Ficha de Nutrición) CRUD
+    // ===========================================
+
+    /**
+     * Store or update nutrition record
+     */
+    public function storeNutricionFicha(Request $request, $docNumero)
+    {
+        $hijo = Hijo::where('doc_numero', $docNumero)->firstOrFail();
+
+        // Verificar permisos
+        if (!Auth::user()->is_admin && $hijo->user_id !== Auth::id()) {
+            abort(403, 'No tienes permisos para gestionar esta ficha.');
+        }
+
+        $validated = $request->validate([
+            'restricciones' => 'nullable|string',
+            'preferencias' => 'nullable|string',
+            'alergias_alimentarias' => 'nullable|string',
+            'intolerancias' => 'nullable|string',
+            'otras_notas' => 'nullable|string'
+        ]);
+
+        $validated['hijo_id'] = $hijo->id;
+
+        // Usar updateOrCreate para actualizar si existe o crear si no existe
+        NutricionFicha::updateOrCreate(
+            ['hijo_id' => $hijo->id],
+            $validated
+        );
+
+        return Redirect::back()->with('message', 'Ficha nutricional guardada exitosamente.');
+    }
+
+    /**
+     * Show nutrition record
+     */
+    public function showNutricionFicha($docNumero)
+    {
+        $hijo = Hijo::where('doc_numero', $docNumero)->firstOrFail();
+
+        // Verificar permisos
+        if (!Auth::user()->is_admin && $hijo->user_id !== Auth::id()) {
+            abort(403, 'No tienes permisos para ver esta ficha.');
+        }
+
+        $nutricionFicha = NutricionFicha::where('hijo_id', $hijo->id)->first();
+
+        return response()->json([
+            'hijo' => $hijo,
+            'nutricionFicha' => $nutricionFicha
+        ]);
+    }
+
+    /**
+     * Update nutrition record
+     */
+    public function updateNutricionFicha(Request $request, $docNumero)
+    {
+        $hijo = Hijo::where('doc_numero', $docNumero)->firstOrFail();
+
+        // Verificar permisos
+        if (!Auth::user()->is_admin && $hijo->user_id !== Auth::id()) {
+            abort(403, 'No tienes permisos para editar esta ficha.');
+        }
+
+        $nutricionFicha = NutricionFicha::where('hijo_id', $hijo->id)->firstOrFail();
+
+        $validated = $request->validate([
+            'restricciones' => 'nullable|string',
+            'preferencias' => 'nullable|string',
+            'alergias_alimentarias' => 'nullable|string',
+            'intolerancias' => 'nullable|string',
+            'otras_notas' => 'nullable|string'
+        ]);
+
+        $nutricionFicha->update($validated);
+
+        return Redirect::back()->with('message', 'Ficha nutricional actualizada exitosamente.');
+    }
+
+    /**
+     * Delete nutrition record
+     */
+    public function destroyNutricionFicha($docNumero)
+    {
+        $hijo = Hijo::where('doc_numero', $docNumero)->firstOrFail();
+
+        // Verificar permisos
+        if (!Auth::user()->is_admin && $hijo->user_id !== Auth::id()) {
+            abort(403, 'No tienes permisos para eliminar esta ficha.');
+        }
+
+        $nutricionFicha = NutricionFicha::where('hijo_id', $hijo->id)->first();
+
+        if ($nutricionFicha) {
+            $nutricionFicha->delete();
+            return Redirect::back()->with('message', 'Ficha nutricional eliminada exitosamente.');
+        }
+
+        return Redirect::back()->with('error', 'No se encontró la ficha nutricional.');
     }
 }
