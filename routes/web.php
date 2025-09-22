@@ -116,6 +116,10 @@ Route::middleware('auth')->group(function () {
     Route::resource('hijos', HijoController::class);
     Route::delete('/hijos/parent/{user}', [HijoController::class, 'destroyParent'])->name('hijos.destroy-parent');
     Route::resource('equipaje', EquipajeController::class);
+
+    // Ruta específica para equipaje por hijo
+    Route::get('/equipaje/hijo/{hijo}', [EquipajeController::class, 'index'])->name('equipaje.index.hijo');
+    Route::post('/equipaje/hijo/{hijo}', [EquipajeController::class, 'store'])->name('equipaje.store.hijo');
     Route::resource('paquetes', PaqueteController::class);
     Route::resource('grupos', GrupoController::class);
     Route::resource('inscripciones', InscripcionController::class)->parameters(['inscripciones' => 'inscripcion']);

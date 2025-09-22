@@ -106,7 +106,9 @@ export default function Index({ auth, hijos, selectedHijo, hijoParam }) {
 
         const routeParams = hijoParam ? { hijo: hijoParam } : {};
 
-        post(route('equipaje.store', routeParams), formData, {
+        post(route('equipaje.store', routeParams), {
+            data: formData,
+            forceFormData: true,
             onSuccess: () => {
                 resetForm();
             }
@@ -436,7 +438,7 @@ export default function Index({ auth, hijos, selectedHijo, hijoParam }) {
                                             <div className="flex justify-between items-start mb-4">
                                                 <div>
                                                     <h4 className="font-semibold text-lg text-gray-900">Equipaje #{equipaje.id}</h4>
-                                                    <p className="text-sm text-gray-500">Registrado para {equipaje.hijo?.nombre} {equipaje.hijo?.apellido}</p>
+                                                     <p className="text-sm text-gray-500">Registrado para {equipaje.hijo?.nombres}</p>
                                                 </div>
                                                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                                                     equipaje.tip_maleta === 'Maleta de 23 kg'
@@ -497,13 +499,13 @@ export default function Index({ auth, hijos, selectedHijo, hijoParam }) {
                                                     </p>
                                                     <div className="flex space-x-2 overflow-x-auto">
                                                         {equipaje.images && (
-                                                            <img src={`/storage/${equipaje.images}`} alt="Imagen 1" className="w-16 h-16 object-cover rounded-md border border-gray-200 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => window.open(`/storage/${equipaje.images}`, '_blank')} />
+                                                            <img src={`/${equipaje.images}`} alt="Imagen 1" className="w-16 h-16 object-cover rounded-md border border-gray-200 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => window.open(`/${equipaje.images}`, '_blank')} />
                                                         )}
                                                         {equipaje.images1 && (
-                                                            <img src={`/storage/${equipaje.images1}`} alt="Imagen 2" className="w-16 h-16 object-cover rounded-md border border-gray-200 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => window.open(`/storage/${equipaje.images1}`, '_blank')} />
+                                                            <img src={`/${equipaje.images1}`} alt="Imagen 2" className="w-16 h-16 object-cover rounded-md border border-gray-200 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => window.open(`/${equipaje.images1}`, '_blank')} />
                                                         )}
                                                         {equipaje.images2 && (
-                                                            <img src={`/storage/${equipaje.images2}`} alt="Imagen 3" className="w-16 h-16 object-cover rounded-md border border-gray-200 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => window.open(`/storage/${equipaje.images2}`, '_blank')} />
+                                                            <img src={`/${equipaje.images2}`} alt="Imagen 3" className="w-16 h-16 object-cover rounded-md border border-gray-200 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => window.open(`/${equipaje.images2}`, '_blank')} />
                                                         )}
                                                     </div>
                                                 </div>
@@ -555,7 +557,7 @@ export default function Index({ auth, hijos, selectedHijo, hijoParam }) {
                     if (data.images1 instanceof File) formData.append('images1', data.images1);
                     if (data.images2 instanceof File) formData.append('images2', data.images2);
 
-                    router.put(route('equipaje.update', selectedEquipaje.id), formData, {
+                    router.post(route('equipaje.update', selectedEquipaje.id), formData, {
                         onSuccess: () => closeModals()
                     });
                 }} encType="multipart/form-data" className="p-6">
@@ -647,7 +649,7 @@ export default function Index({ auth, hijos, selectedHijo, hijoParam }) {
                             {selectedEquipaje?.images && (
                                 <div className="mb-2">
                                     <p className="text-sm text-gray-600 mb-1">Imagen actual:</p>
-                                    <img src={`/storage/${selectedEquipaje.images}`} alt="Imagen actual 1" className="w-16 h-16 object-cover rounded border" />
+                                    <img src={`/${selectedEquipaje.images}`} alt="Imagen actual 1" className="w-16 h-16 object-cover rounded border" />
                                 </div>
                             )}
                              <input
@@ -677,7 +679,7 @@ export default function Index({ auth, hijos, selectedHijo, hijoParam }) {
                             {selectedEquipaje?.images1 && (
                                 <div className="mb-2">
                                     <p className="text-sm text-gray-600 mb-1">Imagen actual:</p>
-                                    <img src={`/storage/${selectedEquipaje.images1}`} alt="Imagen actual 2" className="w-16 h-16 object-cover rounded border" />
+                                    <img src={`/${selectedEquipaje.images1}`} alt="Imagen actual 2" className="w-16 h-16 object-cover rounded border" />
                                 </div>
                             )}
                              <input
@@ -707,7 +709,7 @@ export default function Index({ auth, hijos, selectedHijo, hijoParam }) {
                             {selectedEquipaje?.images2 && (
                                 <div className="mb-2">
                                     <p className="text-sm text-gray-600 mb-1">Imagen actual:</p>
-                                    <img src={`/storage/${selectedEquipaje.images2}`} alt="Imagen actual 3" className="w-16 h-16 object-cover rounded border" />
+                                    <img src={`/${selectedEquipaje.images2}`} alt="Imagen actual 3" className="w-16 h-16 object-cover rounded border" />
                                 </div>
                             )}
                              <input

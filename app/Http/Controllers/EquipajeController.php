@@ -71,12 +71,12 @@ class EquipajeController extends Controller
                 abort(404, 'Hijo no encontrado o no autorizado');
             }
             $hijoId = $hijo->id;
-        } else {
+        } elseif ($request->has('hijo_id') && $request->hijo_id) {
             $hijoId = $request->hijo_id;
         }
 
-        $request->validate([
-            'hijo_id' => $hijoId ? 'nullable' : 'required|exists:hijos,id',
+        // Validación actualizada para manejar ambos casos
+        $validationRules = [
             'tip_maleta' => 'required|string|in:Maleta de 8 kg,Maleta de 23 kg',
             'num_etiqueta' => 'nullable|string|max:100',
             'color' => 'nullable|string|max:50',
@@ -86,10 +86,21 @@ class EquipajeController extends Controller
             'images1' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'images2' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'lugar_regis' => 'nullable|string|max:255',
-        ]);
+        ];
+
+        // Solo requerir hijo_id si no hay hijo_doc_numero
+        if (!$request->has('hijo_doc_numero')) {
+            $validationRules['hijo_id'] = 'required|exists:hijos,id';
+        }
+
+        $request->validate($validationRules);
 
         // Usar el hijoId determinado anteriormente
-        $finalHijoId = $hijoId ?: $request->hijo_id;
+        $finalHijoId = $hijoId;
+
+        if (!$finalHijoId) {
+            abort(400, 'No se pudo determinar el hijo para el equipaje');
+        }
 
         // Verificar que el hijo pertenece al usuario autenticado
         $hijo = Hijo::where('id', $finalHijoId)
@@ -104,7 +115,10 @@ class EquipajeController extends Controller
             if ($request->hasFile($field)) {
                 $image = $request->file($field);
                 $filename = time() . '_' . uniqid() . '_' . $field . '.' . $image->getClientOriginalExtension();
-                $path = $image->storeAs('equipaje', $filename, 'public');
+                
+                // Mover la imagen a public/img/equipaje
+                $image->move(public_path('img/equipaje'), $filename);
+                $path = 'img/equipaje/' . $filename;
                 $imagePaths[$field] = $path;
             }
         }
@@ -183,7 +197,7 @@ class EquipajeController extends Controller
         }
 
         $request->validate([
-            'hijo_id' => 'required|exists:hijos,id',
+            'hijo_id' => 'sometimes|exists:hijos,id', // Not required for updates
             'tip_maleta' => 'required|string|in:Maleta de 8 kg,Maleta de 23 kg',
             'num_etiqueta' => 'nullable|string|max:100',
             'color' => 'nullable|string|max:50',
@@ -195,10 +209,12 @@ class EquipajeController extends Controller
             'lugar_regis' => 'nullable|string|max:255',
         ]);
 
-        // Verificar que el nuevo hijo también pertenece al usuario autenticado
-        $hijo = Hijo::where('id', $request->hijo_id)
-                    ->where('user_id', auth()->id())
-                    ->firstOrFail();
+        // Verificar que el hijo pertenece al usuario si se proporciona uno nuevo
+        if ($request->has('hijo_id')) {
+            $hijo = Hijo::where('id', $request->hijo_id)
+                         ->where('user_id', auth()->id())
+                         ->firstOrFail();
+        }
 
         // Procesar las imágenes
         $imagePaths = [];
@@ -207,13 +223,14 @@ class EquipajeController extends Controller
         foreach ($imageFields as $field) {
             if ($request->hasFile($field)) {
                 // Eliminar imagen anterior si existe
-                if ($equipaje->$field && \Storage::disk('public')->exists($equipaje->$field)) {
-                    \Storage::disk('public')->delete($equipaje->$field);
+                if ($equipaje->$field && file_exists(public_path($equipaje->$field))) {
+                    unlink(public_path($equipaje->$field));
                 }
 
                 $image = $request->file($field);
                 $filename = time() . '_' . uniqid() . '_' . $field . '.' . $image->getClientOriginalExtension();
-                $path = $image->storeAs('equipaje', $filename, 'public');
+                $image->move(public_path('img/equipaje'), $filename);
+                $path = 'img/equipaje/' . $filename;
                 $imagePaths[$field] = $path;
             } else {
                 // Mantener la imagen existente si no se sube una nueva
@@ -221,10 +238,8 @@ class EquipajeController extends Controller
             }
         }
 
-        $equipaje->update([
-            'hijo_id' => $request->hijo_id,
+        $updateData = [
             'tip_maleta' => $request->tip_maleta,
-            'num_etiqueta' => $request->num_etiqueta,
             'color' => $request->color,
             'caracteristicas' => $request->caracteristicas,
             'peso' => $request->peso,
@@ -232,7 +247,14 @@ class EquipajeController extends Controller
             'images1' => $imagePaths['images1'],
             'images2' => $imagePaths['images2'],
             'lugar_regis' => $request->lugar_regis,
-        ]);
+        ];
+
+        // Solo actualizar hijo_id si se proporciona
+        if ($request->has('hijo_id')) {
+            $updateData['hijo_id'] = $request->hijo_id;
+        }
+
+        $equipaje->update($updateData);
 
         // Mantener el parámetro hijo en la redirección si existe en la URL actual
         $redirectRoute = 'equipaje.index';
@@ -259,8 +281,8 @@ class EquipajeController extends Controller
         // Eliminar imágenes asociadas
         $imageFields = ['images', 'images1', 'images2'];
         foreach ($imageFields as $field) {
-            if ($equipaje->$field && \Storage::disk('public')->exists($equipaje->$field)) {
-                \Storage::disk('public')->delete($equipaje->$field);
+            if ($equipaje->$field && file_exists(public_path($equipaje->$field))) {
+                unlink(public_path($equipaje->$field));
             }
         }
 

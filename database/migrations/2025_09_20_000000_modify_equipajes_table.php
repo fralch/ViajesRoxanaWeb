@@ -20,16 +20,44 @@ return new class extends Migration
                 }
             }
             
+            // Renombrar peso_estimado a peso si existe
+            if (Schema::hasColumn('equipajes', 'peso_estimado') && !Schema::hasColumn('equipajes', 'peso')) {
+                $table->renameColumn('peso_estimado', 'peso');
+            } elseif (Schema::hasColumn('equipajes', 'peso_estimado') && Schema::hasColumn('equipajes', 'peso')) {
+                $table->dropColumn('peso_estimado');
+            }
+            
             // Agregar nuevos campos con la sintaxis correcta
-            $table->enum('tip_maleta', ['Maleta de 8 kg', 'Maleta de 23 kg'])->nullable()->after('hijo_id');
-            $table->string('num_etiqueta', 100)->nullable()->after('tip_maleta');
-            $table->string('color', 50)->nullable()->after('num_etiqueta');
-            $table->text('caracteristicas')->nullable()->after('color');
-            $table->decimal('peso', 8, 2)->nullable()->after('caracteristicas');
-            $table->text('images')->nullable()->after('peso');
-            $table->text('images1')->nullable()->after('images');
-            $table->text('images2')->nullable()->after('images1');
-            $table->string('lugar_regis', 255)->nullable()->after('images2');
+            if (!Schema::hasColumn('equipajes', 'tip_maleta')) {
+                $table->enum('tip_maleta', ['Maleta de 8 kg', 'Maleta de 23 kg'])->nullable()->after('hijo_id');
+            }
+            if (!Schema::hasColumn('equipajes', 'num_etiqueta')) {
+                $table->string('num_etiqueta', 100)->nullable()->after('tip_maleta');
+            }
+            if (!Schema::hasColumn('equipajes', 'color')) {
+                $table->string('color', 50)->nullable()->after('num_etiqueta');
+            }
+            if (!Schema::hasColumn('equipajes', 'caracteristicas')) {
+                $table->text('caracteristicas')->nullable()->after('color');
+            }
+            
+            // Solo agregar peso si no existe
+            if (!Schema::hasColumn('equipajes', 'peso')) {
+                $table->decimal('peso', 8, 2)->nullable()->after('caracteristicas');
+            }
+            
+            if (!Schema::hasColumn('equipajes', 'images')) {
+                $table->text('images')->nullable()->after('peso');
+            }
+            if (!Schema::hasColumn('equipajes', 'images1')) {
+                $table->text('images1')->nullable()->after('images');
+            }
+            if (!Schema::hasColumn('equipajes', 'images2')) {
+                $table->text('images2')->nullable()->after('images1');
+            }
+            if (!Schema::hasColumn('equipajes', 'lugar_regis')) {
+                $table->string('lugar_regis', 255)->nullable()->after('images2');
+            }
         });
     }
 
