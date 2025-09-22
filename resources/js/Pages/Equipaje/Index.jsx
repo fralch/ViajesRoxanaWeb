@@ -10,7 +10,7 @@ import InputLabel from '@/Components/InputLabel';
 import InputError from '@/Components/InputError';
 import SelectInput from '@/Components/SelectInput';
 
-export default function Index({ auth, hijos }) {
+export default function Index({ auth, hijos, selectedHijo, hijoParam }) {
     const [showEditModal, setShowEditModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [selectedEquipaje, setSelectedEquipaje] = useState(null);
@@ -21,6 +21,7 @@ export default function Index({ auth, hijos }) {
     });
 
     const { data, setData, post, put, delete: destroy, processing, errors, reset } = useForm({
+        hijo_id: '',
         tip_maleta: 'Maleta de 8 kg',
         color: '',
         caracteristicas: '',
@@ -91,12 +92,21 @@ export default function Index({ auth, hijos }) {
         formData.append('peso', data.peso || '');
         formData.append('lugar_regis', data.lugar_regis || '');
 
+        // Si hay un hijo seleccionado específico, pasarlo como parámetro
+        if (selectedHijo) {
+            formData.append('hijo_doc_numero', selectedHijo.doc_numero);
+        } else if (data.hijo_id) {
+            formData.append('hijo_id', data.hijo_id);
+        }
+
         // Agregar archivos si existen
         if (data.images instanceof File) formData.append('images', data.images);
         if (data.images1 instanceof File) formData.append('images1', data.images1);
         if (data.images2 instanceof File) formData.append('images2', data.images2);
 
-        post(route('equipaje.store'), formData, {
+        const routeParams = hijoParam ? { hijo: hijoParam } : {};
+
+        post(route('equipaje.store', routeParams), formData, {
             onSuccess: () => {
                 resetForm();
             }
@@ -145,11 +155,39 @@ export default function Index({ auth, hijos }) {
     return (
         <AuthenticatedLayout
             user={auth.user}
-            header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Gestión de Equipaje</h2>}
+            header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">
+                {selectedHijo ? `Gestión de Equipaje - ${selectedHijo.nombres}` : 'Gestión de Equipaje'}
+            </h2>}
         >
             <Head title="Equipaje" />
 
             <div className="py-12 space-y-8">
+                {/* Navegación cuando se está viendo un hijo específico */}
+                {selectedHijo && (
+                    <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                    <svg className="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span className="text-blue-800 font-medium">
+                                        Viendo equipaje de: <strong>{selectedHijo.nombres}</strong> ({selectedHijo.doc_numero})
+                                    </span>
+                                </div>
+                                <Link
+                                    href={route('equipaje.index')}
+                                    className="inline-flex items-center px-3 py-2 border border-blue-300 rounded-md text-sm font-medium text-blue-700 bg-white hover:bg-blue-50 transition-colors duration-200"
+                                >
+                                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                    </svg>
+                                    Ver todos los hijos
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                )}
                 {/* Formulario de Creación - Mostrado al inicio */}
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
                     <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
@@ -161,12 +199,41 @@ export default function Index({ auth, hijos }) {
                                     </svg>
                                 </div>
                                 <div className="ml-3">
-                                    <h3 className="text-lg font-medium text-gray-900">Registrar Nuevo Equipaje</h3>
-                                    <p className="text-sm text-gray-500">Complete los datos del equipaje para registrarlo en el sistema</p>
+                                    <h3 className="text-lg font-medium text-gray-900">
+                                        {selectedHijo ? `Registrar Equipaje para ${selectedHijo.nombres}` : 'Registrar Nuevo Equipaje'}
+                                    </h3>
+                                    <p className="text-sm text-gray-500">
+                                        {selectedHijo
+                                            ? `Complete los datos del equipaje para ${selectedHijo.nombres}`
+                                            : 'Complete los datos del equipaje para registrarlo en el sistema'
+                                        }
+                                    </p>
                                 </div>
                             </div>
 
                              <form onSubmit={handleSubmit} encType="multipart/form-data" className="space-y-6">
+                                 {/* Selector de hijo solo cuando no hay un hijo específico seleccionado */}
+                                 {!selectedHijo && (
+                                     <div>
+                                         <InputLabel htmlFor="hijo_id" value="Seleccionar Hijo" />
+                                         <SelectInput
+                                             id="hijo_id"
+                                             value={data.hijo_id || ''}
+                                             onChange={(e) => setData('hijo_id', e.target.value)}
+                                             className="mt-1 block w-full"
+                                             required
+                                         >
+                                             <option value="">Seleccionar hijo</option>
+                                             {hijos.map((hijo) => (
+                                                 <option key={hijo.id} value={hijo.id}>
+                                                     {hijo.nombres} - {hijo.doc_numero}
+                                                 </option>
+                                             ))}
+                                         </SelectInput>
+                                         <InputError message={errors.hijo_id} className="mt-2" />
+                                     </div>
+                                 )}
+
                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                      <div>
                                          <InputLabel htmlFor="tip_maleta" value="Tipo de Maleta" />

@@ -12,17 +12,34 @@ class EquipajeController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         $user = auth()->user();
-        
-        // Obtener los hijos del usuario con sus equipajes
-        $hijos = $user->hijos()->with(['equipajes' => function($query) {
-            $query->orderBy('created_at', 'desc');
-        }])->get();
+        $selectedHijo = null;
+
+        // Si se pasa el parámetro hijo (doc_numero), filtrar por ese hijo específico
+        if ($request->has('hijo')) {
+            $selectedHijo = $user->hijos()->where('doc_numero', $request->hijo)->first();
+
+            if (!$selectedHijo) {
+                abort(404, 'Hijo no encontrado o no autorizado');
+            }
+
+            // Obtener solo el hijo seleccionado con sus equipajes
+            $hijos = collect([$selectedHijo->load(['equipajes' => function($query) {
+                $query->orderBy('created_at', 'desc');
+            }])]);
+        } else {
+            // Obtener todos los hijos del usuario con sus equipajes
+            $hijos = $user->hijos()->with(['equipajes' => function($query) {
+                $query->orderBy('created_at', 'desc');
+            }])->get();
+        }
 
         return Inertia::render('Equipaje/Index', [
             'hijos' => $hijos,
+            'selectedHijo' => $selectedHijo,
+            'hijoParam' => $request->hijo,
         ]);
     }
 
@@ -44,8 +61,22 @@ class EquipajeController extends Controller
      */
     public function store(Request $request)
     {
+        $user = auth()->user();
+
+        // Si hay un parámetro hijo_doc_numero, obtener el hijo_id automáticamente
+        $hijoId = null;
+        if ($request->has('hijo_doc_numero')) {
+            $hijo = $user->hijos()->where('doc_numero', $request->hijo_doc_numero)->first();
+            if (!$hijo) {
+                abort(404, 'Hijo no encontrado o no autorizado');
+            }
+            $hijoId = $hijo->id;
+        } else {
+            $hijoId = $request->hijo_id;
+        }
+
         $request->validate([
-            'hijo_id' => 'required|exists:hijos,id',
+            'hijo_id' => $hijoId ? 'nullable' : 'required|exists:hijos,id',
             'tip_maleta' => 'required|string|in:Maleta de 8 kg,Maleta de 23 kg',
             'num_etiqueta' => 'nullable|string|max:100',
             'color' => 'nullable|string|max:50',
@@ -57,8 +88,11 @@ class EquipajeController extends Controller
             'lugar_regis' => 'nullable|string|max:255',
         ]);
 
+        // Usar el hijoId determinado anteriormente
+        $finalHijoId = $hijoId ?: $request->hijo_id;
+
         // Verificar que el hijo pertenece al usuario autenticado
-        $hijo = Hijo::where('id', $request->hijo_id)
+        $hijo = Hijo::where('id', $finalHijoId)
                     ->where('user_id', auth()->id())
                     ->firstOrFail();
 
@@ -76,7 +110,7 @@ class EquipajeController extends Controller
         }
 
         Equipaje::create([
-            'hijo_id' => $request->hijo_id,
+            'hijo_id' => $finalHijoId,
             'tip_maleta' => $request->tip_maleta,
             'num_etiqueta' => $request->num_etiqueta,
             'color' => $request->color,
@@ -88,7 +122,14 @@ class EquipajeController extends Controller
             'lugar_regis' => $request->lugar_regis,
         ]);
 
-        return redirect()->route('equipaje.index')->with('success', 'Equipaje agregado correctamente.');
+        // Mantener el parámetro hijo en la redirección si existe
+        $redirectRoute = 'equipaje.index';
+        $redirectParams = [];
+        if ($request->has('hijo_doc_numero')) {
+            $redirectParams['hijo'] = $request->hijo_doc_numero;
+        }
+
+        return redirect()->route($redirectRoute, $redirectParams)->with('success', 'Equipaje agregado correctamente.');
     }
 
     /**
@@ -193,7 +234,14 @@ class EquipajeController extends Controller
             'lugar_regis' => $request->lugar_regis,
         ]);
 
-        return redirect()->route('equipaje.index')->with('success', 'Equipaje actualizado correctamente.');
+        // Mantener el parámetro hijo en la redirección si existe en la URL actual
+        $redirectRoute = 'equipaje.index';
+        $redirectParams = [];
+        if (request()->has('hijo')) {
+            $redirectParams['hijo'] = request()->hijo;
+        }
+
+        return redirect()->route($redirectRoute, $redirectParams)->with('success', 'Equipaje actualizado correctamente.');
     }
 
     /**
@@ -218,6 +266,13 @@ class EquipajeController extends Controller
 
         $equipaje->delete();
 
-        return redirect()->route('equipaje.index')->with('success', 'Equipaje eliminado correctamente.');
+        // Mantener el parámetro hijo en la redirección si existe en la URL actual
+        $redirectRoute = 'equipaje.index';
+        $redirectParams = [];
+        if (request()->has('hijo')) {
+            $redirectParams['hijo'] = request()->hijo;
+        }
+
+        return redirect()->route($redirectRoute, $redirectParams)->with('success', 'Equipaje eliminado correctamente.');
     }
 }
