@@ -51,16 +51,29 @@ class EquipajeController extends Controller
             'color' => 'nullable|string|max:50',
             'caracteristicas' => 'nullable|string',
             'peso' => 'nullable|numeric|min:0',
-            'images' => 'nullable|string',
-            'images1' => 'nullable|string',
-            'images2' => 'nullable|string',
+            'images' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'images1' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'images2' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'lugar_regis' => 'nullable|string|max:255',
         ]);
 
         // Verificar que el hijo pertenece al usuario autenticado
         $hijo = Hijo::where('id', $request->hijo_id)
-                   ->where('user_id', auth()->id())
-                   ->firstOrFail();
+                    ->where('user_id', auth()->id())
+                    ->firstOrFail();
+
+        // Procesar las imágenes
+        $imagePaths = [];
+        $imageFields = ['images', 'images1', 'images2'];
+
+        foreach ($imageFields as $field) {
+            if ($request->hasFile($field)) {
+                $image = $request->file($field);
+                $filename = time() . '_' . uniqid() . '_' . $field . '.' . $image->getClientOriginalExtension();
+                $path = $image->storeAs('equipaje', $filename, 'public');
+                $imagePaths[$field] = $path;
+            }
+        }
 
         Equipaje::create([
             'hijo_id' => $request->hijo_id,
@@ -69,9 +82,9 @@ class EquipajeController extends Controller
             'color' => $request->color,
             'caracteristicas' => $request->caracteristicas,
             'peso' => $request->peso,
-            'images' => $request->images,
-            'images1' => $request->images1,
-            'images2' => $request->images2,
+            'images' => $imagePaths['images'] ?? null,
+            'images1' => $imagePaths['images1'] ?? null,
+            'images2' => $imagePaths['images2'] ?? null,
             'lugar_regis' => $request->lugar_regis,
         ]);
 
@@ -135,16 +148,37 @@ class EquipajeController extends Controller
             'color' => 'nullable|string|max:50',
             'caracteristicas' => 'nullable|string',
             'peso' => 'nullable|numeric|min:0',
-            'images' => 'nullable|string',
-            'images1' => 'nullable|string',
-            'images2' => 'nullable|string',
+            'images' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'images1' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'images2' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'lugar_regis' => 'nullable|string|max:255',
         ]);
 
         // Verificar que el nuevo hijo también pertenece al usuario autenticado
         $hijo = Hijo::where('id', $request->hijo_id)
-                   ->where('user_id', auth()->id())
-                   ->firstOrFail();
+                    ->where('user_id', auth()->id())
+                    ->firstOrFail();
+
+        // Procesar las imágenes
+        $imagePaths = [];
+        $imageFields = ['images', 'images1', 'images2'];
+
+        foreach ($imageFields as $field) {
+            if ($request->hasFile($field)) {
+                // Eliminar imagen anterior si existe
+                if ($equipaje->$field && \Storage::disk('public')->exists($equipaje->$field)) {
+                    \Storage::disk('public')->delete($equipaje->$field);
+                }
+
+                $image = $request->file($field);
+                $filename = time() . '_' . uniqid() . '_' . $field . '.' . $image->getClientOriginalExtension();
+                $path = $image->storeAs('equipaje', $filename, 'public');
+                $imagePaths[$field] = $path;
+            } else {
+                // Mantener la imagen existente si no se sube una nueva
+                $imagePaths[$field] = $equipaje->$field;
+            }
+        }
 
         $equipaje->update([
             'hijo_id' => $request->hijo_id,
@@ -153,9 +187,9 @@ class EquipajeController extends Controller
             'color' => $request->color,
             'caracteristicas' => $request->caracteristicas,
             'peso' => $request->peso,
-            'images' => $request->images,
-            'images1' => $request->images1,
-            'images2' => $request->images2,
+            'images' => $imagePaths['images'],
+            'images1' => $imagePaths['images1'],
+            'images2' => $imagePaths['images2'],
             'lugar_regis' => $request->lugar_regis,
         ]);
 
@@ -168,10 +202,18 @@ class EquipajeController extends Controller
     public function destroy(string $id)
     {
         $equipaje = Equipaje::with('hijo')->findOrFail($id);
-        
+
         // Verificar que el equipaje pertenece a un hijo del usuario autenticado
         if ($equipaje->hijo->user_id !== auth()->id()) {
             abort(403);
+        }
+
+        // Eliminar imágenes asociadas
+        $imageFields = ['images', 'images1', 'images2'];
+        foreach ($imageFields as $field) {
+            if ($equipaje->$field && \Storage::disk('public')->exists($equipaje->$field)) {
+                \Storage::disk('public')->delete($equipaje->$field);
+            }
         }
 
         $equipaje->delete();
