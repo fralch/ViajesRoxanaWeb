@@ -61,21 +61,47 @@ class EquipajeController extends Controller
      */
     public function store(Request $request)
     {
+        \Log::info('=== EQUIPAJE CONTROLLER STORE METHOD DEBUG ===');
+        \Log::info('Request method: ' . $request->method());
+        \Log::info('Request URL: ' . $request->fullUrl());
+        \Log::info('All request data:', $request->all());
+        \Log::info('Files in request:', $request->allFiles());
+        \Log::info('Headers:', $request->headers->all());
+        
         $user = auth()->user();
+        \Log::info('Authenticated user ID: ' . $user->id);
 
-        // Si hay un parámetro hijo_doc_numero, obtener el hijo_id automáticamente
+        // Obtener el hijo_id basado en el número de documento enviado desde el frontend
         $hijoId = null;
-        if ($request->has('hijo_doc_numero')) {
+        if ($request->has('hijo_doc_numero') && $request->hijo_doc_numero) {
+            \Log::info('Processing with hijo_doc_numero from form data: ' . $request->hijo_doc_numero);
             $hijo = $user->hijos()->where('doc_numero', $request->hijo_doc_numero)->first();
             if (!$hijo) {
-                abort(404, 'Hijo no encontrado o no autorizado');
+                \Log::error('Hijo not found with doc_numero: ' . $request->hijo_doc_numero);
+                return back()->withErrors(['hijo_doc_numero' => 'Hijo no encontrado o no autorizado']);
             }
             $hijoId = $hijo->id;
+            \Log::info('Found hijo ID: ' . $hijoId);
+        } elseif ($request->has('hijo') && $request->hijo) {
+            \Log::info('Processing with hijo parameter from URL: ' . $request->hijo);
+            $hijo = $user->hijos()->where('doc_numero', $request->hijo)->first();
+            if (!$hijo) {
+                \Log::error('Hijo not found with doc_numero: ' . $request->hijo);
+                return back()->withErrors(['hijo' => 'Hijo no encontrado o no autorizado']);
+            }
+            $hijoId = $hijo->id;
+            \Log::info('Found hijo ID: ' . $hijoId);
         } elseif ($request->has('hijo_id') && $request->hijo_id) {
+            \Log::info('Processing with hijo_id: ' . $request->hijo_id);
             $hijoId = $request->hijo_id;
+        } else {
+            \Log::error('No hijo information provided');
+            return back()->withErrors(['hijo' => 'Debe seleccionar un hijo']);
         }
 
-        // Validación actualizada para manejar ambos casos
+        \Log::info('Final hijo ID to use: ' . $hijoId);
+
+        // Validación actualizada - ya no necesitamos validar hijo_id porque lo obtenemos del doc_numero
         $validationRules = [
             'tip_maleta' => 'required|string|in:Maleta de 8 kg,Maleta de 23 kg',
             'num_etiqueta' => 'nullable|string|max:100',
@@ -88,17 +114,21 @@ class EquipajeController extends Controller
             'lugar_regis' => 'nullable|string|max:255',
         ];
 
-        // Solo requerir hijo_id si no hay hijo_doc_numero
-        if (!$request->has('hijo_doc_numero')) {
-            $validationRules['hijo_id'] = 'required|exists:hijos,id';
-        }
+        \Log::info('Validation rules:', $validationRules);
 
-        $request->validate($validationRules);
+        try {
+            $request->validate($validationRules);
+            \Log::info('✅ Validation passed');
+        } catch (\Exception $e) {
+            \Log::error('❌ Validation failed: ' . $e->getMessage());
+            throw $e;
+        }
 
         // Usar el hijoId determinado anteriormente
         $finalHijoId = $hijoId;
 
         if (!$finalHijoId) {
+            \Log::error('❌ No hijo ID could be determined');
             abort(400, 'No se pudo determinar el hijo para el equipaje');
         }
 
@@ -107,12 +137,15 @@ class EquipajeController extends Controller
                     ->where('user_id', auth()->id())
                     ->firstOrFail();
 
+        \Log::info('✅ Hijo verification passed for ID: ' . $finalHijoId);
+
         // Procesar las imágenes
         $imagePaths = [];
         $imageFields = ['images', 'images1', 'images2'];
 
         foreach ($imageFields as $field) {
             if ($request->hasFile($field)) {
+                \Log::info('Processing image field: ' . $field);
                 $image = $request->file($field);
                 $filename = time() . '_' . uniqid() . '_' . $field . '.' . $image->getClientOriginalExtension();
                 
@@ -120,10 +153,13 @@ class EquipajeController extends Controller
                 $image->move(public_path('img/equipaje'), $filename);
                 $path = 'img/equipaje/' . $filename;
                 $imagePaths[$field] = $path;
+                \Log::info('Image saved: ' . $path);
             }
         }
 
-        Equipaje::create([
+        \Log::info('Image paths:', $imagePaths);
+
+        $equipajeData = [
             'hijo_id' => $finalHijoId,
             'tip_maleta' => $request->tip_maleta,
             'num_etiqueta' => $request->num_etiqueta,
@@ -134,7 +170,17 @@ class EquipajeController extends Controller
             'images1' => $imagePaths['images1'] ?? null,
             'images2' => $imagePaths['images2'] ?? null,
             'lugar_regis' => $request->lugar_regis,
-        ]);
+        ];
+
+        \Log::info('Creating equipaje with data:', $equipajeData);
+
+        try {
+            $equipaje = Equipaje::create($equipajeData);
+            \Log::info('✅ Equipaje created successfully with ID: ' . $equipaje->id);
+        } catch (\Exception $e) {
+            \Log::error('❌ Failed to create equipaje: ' . $e->getMessage());
+            throw $e;
+        }
 
         // Mantener el parámetro hijo en la redirección si existe
         $redirectRoute = 'equipaje.index';
@@ -142,6 +188,9 @@ class EquipajeController extends Controller
         if ($request->has('hijo_doc_numero')) {
             $redirectParams['hijo'] = $request->hijo_doc_numero;
         }
+
+        \Log::info('Redirecting to: ' . $redirectRoute . ' with params:', $redirectParams);
+        \Log::info('=== END EQUIPAJE CONTROLLER DEBUG ===');
 
         return redirect()->route($redirectRoute, $redirectParams)->with('success', 'Equipaje agregado correctamente.');
     }

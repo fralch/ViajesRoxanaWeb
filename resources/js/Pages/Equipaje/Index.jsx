@@ -85,6 +85,12 @@ export default function Index({ auth, hijos, selectedHijo, hijoParam }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        
+        console.log('=== EQUIPAJE FORM SUBMISSION DEBUG ===');
+        console.log('Form data object:', data);
+        console.log('Selected hijo:', selectedHijo);
+        console.log('Hijo param:', hijoParam);
+        
         const formData = new FormData();
         formData.append('tip_maleta', data.tip_maleta);
         formData.append('color', data.color || '');
@@ -92,25 +98,52 @@ export default function Index({ auth, hijos, selectedHijo, hijoParam }) {
         formData.append('peso', data.peso || '');
         formData.append('lugar_regis', data.lugar_regis || '');
 
-        // Si hay un hijo seleccionado específico, pasarlo como parámetro
+        // Enviar el número de documento del hijo al backend
         if (selectedHijo) {
             formData.append('hijo_doc_numero', selectedHijo.doc_numero);
+            console.log('Adding hijo_doc_numero from selectedHijo:', selectedHijo.doc_numero);
+        } else if (hijoParam) {
+            formData.append('hijo_doc_numero', hijoParam);
+            console.log('Adding hijo_doc_numero from hijoParam:', hijoParam);
         } else if (data.hijo_id) {
             formData.append('hijo_id', data.hijo_id);
+            console.log('Adding hijo_id:', data.hijo_id);
         }
 
         // Agregar archivos si existen
-        if (data.images instanceof File) formData.append('images', data.images);
-        if (data.images1 instanceof File) formData.append('images1', data.images1);
-        if (data.images2 instanceof File) formData.append('images2', data.images2);
+        if (data.images instanceof File) {
+            formData.append('images', data.images);
+            console.log('Adding images file:', data.images.name);
+        }
+        if (data.images1 instanceof File) {
+            formData.append('images1', data.images1);
+            console.log('Adding images1 file:', data.images1.name);
+        }
+        if (data.images2 instanceof File) {
+            formData.append('images2', data.images2);
+            console.log('Adding images2 file:', data.images2.name);
+        }
 
         const routeParams = hijoParam ? { hijo: hijoParam } : {};
+        const routeUrl = route('equipaje.store', routeParams);
+        
+        console.log('Route params:', routeParams);
+        console.log('Final route URL:', routeUrl);
+        console.log('FormData entries:');
+        for (let [key, value] of formData.entries()) {
+            console.log(`  ${key}:`, value);
+        }
+        console.log('=== END DEBUG ===');
 
-        post(route('equipaje.store', routeParams), {
+        post(routeUrl, {
             data: formData,
             forceFormData: true,
             onSuccess: () => {
+                console.log('✅ Form submitted successfully');
                 resetForm();
+            },
+            onError: (errors) => {
+                console.log('❌ Form submission errors:', errors);
             }
         });
     };
