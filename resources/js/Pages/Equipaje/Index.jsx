@@ -16,9 +16,7 @@ export default function Index({ auth, hijos }) {
     const [selectedEquipaje, setSelectedEquipaje] = useState(null);
 
     const { data, setData, post, put, delete: destroy, processing, errors, reset } = useForm({
-        hijo_id: '',
         tip_maleta: 'Maleta de 8 kg',
-        num_etiqueta: '',
         color: '',
         caracteristicas: '',
         peso: '',
@@ -36,9 +34,7 @@ export default function Index({ auth, hijos }) {
     const openEditModal = (equipaje) => {
         setSelectedEquipaje(equipaje);
         setData({
-            hijo_id: equipaje.hijo_id,
             tip_maleta: equipaje.tip_maleta || 'Maleta de 8 kg',
-            num_etiqueta: equipaje.num_etiqueta || '',
             color: equipaje.color || '',
             caracteristicas: equipaje.caracteristicas || '',
             peso: equipaje.peso || '',
@@ -64,9 +60,7 @@ export default function Index({ auth, hijos }) {
     const handleSubmit = (e) => {
         e.preventDefault();
         const formData = new FormData();
-        formData.append('hijo_id', data.hijo_id);
         formData.append('tip_maleta', data.tip_maleta);
-        formData.append('num_etiqueta', data.num_etiqueta || '');
         formData.append('color', data.color || '');
         formData.append('caracteristicas', data.caracteristicas || '');
         formData.append('peso', data.peso || '');
@@ -127,99 +121,69 @@ export default function Index({ auth, hijos }) {
                                 </div>
                             </div>
 
-                            <form onSubmit={handleSubmit} encType="multipart/form-data" className="space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    <div>
-                                        <InputLabel htmlFor="hijo_id" value="Hijo" />
-                                        <SelectInput
-                                            id="hijo_id"
-                                            value={data.hijo_id}
-                                            onChange={(e) => setData('hijo_id', e.target.value)}
-                                            className="mt-1 block w-full"
-                                            required
-                                        >
-                                            <option value="">Seleccionar hijo</option>
-                                            {hijos.map((hijo) => (
-                                                <option key={hijo.id} value={hijo.id}>
-                                                    {hijo.nombre} {hijo.apellido}
-                                                </option>
-                                            ))}
-                                        </SelectInput>
-                                        <InputError message={errors.hijo_id} className="mt-2" />
-                                    </div>
+                             <form onSubmit={handleSubmit} encType="multipart/form-data" className="space-y-6">
+                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                     <div>
+                                         <InputLabel htmlFor="tip_maleta" value="Tipo de Maleta" />
+                                         <SelectInput
+                                             id="tip_maleta"
+                                             value={data.tip_maleta}
+                                             onChange={(e) => setData('tip_maleta', e.target.value)}
+                                             className="mt-1 block w-full"
+                                             required
+                                         >
+                                             {tiposMaleta.map((tipo) => (
+                                                 <option key={tipo.value} value={tipo.value}>
+                                                     {tipo.label}
+                                                 </option>
+                                             ))}
+                                         </SelectInput>
+                                         <InputError message={errors.tip_maleta} className="mt-2" />
+                                     </div>
 
-                                    <div>
-                                        <InputLabel htmlFor="tip_maleta" value="Tipo de Maleta" />
-                                        <SelectInput
-                                            id="tip_maleta"
-                                            value={data.tip_maleta}
-                                            onChange={(e) => setData('tip_maleta', e.target.value)}
-                                            className="mt-1 block w-full"
-                                            required
-                                        >
-                                            {tiposMaleta.map((tipo) => (
-                                                <option key={tipo.value} value={tipo.value}>
-                                                    {tipo.label}
-                                                </option>
-                                            ))}
-                                        </SelectInput>
-                                        <InputError message={errors.tip_maleta} className="mt-2" />
-                                    </div>
+                                     <div>
+                                         <InputLabel htmlFor="color" value="Color" />
+                                         <TextInput
+                                             id="color"
+                                             value={data.color}
+                                             onChange={(e) => setData('color', e.target.value)}
+                                             className="mt-1 block w-full"
+                                             maxLength="50"
+                                             placeholder="Ej: Rojo"
+                                         />
+                                         <InputError message={errors.color} className="mt-2" />
+                                     </div>
+                                 </div>
 
-                                    <div>
-                                        <InputLabel htmlFor="num_etiqueta" value="Número de Etiqueta" />
-                                        <TextInput
-                                            id="num_etiqueta"
-                                            value={data.num_etiqueta}
-                                            onChange={(e) => setData('num_etiqueta', e.target.value)}
-                                            className="mt-1 block w-full"
-                                            maxLength="100"
-                                            placeholder="Ej: ABC123"
-                                        />
-                                        <InputError message={errors.num_etiqueta} className="mt-2" />
-                                    </div>
+                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                     <div>
+                                         <InputLabel htmlFor="peso" value="Peso (kg)" />
+                                         <TextInput
+                                             id="peso"
+                                             type="number"
+                                             step="0.01"
+                                             min="0"
+                                             value={data.peso}
+                                             onChange={(e) => setData('peso', e.target.value)}
+                                             className="mt-1 block w-full"
+                                             placeholder="0.00"
+                                         />
+                                         <InputError message={errors.peso} className="mt-2" />
+                                     </div>
 
-                                    <div>
-                                        <InputLabel htmlFor="color" value="Color" />
-                                        <TextInput
-                                            id="color"
-                                            value={data.color}
-                                            onChange={(e) => setData('color', e.target.value)}
-                                            className="mt-1 block w-full"
-                                            maxLength="50"
-                                            placeholder="Ej: Rojo"
-                                        />
-                                        <InputError message={errors.color} className="mt-2" />
-                                    </div>
-
-                                    <div>
-                                        <InputLabel htmlFor="peso" value="Peso (kg)" />
-                                        <TextInput
-                                            id="peso"
-                                            type="number"
-                                            step="0.01"
-                                            min="0"
-                                            value={data.peso}
-                                            onChange={(e) => setData('peso', e.target.value)}
-                                            className="mt-1 block w-full"
-                                            placeholder="0.00"
-                                        />
-                                        <InputError message={errors.peso} className="mt-2" />
-                                    </div>
-
-                                    <div>
-                                        <InputLabel htmlFor="lugar_regis" value="Lugar de Registro" />
-                                        <TextInput
-                                            id="lugar_regis"
-                                            value={data.lugar_regis}
-                                            onChange={(e) => setData('lugar_regis', e.target.value)}
-                                            className="mt-1 block w-full"
-                                            maxLength="255"
-                                            placeholder="Ej: Aeropuerto Internacional"
-                                        />
-                                        <InputError message={errors.lugar_regis} className="mt-2" />
-                                    </div>
-                                </div>
+                                     <div>
+                                         <InputLabel htmlFor="lugar_regis" value="Lugar de Registro" />
+                                         <TextInput
+                                             id="lugar_regis"
+                                             value={data.lugar_regis}
+                                             onChange={(e) => setData('lugar_regis', e.target.value)}
+                                             className="mt-1 block w-full"
+                                             maxLength="255"
+                                             placeholder="Ej: Aeropuerto Internacional"
+                                         />
+                                         <InputError message={errors.lugar_regis} className="mt-2" />
+                                     </div>
+                                 </div>
 
                                 <div>
                                     <InputLabel htmlFor="caracteristicas" value="Características" />
@@ -336,16 +300,8 @@ export default function Index({ auth, hijos }) {
                                                 </span>
                                             </div>
 
-                                            <div className="space-y-2 text-sm mb-4">
-                                                {equipaje.num_etiqueta && (
-                                                    <div className="flex items-center">
-                                                        <svg className="w-4 h-4 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                                                        </svg>
-                                                        <span className="text-gray-600"><strong>Etiqueta:</strong> {equipaje.num_etiqueta}</span>
-                                                    </div>
-                                                )}
-                                                {equipaje.color && (
+                                             <div className="space-y-2 text-sm mb-4">
+                                                 {equipaje.color && (
                                                     <div className="flex items-center">
                                                         <svg className="w-4 h-4 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z" />
@@ -439,15 +395,13 @@ export default function Index({ auth, hijos }) {
             <Modal show={showEditModal} onClose={closeModals}>
                 <form onSubmit={(e) => {
                     e.preventDefault();
-                    const formData = new FormData();
-                    formData.append('_method', 'PUT');
-                    formData.append('hijo_id', data.hijo_id);
-                    formData.append('tip_maleta', data.tip_maleta);
-                    formData.append('num_etiqueta', data.num_etiqueta || '');
-                    formData.append('color', data.color || '');
-                    formData.append('caracteristicas', data.caracteristicas || '');
-                    formData.append('peso', data.peso || '');
-                    formData.append('lugar_regis', data.lugar_regis || '');
+                     const formData = new FormData();
+                     formData.append('_method', 'PUT');
+                     formData.append('tip_maleta', data.tip_maleta);
+                     formData.append('color', data.color || '');
+                     formData.append('caracteristicas', data.caracteristicas || '');
+                     formData.append('peso', data.peso || '');
+                     formData.append('lugar_regis', data.lugar_regis || '');
 
                     // Agregar archivos si existen
                     if (data.images instanceof File) formData.append('images', data.images);
@@ -462,94 +416,65 @@ export default function Index({ auth, hijos }) {
                         Editar Equipaje #{selectedEquipaje?.id}
                     </h2>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <InputLabel htmlFor="hijo_id" value="Hijo" />
-                            <SelectInput
-                                id="hijo_id"
-                                value={data.hijo_id}
-                                onChange={(e) => setData('hijo_id', e.target.value)}
-                                className="mt-1 block w-full"
-                                required
-                            >
-                                <option value="">Seleccionar hijo</option>
-                                {hijos.map((hijo) => (
-                                    <option key={hijo.id} value={hijo.id}>
-                                        {hijo.nombre} {hijo.apellido}
-                                    </option>
-                                ))}
-                            </SelectInput>
-                            <InputError message={errors.hijo_id} className="mt-2" />
-                        </div>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                         <div>
+                             <InputLabel htmlFor="tip_maleta" value="Tipo de Maleta" />
+                             <SelectInput
+                                 id="tip_maleta"
+                                 value={data.tip_maleta}
+                                 onChange={(e) => setData('tip_maleta', e.target.value)}
+                                 className="mt-1 block w-full"
+                                 required
+                             >
+                                 {tiposMaleta.map((tipo) => (
+                                     <option key={tipo.value} value={tipo.value}>
+                                         {tipo.label}
+                                     </option>
+                                 ))}
+                             </SelectInput>
+                             <InputError message={errors.tip_maleta} className="mt-2" />
+                         </div>
 
-                        <div>
-                            <InputLabel htmlFor="tip_maleta" value="Tipo de Maleta" />
-                            <SelectInput
-                                id="tip_maleta"
-                                value={data.tip_maleta}
-                                onChange={(e) => setData('tip_maleta', e.target.value)}
-                                className="mt-1 block w-full"
-                                required
-                            >
-                                {tiposMaleta.map((tipo) => (
-                                    <option key={tipo.value} value={tipo.value}>
-                                        {tipo.label}
-                                    </option>
-                                ))}
-                            </SelectInput>
-                            <InputError message={errors.tip_maleta} className="mt-2" />
-                        </div>
+                         <div>
+                             <InputLabel htmlFor="color" value="Color" />
+                             <TextInput
+                                 id="color"
+                                 value={data.color}
+                                 onChange={(e) => setData('color', e.target.value)}
+                                 className="mt-1 block w-full"
+                                 maxLength="50"
+                             />
+                             <InputError message={errors.color} className="mt-2" />
+                         </div>
+                     </div>
 
-                        <div>
-                            <InputLabel htmlFor="num_etiqueta" value="Número de Etiqueta" />
-                            <TextInput
-                                id="num_etiqueta"
-                                value={data.num_etiqueta}
-                                onChange={(e) => setData('num_etiqueta', e.target.value)}
-                                className="mt-1 block w-full"
-                                maxLength="100"
-                            />
-                            <InputError message={errors.num_etiqueta} className="mt-2" />
-                        </div>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                         <div>
+                             <InputLabel htmlFor="peso" value="Peso (kg)" />
+                             <TextInput
+                                 id="peso"
+                                 type="number"
+                                 step="0.01"
+                                 min="0"
+                                 value={data.peso}
+                                 onChange={(e) => setData('peso', e.target.value)}
+                                 className="mt-1 block w-full"
+                             />
+                             <InputError message={errors.peso} className="mt-2" />
+                         </div>
 
-                        <div>
-                            <InputLabel htmlFor="color" value="Color" />
-                            <TextInput
-                                id="color"
-                                value={data.color}
-                                onChange={(e) => setData('color', e.target.value)}
-                                className="mt-1 block w-full"
-                                maxLength="50"
-                            />
-                            <InputError message={errors.color} className="mt-2" />
-                        </div>
-
-                        <div>
-                            <InputLabel htmlFor="peso" value="Peso (kg)" />
-                            <TextInput
-                                id="peso"
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                value={data.peso}
-                                onChange={(e) => setData('peso', e.target.value)}
-                                className="mt-1 block w-full"
-                            />
-                            <InputError message={errors.peso} className="mt-2" />
-                        </div>
-
-                        <div>
-                            <InputLabel htmlFor="lugar_regis" value="Lugar de Registro" />
-                            <TextInput
-                                id="lugar_regis"
-                                value={data.lugar_regis}
-                                onChange={(e) => setData('lugar_regis', e.target.value)}
-                                className="mt-1 block w-full"
-                                maxLength="255"
-                            />
-                            <InputError message={errors.lugar_regis} className="mt-2" />
-                        </div>
-                    </div>
+                         <div>
+                             <InputLabel htmlFor="lugar_regis" value="Lugar de Registro" />
+                             <TextInput
+                                 id="lugar_regis"
+                                 value={data.lugar_regis}
+                                 onChange={(e) => setData('lugar_regis', e.target.value)}
+                                 className="mt-1 block w-full"
+                                 maxLength="255"
+                             />
+                             <InputError message={errors.lugar_regis} className="mt-2" />
+                         </div>
+                     </div>
 
                     <div className="mt-4">
                         <InputLabel htmlFor="caracteristicas" value="Características" />
