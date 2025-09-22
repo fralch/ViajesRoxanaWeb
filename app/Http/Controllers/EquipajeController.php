@@ -46,13 +46,15 @@ class EquipajeController extends Controller
     {
         $request->validate([
             'hijo_id' => 'required|exists:hijos,id',
-            'nombre_item' => 'required|string|max:255',
-            'descripcion' => 'nullable|string',
-            'cantidad' => 'required|integer|min:1',
-            'categoria' => 'required|string|in:ropa,calzado,higiene,medicamentos,electronica,documentos,otros',
-            'peso_estimado' => 'nullable|numeric|min:0',
-            'es_fragil' => 'boolean',
-            'notas' => 'nullable|string',
+            'tip_maleta' => 'required|string|in:Maleta de 8 kg,Maleta de 23 kg',
+            'num_etiqueta' => 'nullable|string|max:100',
+            'color' => 'nullable|string|max:50',
+            'caracteristicas' => 'nullable|string',
+            'peso' => 'nullable|numeric|min:0',
+            'images' => 'nullable|string',
+            'images1' => 'nullable|string',
+            'images2' => 'nullable|string',
+            'lugar_regis' => 'nullable|string|max:255',
         ]);
 
         // Verificar que el hijo pertenece al usuario autenticado
@@ -62,16 +64,18 @@ class EquipajeController extends Controller
 
         Equipaje::create([
             'hijo_id' => $request->hijo_id,
-            'nombre_item' => $request->nombre_item,
-            'descripcion' => $request->descripcion,
-            'cantidad' => $request->cantidad,
-            'categoria' => $request->categoria,
-            'peso_estimado' => $request->peso_estimado,
-            'es_fragil' => $request->boolean('es_fragil'),
-            'notas' => $request->notas,
+            'tip_maleta' => $request->tip_maleta,
+            'num_etiqueta' => $request->num_etiqueta,
+            'color' => $request->color,
+            'caracteristicas' => $request->caracteristicas,
+            'peso' => $request->peso,
+            'images' => $request->images,
+            'images1' => $request->images1,
+            'images2' => $request->images2,
+            'lugar_regis' => $request->lugar_regis,
         ]);
 
-        return redirect()->route('equipaje.index')->with('success', 'Item de equipaje agregado correctamente.');
+        return redirect()->route('equipaje.index')->with('success', 'Equipaje agregado correctamente.');
     }
 
     /**
@@ -118,7 +122,7 @@ class EquipajeController extends Controller
     public function update(Request $request, string $id)
     {
         $equipaje = Equipaje::with('hijo')->findOrFail($id);
-        
+
         // Verificar que el equipaje pertenece a un hijo del usuario autenticado
         if ($equipaje->hijo->user_id !== auth()->id()) {
             abort(403);
@@ -126,13 +130,15 @@ class EquipajeController extends Controller
 
         $request->validate([
             'hijo_id' => 'required|exists:hijos,id',
-            'nombre_item' => 'required|string|max:255',
-            'descripcion' => 'nullable|string',
-            'cantidad' => 'required|integer|min:1',
-            'categoria' => 'required|string|in:ropa,calzado,higiene,medicamentos,electronica,documentos,otros',
-            'peso_estimado' => 'nullable|numeric|min:0',
-            'es_fragil' => 'boolean',
-            'notas' => 'nullable|string',
+            'tip_maleta' => 'required|string|in:Maleta de 8 kg,Maleta de 23 kg',
+            'num_etiqueta' => 'nullable|string|max:100',
+            'color' => 'nullable|string|max:50',
+            'caracteristicas' => 'nullable|string',
+            'peso' => 'nullable|numeric|min:0',
+            'images' => 'nullable|string',
+            'images1' => 'nullable|string',
+            'images2' => 'nullable|string',
+            'lugar_regis' => 'nullable|string|max:255',
         ]);
 
         // Verificar que el nuevo hijo también pertenece al usuario autenticado
@@ -142,16 +148,18 @@ class EquipajeController extends Controller
 
         $equipaje->update([
             'hijo_id' => $request->hijo_id,
-            'nombre_item' => $request->nombre_item,
-            'descripcion' => $request->descripcion,
-            'cantidad' => $request->cantidad,
-            'categoria' => $request->categoria,
-            'peso_estimado' => $request->peso_estimado,
-            'es_fragil' => $request->boolean('es_fragil'),
-            'notas' => $request->notas,
+            'tip_maleta' => $request->tip_maleta,
+            'num_etiqueta' => $request->num_etiqueta,
+            'color' => $request->color,
+            'caracteristicas' => $request->caracteristicas,
+            'peso' => $request->peso,
+            'images' => $request->images,
+            'images1' => $request->images1,
+            'images2' => $request->images2,
+            'lugar_regis' => $request->lugar_regis,
         ]);
 
-        return redirect()->route('equipaje.index')->with('success', 'Item de equipaje actualizado correctamente.');
+        return redirect()->route('equipaje.index')->with('success', 'Equipaje actualizado correctamente.');
     }
 
     /**
@@ -168,6 +176,6 @@ class EquipajeController extends Controller
 
         $equipaje->delete();
 
-        return redirect()->route('equipaje.index')->with('success', 'Item de equipaje eliminado correctamente.');
+        return redirect()->route('equipaje.index')->with('success', 'Equipaje eliminado correctamente.');
     }
 }

@@ -10,7 +10,7 @@ import InputLabel from '@/Components/InputLabel';
 import InputError from '@/Components/InputError';
 import SelectInput from '@/Components/SelectInput';
 
-export default function Index({ auth, equipajes, hijos }) {
+export default function Index({ auth, hijos }) {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -18,23 +18,20 @@ export default function Index({ auth, equipajes, hijos }) {
 
     const { data, setData, post, put, delete: destroy, processing, errors, reset } = useForm({
         hijo_id: '',
-        nombre_item: '',
-        descripcion: '',
-        cantidad: 1,
-        categoria: 'otros',
-        peso_estimado: '',
-        es_fragil: false,
-        notas: ''
+        tip_maleta: 'Maleta de 8 kg',
+        num_etiqueta: '',
+        color: '',
+        caracteristicas: '',
+        peso: '',
+        images: '',
+        images1: '',
+        images2: '',
+        lugar_regis: ''
     });
 
-    const categorias = [
-        { value: 'ropa', label: 'Ropa' },
-        { value: 'calzado', label: 'Calzado' },
-        { value: 'higiene', label: 'Higiene Personal' },
-        { value: 'medicamentos', label: 'Medicamentos' },
-        { value: 'electronica', label: 'Electrónicos' },
-        { value: 'documentos', label: 'Documentos' },
-        { value: 'otros', label: 'Otros' }
+    const tiposMaleta = [
+        { value: 'Maleta de 8 kg', label: 'Maleta de 8 kg' },
+        { value: 'Maleta de 23 kg', label: 'Maleta de 23 kg' }
     ];
 
     const openCreateModal = () => {
@@ -46,13 +43,15 @@ export default function Index({ auth, equipajes, hijos }) {
         setSelectedEquipaje(equipaje);
         setData({
             hijo_id: equipaje.hijo_id,
-            nombre_item: equipaje.nombre_item,
-            descripcion: equipaje.descripcion || '',
-            cantidad: equipaje.cantidad,
-            categoria: equipaje.categoria,
-            peso_estimado: equipaje.peso_estimado || '',
-            es_fragil: equipaje.es_fragil,
-            notas: equipaje.notas || ''
+            tip_maleta: equipaje.tip_maleta || 'Maleta de 8 kg',
+            num_etiqueta: equipaje.num_etiqueta || '',
+            color: equipaje.color || '',
+            caracteristicas: equipaje.caracteristicas || '',
+            peso: equipaje.peso || '',
+            images: equipaje.images || '',
+            images1: equipaje.images1 || '',
+            images2: equipaje.images2 || '',
+            lugar_regis: equipaje.lugar_regis || ''
         });
         setShowEditModal(true);
     };
@@ -89,10 +88,18 @@ export default function Index({ auth, equipajes, hijos }) {
         });
     };
 
-    const getCategoriaLabel = (categoria) => {
-        const cat = categorias.find(c => c.value === categoria);
-        return cat ? cat.label : categoria;
+    const getTipoMaletaLabel = (tipo) => {
+        const t = tiposMaleta.find(tm => tm.value === tipo);
+        return t ? t.label : tipo;
     };
+
+    // Obtener todos los equipajes de los hijos
+    const equipajes = hijos.flatMap(hijo =>
+        (hijo.equipajes || []).map(equipaje => ({
+            ...equipaje,
+            hijo: hijo
+        }))
+    );
 
     return (
         <AuthenticatedLayout
@@ -124,37 +131,57 @@ export default function Index({ auth, equipajes, hijos }) {
                                     {equipajes.map((equipaje) => (
                                         <div key={equipaje.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                                             <div className="flex justify-between items-start mb-2">
-                                                <h4 className="font-semibold text-lg">{equipaje.nombre_item}</h4>
-                                                <span className={`px-2 py-1 rounded text-xs ${
-                                                    equipaje.es_fragil ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
-                                                }`}>
-                                                    {equipaje.es_fragil ? 'Frágil' : 'Normal'}
+                                                <h4 className="font-semibold text-lg">Equipaje #{equipaje.id}</h4>
+                                                <span className={`px-2 py-1 rounded text-xs bg-blue-100 text-blue-800`}>
+                                                    {getTipoMaletaLabel(equipaje.tip_maleta)}
                                                 </span>
                                             </div>
-                                            
+
                                             <div className="space-y-1 text-sm text-gray-600 mb-3">
                                                 <p><strong>Hijo:</strong> {equipaje.hijo?.nombre} {equipaje.hijo?.apellido}</p>
-                                                <p><strong>Categoría:</strong> {getCategoriaLabel(equipaje.categoria)}</p>
-                                                <p><strong>Cantidad:</strong> {equipaje.cantidad}</p>
-                                                {equipaje.peso_estimado && (
-                                                    <p><strong>Peso:</strong> {equipaje.peso_estimado} kg</p>
+                                                {equipaje.num_etiqueta && (
+                                                    <p><strong>Etiqueta:</strong> {equipaje.num_etiqueta}</p>
                                                 )}
-                                                {equipaje.descripcion && (
-                                                    <p><strong>Descripción:</strong> {equipaje.descripcion}</p>
+                                                {equipaje.color && (
+                                                    <p><strong>Color:</strong> {equipaje.color}</p>
                                                 )}
-                                                {equipaje.notas && (
-                                                    <p><strong>Notas:</strong> {equipaje.notas}</p>
+                                                {equipaje.peso && (
+                                                    <p><strong>Peso:</strong> {equipaje.peso} kg</p>
+                                                )}
+                                                {equipaje.lugar_regis && (
+                                                    <p><strong>Lugar de registro:</strong> {equipaje.lugar_regis}</p>
+                                                )}
+                                                {equipaje.caracteristicas && (
+                                                    <p><strong>Características:</strong> {equipaje.caracteristicas}</p>
                                                 )}
                                             </div>
 
+                                            {/* Mostrar imágenes si existen */}
+                                            {(equipaje.images || equipaje.images1 || equipaje.images2) && (
+                                                <div className="mb-3">
+                                                    <p className="text-sm font-medium text-gray-700 mb-1">Imágenes:</p>
+                                                    <div className="flex space-x-2">
+                                                        {equipaje.images && (
+                                                            <img src={equipaje.images} alt="Imagen 1" className="w-16 h-16 object-cover rounded" />
+                                                        )}
+                                                        {equipaje.images1 && (
+                                                            <img src={equipaje.images1} alt="Imagen 2" className="w-16 h-16 object-cover rounded" />
+                                                        )}
+                                                        {equipaje.images2 && (
+                                                            <img src={equipaje.images2} alt="Imagen 3" className="w-16 h-16 object-cover rounded" />
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+
                                             <div className="flex space-x-2">
-                                                <SecondaryButton 
+                                                <SecondaryButton
                                                     onClick={() => openEditModal(equipaje)}
                                                     className="text-xs"
                                                 >
                                                     Editar
                                                 </SecondaryButton>
-                                                <DangerButton 
+                                                <DangerButton
                                                     onClick={() => openDeleteModal(equipaje)}
                                                     className="text-xs"
                                                 >
@@ -174,7 +201,7 @@ export default function Index({ auth, equipajes, hijos }) {
             <Modal show={showCreateModal || showEditModal} onClose={closeModals}>
                 <form onSubmit={handleSubmit} className="p-6">
                     <h2 className="text-lg font-medium text-gray-900 mb-4">
-                        {selectedEquipaje ? 'Editar Item de Equipaje' : 'Agregar Item de Equipaje'}
+                        {selectedEquipaje ? 'Editar Equipaje' : 'Agregar Equipaje'}
                     </h2>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -198,96 +225,125 @@ export default function Index({ auth, equipajes, hijos }) {
                         </div>
 
                         <div>
-                            <InputLabel htmlFor="nombre_item" value="Nombre del Item" />
-                            <TextInput
-                                id="nombre_item"
-                                value={data.nombre_item}
-                                onChange={(e) => setData('nombre_item', e.target.value)}
+                            <InputLabel htmlFor="tip_maleta" value="Tipo de Maleta" />
+                            <SelectInput
+                                id="tip_maleta"
+                                value={data.tip_maleta}
+                                onChange={(e) => setData('tip_maleta', e.target.value)}
                                 className="mt-1 block w-full"
                                 required
-                            />
-                            <InputError message={errors.nombre_item} className="mt-2" />
-                        </div>
-
-                        <div>
-                            <InputLabel htmlFor="categoria" value="Categoría" />
-                            <SelectInput
-                                id="categoria"
-                                value={data.categoria}
-                                onChange={(e) => setData('categoria', e.target.value)}
-                                className="mt-1 block w-full"
                             >
-                                {categorias.map((categoria) => (
-                                    <option key={categoria.value} value={categoria.value}>
-                                        {categoria.label}
+                                {tiposMaleta.map((tipo) => (
+                                    <option key={tipo.value} value={tipo.value}>
+                                        {tipo.label}
                                     </option>
                                 ))}
                             </SelectInput>
-                            <InputError message={errors.categoria} className="mt-2" />
+                            <InputError message={errors.tip_maleta} className="mt-2" />
                         </div>
 
                         <div>
-                            <InputLabel htmlFor="cantidad" value="Cantidad" />
+                            <InputLabel htmlFor="num_etiqueta" value="Número de Etiqueta" />
                             <TextInput
-                                id="cantidad"
-                                type="number"
-                                min="1"
-                                value={data.cantidad}
-                                onChange={(e) => setData('cantidad', e.target.value)}
+                                id="num_etiqueta"
+                                value={data.num_etiqueta}
+                                onChange={(e) => setData('num_etiqueta', e.target.value)}
                                 className="mt-1 block w-full"
-                                required
+                                maxLength="100"
                             />
-                            <InputError message={errors.cantidad} className="mt-2" />
+                            <InputError message={errors.num_etiqueta} className="mt-2" />
                         </div>
 
                         <div>
-                            <InputLabel htmlFor="peso_estimado" value="Peso Estimado (kg)" />
+                            <InputLabel htmlFor="color" value="Color" />
                             <TextInput
-                                id="peso_estimado"
+                                id="color"
+                                value={data.color}
+                                onChange={(e) => setData('color', e.target.value)}
+                                className="mt-1 block w-full"
+                                maxLength="50"
+                            />
+                            <InputError message={errors.color} className="mt-2" />
+                        </div>
+
+                        <div>
+                            <InputLabel htmlFor="peso" value="Peso (kg)" />
+                            <TextInput
+                                id="peso"
                                 type="number"
                                 step="0.01"
                                 min="0"
-                                value={data.peso_estimado}
-                                onChange={(e) => setData('peso_estimado', e.target.value)}
+                                value={data.peso}
+                                onChange={(e) => setData('peso', e.target.value)}
                                 className="mt-1 block w-full"
                             />
-                            <InputError message={errors.peso_estimado} className="mt-2" />
+                            <InputError message={errors.peso} className="mt-2" />
                         </div>
 
-                        <div className="flex items-center">
-                            <input
-                                id="es_fragil"
-                                type="checkbox"
-                                checked={data.es_fragil}
-                                onChange={(e) => setData('es_fragil', e.target.checked)}
-                                className="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                        <div>
+                            <InputLabel htmlFor="lugar_regis" value="Lugar de Registro" />
+                            <TextInput
+                                id="lugar_regis"
+                                value={data.lugar_regis}
+                                onChange={(e) => setData('lugar_regis', e.target.value)}
+                                className="mt-1 block w-full"
+                                maxLength="255"
                             />
-                            <InputLabel htmlFor="es_fragil" value="Es frágil" className="ml-2" />
+                            <InputError message={errors.lugar_regis} className="mt-2" />
                         </div>
                     </div>
 
                     <div className="mt-4">
-                        <InputLabel htmlFor="descripcion" value="Descripción" />
+                        <InputLabel htmlFor="caracteristicas" value="Características" />
                         <textarea
-                            id="descripcion"
-                            value={data.descripcion}
-                            onChange={(e) => setData('descripcion', e.target.value)}
+                            id="caracteristicas"
+                            value={data.caracteristicas}
+                            onChange={(e) => setData('caracteristicas', e.target.value)}
                             className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                             rows="3"
                         />
-                        <InputError message={errors.descripcion} className="mt-2" />
+                        <InputError message={errors.caracteristicas} className="mt-2" />
                     </div>
 
-                    <div className="mt-4">
-                        <InputLabel htmlFor="notas" value="Notas adicionales" />
-                        <textarea
-                            id="notas"
-                            value={data.notas}
-                            onChange={(e) => setData('notas', e.target.value)}
-                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            rows="2"
-                        />
-                        <InputError message={errors.notas} className="mt-2" />
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <InputLabel htmlFor="images" value="Imagen 1 (URL)" />
+                            <TextInput
+                                id="images"
+                                type="url"
+                                value={data.images}
+                                onChange={(e) => setData('images', e.target.value)}
+                                className="mt-1 block w-full"
+                                placeholder="https://..."
+                            />
+                            <InputError message={errors.images} className="mt-2" />
+                        </div>
+
+                        <div>
+                            <InputLabel htmlFor="images1" value="Imagen 2 (URL)" />
+                            <TextInput
+                                id="images1"
+                                type="url"
+                                value={data.images1}
+                                onChange={(e) => setData('images1', e.target.value)}
+                                className="mt-1 block w-full"
+                                placeholder="https://..."
+                            />
+                            <InputError message={errors.images1} className="mt-2" />
+                        </div>
+
+                        <div>
+                            <InputLabel htmlFor="images2" value="Imagen 3 (URL)" />
+                            <TextInput
+                                id="images2"
+                                type="url"
+                                value={data.images2}
+                                onChange={(e) => setData('images2', e.target.value)}
+                                className="mt-1 block w-full"
+                                placeholder="https://..."
+                            />
+                            <InputError message={errors.images2} className="mt-2" />
+                        </div>
                     </div>
 
                     <div className="mt-6 flex justify-end space-x-3">
@@ -305,10 +361,10 @@ export default function Index({ auth, equipajes, hijos }) {
             <Modal show={showDeleteModal} onClose={closeModals}>
                 <div className="p-6">
                     <h2 className="text-lg font-medium text-gray-900 mb-4">
-                        Eliminar Item de Equipaje
+                        Eliminar Equipaje
                     </h2>
                     <p className="text-sm text-gray-600 mb-6">
-                        ¿Estás seguro de que deseas eliminar "{selectedEquipaje?.nombre_item}"? 
+                        ¿Estás seguro de que deseas eliminar el equipaje #{selectedEquipaje?.id}?
                         Esta acción no se puede deshacer.
                     </p>
                     <div className="flex justify-end space-x-3">

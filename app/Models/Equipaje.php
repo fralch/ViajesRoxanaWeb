@@ -11,19 +11,19 @@ class Equipaje extends Model
 
     protected $fillable = [
         'hijo_id',
-        'nombre_item',
-        'descripcion',
-        'cantidad',
-        'categoria',
-        'peso_estimado',
-        'es_fragil',
-        'notas',
+        'tip_maleta',
+        'num_etiqueta',
+        'color',
+        'caracteristicas',
+        'peso',
+        'images',
+        'images1',
+        'images2',
+        'lugar_regis',
     ];
 
     protected $casts = [
-        'cantidad' => 'integer',
-        'peso_estimado' => 'decimal:2',
-        'es_fragil' => 'boolean',
+        'peso' => 'decimal:2',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -37,36 +37,14 @@ class Equipaje extends Model
     }
 
     /**
-     * Obtener las categorías disponibles
+     * Obtener los tipos de maleta disponibles
      */
-    public static function getCategorias(): array
+    public static function getTiposMaleta(): array
     {
         return [
-            'ropa' => 'Ropa',
-            'calzado' => 'Calzado',
-            'higiene' => 'Higiene Personal',
-            'medicamentos' => 'Medicamentos',
-            'electronica' => 'Electrónicos',
-            'documentos' => 'Documentos',
-            'otros' => 'Otros',
+            'Maleta de 8 kg' => 'Maleta de 8 kg',
+            'Maleta de 23 kg' => 'Maleta de 23 kg',
         ];
-    }
-
-    /**
-     * Obtener el nombre de la categoría
-     */
-    public function getCategoriaNameAttribute(): string
-    {
-        $categorias = self::getCategorias();
-        return $categorias[$this->categoria] ?? $this->categoria;
-    }
-
-    /**
-     * Scope para filtrar por categoría
-     */
-    public function scopeByCategoria($query, $categoria)
-    {
-        return $query->where('categoria', $categoria);
     }
 
     /**
@@ -78,10 +56,22 @@ class Equipaje extends Model
     }
 
     /**
-     * Scope para items frágiles
+     * Scope para filtrar por tipo de maleta
      */
-    public function scopeFragiles($query)
+    public function scopeByTipoMaleta($query, $tipo)
     {
-        return $query->where('es_fragil', true);
+        return $query->where('tip_maleta', $tipo);
+    }
+
+    /**
+     * Obtener las imágenes como array
+     */
+    public function getImagenesAttribute()
+    {
+        $imagenes = [];
+        if ($this->images) $imagenes[] = $this->images;
+        if ($this->images1) $imagenes[] = $this->images1;
+        if ($this->images2) $imagenes[] = $this->images2;
+        return array_filter($imagenes);
     }
 }
