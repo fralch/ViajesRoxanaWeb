@@ -14,6 +14,11 @@ export default function Index({ auth, hijos }) {
     const [showEditModal, setShowEditModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [selectedEquipaje, setSelectedEquipaje] = useState(null);
+    const [imagePreviews, setImagePreviews] = useState({
+        images: null,
+        images1: null,
+        images2: null
+    });
 
     const { data, setData, post, put, delete: destroy, processing, errors, reset } = useForm({
         tip_maleta: 'Maleta de 8 kg',
@@ -26,9 +31,24 @@ export default function Index({ auth, hijos }) {
         lugar_regis: ''
     });
 
+    const resetForm = () => {
+        reset();
+        setImagePreviews({
+            images: null,
+            images1: null,
+            images2: null
+        });
+    };
+
     const tiposMaleta = [
         { value: 'Maleta de 8 kg', label: 'Maleta de 8 kg' },
         { value: 'Maleta de 23 kg', label: 'Maleta de 23 kg' }
+    ];
+
+    const lugaresRegistro = [
+        { value: 'aeropuerto', label: 'Aeropuerto' },
+        { value: 'casa', label: 'Casa' },
+        { value: 'colegio', label: 'Colegio' }
     ];
 
     const openEditModal = (equipaje) => {
@@ -55,6 +75,11 @@ export default function Index({ auth, hijos }) {
         setShowEditModal(false);
         setShowDeleteModal(false);
         setSelectedEquipaje(null);
+        setImagePreviews({
+            images: null,
+            images1: null,
+            images2: null
+        });
     };
 
     const handleSubmit = (e) => {
@@ -73,7 +98,7 @@ export default function Index({ auth, hijos }) {
 
         post(route('equipaje.store'), formData, {
             onSuccess: () => {
-                reset();
+                resetForm();
             }
         });
     };
@@ -87,6 +112,26 @@ export default function Index({ auth, hijos }) {
     const getTipoMaletaLabel = (tipo) => {
         const t = tiposMaleta.find(tm => tm.value === tipo);
         return t ? t.label : tipo;
+    };
+
+    const handleImageChange = (field, file) => {
+        setData(field, file);
+
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                setImagePreviews(prev => ({
+                    ...prev,
+                    [field]: e.target.result
+                }));
+            };
+            reader.readAsDataURL(file);
+        } else {
+            setImagePreviews(prev => ({
+                ...prev,
+                [field]: null
+            }));
+        }
     };
 
     // Obtener todos los equipajes de los hijos
@@ -173,14 +218,19 @@ export default function Index({ auth, hijos }) {
 
                                      <div>
                                          <InputLabel htmlFor="lugar_regis" value="Lugar de Registro" />
-                                         <TextInput
+                                         <SelectInput
                                              id="lugar_regis"
                                              value={data.lugar_regis}
                                              onChange={(e) => setData('lugar_regis', e.target.value)}
                                              className="mt-1 block w-full"
-                                             maxLength="255"
-                                             placeholder="Ej: Aeropuerto Internacional"
-                                         />
+                                         >
+                                             <option value="">Seleccionar lugar</option>
+                                             {lugaresRegistro.map((lugar) => (
+                                                 <option key={lugar.value} value={lugar.value}>
+                                                     {lugar.label}
+                                                 </option>
+                                             ))}
+                                         </SelectInput>
                                          <InputError message={errors.lugar_regis} className="mt-2" />
                                      </div>
                                  </div>
@@ -198,46 +248,76 @@ export default function Index({ auth, hijos }) {
                                     <InputError message={errors.caracteristicas} className="mt-2" />
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    <div>
-                                        <InputLabel htmlFor="images" value="Imagen 1" />
-                                        <input
-                                            id="images"
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={(e) => setData('images', e.target.files[0])}
-                                            className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                                        />
-                                        <p className="mt-1 text-xs text-gray-500">Formatos: JPG, PNG, GIF. Máx: 2MB</p>
-                                        <InputError message={errors.images} className="mt-2" />
-                                    </div>
+                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                     <div>
+                                         <InputLabel htmlFor="images" value="Imagen 1" />
+                                         <input
+                                             id="images"
+                                             type="file"
+                                             accept="image/*"
+                                             capture="environment"
+                                             onChange={(e) => handleImageChange('images', e.target.files[0])}
+                                             className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                                         />
+                                         <p className="mt-1 text-xs text-gray-500">Formatos: JPG, PNG, GIF. Máx: 2MB</p>
+                                         {imagePreviews.images && (
+                                             <div className="mt-2">
+                                                 <img
+                                                     src={imagePreviews.images}
+                                                     alt="Vista previa 1"
+                                                     className="w-20 h-20 object-cover rounded-md border border-gray-300"
+                                                 />
+                                             </div>
+                                         )}
+                                         <InputError message={errors.images} className="mt-2" />
+                                     </div>
 
-                                    <div>
-                                        <InputLabel htmlFor="images1" value="Imagen 2" />
-                                        <input
-                                            id="images1"
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={(e) => setData('images1', e.target.files[0])}
-                                            className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                                        />
-                                        <p className="mt-1 text-xs text-gray-500">Formatos: JPG, PNG, GIF. Máx: 2MB</p>
-                                        <InputError message={errors.images1} className="mt-2" />
-                                    </div>
+                                     <div>
+                                         <InputLabel htmlFor="images1" value="Imagen 2" />
+                                         <input
+                                             id="images1"
+                                             type="file"
+                                             accept="image/*"
+                                             capture="environment"
+                                             onChange={(e) => handleImageChange('images1', e.target.files[0])}
+                                             className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                                         />
+                                         <p className="mt-1 text-xs text-gray-500">Formatos: JPG, PNG, GIF. Máx: 2MB</p>
+                                         {imagePreviews.images1 && (
+                                             <div className="mt-2">
+                                                 <img
+                                                     src={imagePreviews.images1}
+                                                     alt="Vista previa 2"
+                                                     className="w-20 h-20 object-cover rounded-md border border-gray-300"
+                                                 />
+                                             </div>
+                                         )}
+                                         <InputError message={errors.images1} className="mt-2" />
+                                     </div>
 
-                                    <div>
-                                        <InputLabel htmlFor="images2" value="Imagen 3" />
-                                        <input
-                                            id="images2"
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={(e) => setData('images2', e.target.files[0])}
-                                            className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                                        />
-                                        <p className="mt-1 text-xs text-gray-500">Formatos: JPG, PNG, GIF. Máx: 2MB</p>
-                                        <InputError message={errors.images2} className="mt-2" />
-                                    </div>
-                                </div>
+                                     <div>
+                                         <InputLabel htmlFor="images2" value="Imagen 3" />
+                                         <input
+                                             id="images2"
+                                             type="file"
+                                             accept="image/*"
+                                             capture="environment"
+                                             onChange={(e) => handleImageChange('images2', e.target.files[0])}
+                                             className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                                         />
+                                         <p className="mt-1 text-xs text-gray-500">Formatos: JPG, PNG, GIF. Máx: 2MB</p>
+                                         {imagePreviews.images2 && (
+                                             <div className="mt-2">
+                                                 <img
+                                                     src={imagePreviews.images2}
+                                                     alt="Vista previa 3"
+                                                     className="w-20 h-20 object-cover rounded-md border border-gray-300"
+                                                 />
+                                             </div>
+                                         )}
+                                         <InputError message={errors.images2} className="mt-2" />
+                                     </div>
+                                 </div>
 
                                 <div className="flex justify-end">
                                     <PrimaryButton disabled={processing} type="submit">
@@ -465,13 +545,19 @@ export default function Index({ auth, hijos }) {
 
                          <div>
                              <InputLabel htmlFor="lugar_regis" value="Lugar de Registro" />
-                             <TextInput
+                             <SelectInput
                                  id="lugar_regis"
                                  value={data.lugar_regis}
                                  onChange={(e) => setData('lugar_regis', e.target.value)}
                                  className="mt-1 block w-full"
-                                 maxLength="255"
-                             />
+                             >
+                                 <option value="">Seleccionar lugar</option>
+                                 {lugaresRegistro.map((lugar) => (
+                                     <option key={lugar.value} value={lugar.value}>
+                                         {lugar.label}
+                                     </option>
+                                 ))}
+                             </SelectInput>
                              <InputError message={errors.lugar_regis} className="mt-2" />
                          </div>
                      </div>
@@ -497,15 +583,26 @@ export default function Index({ auth, hijos }) {
                                     <img src={`/storage/${selectedEquipaje.images}`} alt="Imagen actual 1" className="w-16 h-16 object-cover rounded border" />
                                 </div>
                             )}
-                            <input
-                                id="images"
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => setData('images', e.target.files[0] || null)}
-                                className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                            />
-                            <p className="mt-1 text-xs text-gray-500">Deja vacío para mantener la imagen actual</p>
-                            <InputError message={errors.images} className="mt-2" />
+                             <input
+                                 id="images"
+                                 type="file"
+                                 accept="image/*"
+                                 capture="environment"
+                                 onChange={(e) => handleImageChange('images', e.target.files[0] || null)}
+                                 className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                             />
+                             <p className="mt-1 text-xs text-gray-500">Deja vacío para mantener la imagen actual</p>
+                             {imagePreviews.images && (
+                                 <div className="mt-2">
+                                     <p className="text-sm text-gray-600 mb-1">Nueva imagen:</p>
+                                     <img
+                                         src={imagePreviews.images}
+                                         alt="Vista previa nueva 1"
+                                         className="w-16 h-16 object-cover rounded border"
+                                     />
+                                 </div>
+                             )}
+                             <InputError message={errors.images} className="mt-2" />
                         </div>
 
                         <div>
@@ -516,15 +613,26 @@ export default function Index({ auth, hijos }) {
                                     <img src={`/storage/${selectedEquipaje.images1}`} alt="Imagen actual 2" className="w-16 h-16 object-cover rounded border" />
                                 </div>
                             )}
-                            <input
-                                id="images1"
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => setData('images1', e.target.files[0] || null)}
-                                className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                            />
-                            <p className="mt-1 text-xs text-gray-500">Deja vacío para mantener la imagen actual</p>
-                            <InputError message={errors.images1} className="mt-2" />
+                             <input
+                                 id="images1"
+                                 type="file"
+                                 accept="image/*"
+                                 capture="environment"
+                                 onChange={(e) => handleImageChange('images1', e.target.files[0] || null)}
+                                 className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                             />
+                             <p className="mt-1 text-xs text-gray-500">Deja vacío para mantener la imagen actual</p>
+                             {imagePreviews.images1 && (
+                                 <div className="mt-2">
+                                     <p className="text-sm text-gray-600 mb-1">Nueva imagen:</p>
+                                     <img
+                                         src={imagePreviews.images1}
+                                         alt="Vista previa nueva 2"
+                                         className="w-16 h-16 object-cover rounded border"
+                                     />
+                                 </div>
+                             )}
+                             <InputError message={errors.images1} className="mt-2" />
                         </div>
 
                         <div>
@@ -535,15 +643,26 @@ export default function Index({ auth, hijos }) {
                                     <img src={`/storage/${selectedEquipaje.images2}`} alt="Imagen actual 3" className="w-16 h-16 object-cover rounded border" />
                                 </div>
                             )}
-                            <input
-                                id="images2"
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => setData('images2', e.target.files[0] || null)}
-                                className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                            />
-                            <p className="mt-1 text-xs text-gray-500">Deja vacío para mantener la imagen actual</p>
-                            <InputError message={errors.images2} className="mt-2" />
+                             <input
+                                 id="images2"
+                                 type="file"
+                                 accept="image/*"
+                                 capture="environment"
+                                 onChange={(e) => handleImageChange('images2', e.target.files[0] || null)}
+                                 className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                             />
+                             <p className="mt-1 text-xs text-gray-500">Deja vacío para mantener la imagen actual</p>
+                             {imagePreviews.images2 && (
+                                 <div className="mt-2">
+                                     <p className="text-sm text-gray-600 mb-1">Nueva imagen:</p>
+                                     <img
+                                         src={imagePreviews.images2}
+                                         alt="Vista previa nueva 3"
+                                         className="w-16 h-16 object-cover rounded border"
+                                     />
+                                 </div>
+                             )}
+                             <InputError message={errors.images2} className="mt-2" />
                         </div>
                     </div>
 
