@@ -552,6 +552,40 @@ export default function Index({ auth, hijos, selectedHijo, hijoParam }) {
                                                         </div>
                                                     </div>
                                                 )}
+                                                
+                                                {/* Fechas de creación y actualización */}
+                                                <div className="border-t border-gray-100 pt-2 mt-3">
+                                                    <div className="flex items-center mb-1">
+                                                        <svg className="w-4 h-4 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                                        </svg>
+                                                        <span className="text-gray-600 text-xs">
+                                                            <strong>Creado:</strong> {new Date(equipaje.created_at).toLocaleDateString('es-ES', {
+                                                                year: 'numeric',
+                                                                month: 'short',
+                                                                day: 'numeric',
+                                                                hour: '2-digit',
+                                                                minute: '2-digit'
+                                                            })}
+                                                        </span>
+                                                    </div>
+                                                    {equipaje.updated_at !== equipaje.created_at && (
+                                                        <div className="flex items-center">
+                                                            <svg className="w-4 h-4 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                            </svg>
+                                                            <span className="text-gray-600 text-xs">
+                                                                <strong>Actualizado:</strong> {new Date(equipaje.updated_at).toLocaleDateString('es-ES', {
+                                                                    year: 'numeric',
+                                                                    month: 'short',
+                                                                    day: 'numeric',
+                                                                    hour: '2-digit',
+                                                                    minute: '2-digit'
+                                                                })}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
 
                                             {/* Mostrar imágenes si existen */}
