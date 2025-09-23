@@ -227,7 +227,7 @@ export default function Index({ auth, hijos, selectedHijo, hijoParam }) {
                             <h2 className="text-2xl font-bold text-gray-900">
                                 {selectedHijo ? `Gestión de Equipaje - ${selectedHijo.nombres}` : 'Gestión de Equipaje'}
                             </h2>
-                            <p className="text-gray-600">Organiza y controla el equipaje de manera sencilla</p>
+                            <p className="text-gray-600">Organiza y controla el equipaje</p>
                         </div>
                     </div>
                      <div className="flex gap-3">
