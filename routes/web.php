@@ -14,6 +14,7 @@ use App\Http\Controllers\TrazabilidadController;
 use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\PerfilHijoController;
 use App\Http\Controllers\SendMessageController;
+use App\Http\Controllers\EquipajeController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
@@ -114,6 +115,14 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('hijos', HijoController::class);
     Route::delete('/hijos/parent/{user}', [HijoController::class, 'destroyParent'])->name('hijos.destroy-parent');
+    
+    // Rutas específicas de equipaje (deben ir antes del resource)
+    Route::get('/equipaje/export-pdf', [EquipajeController::class, 'exportPdf'])->name('equipaje.export-pdf');
+    Route::resource('equipaje', EquipajeController::class);
+
+    // Ruta específica para equipaje por hijo
+    Route::get('/equipaje/hijo/{hijo}', [EquipajeController::class, 'index'])->name('equipaje.index.hijo');
+    Route::post('/equipaje/hijo/{hijo}', [EquipajeController::class, 'store'])->name('equipaje.store.hijo');
     Route::resource('paquetes', PaqueteController::class);
     Route::resource('grupos', GrupoController::class);
     Route::resource('inscripciones', InscripcionController::class)->parameters(['inscripciones' => 'inscripcion']);
