@@ -206,6 +206,21 @@ export default function Index({ auth, hijos, selectedHijo, hijoParam }) {
                         </div>
                     </div>
                      <div className="flex gap-3">
+                         <button
+                             onClick={() => {
+                                 const params = new URLSearchParams();
+                                 if (hijoParam) {
+                                     params.append('hijo', hijoParam);
+                                 }
+                                 window.open(`/equipaje/export-pdf?${params.toString()}`, '_blank');
+                             }}
+                             className="inline-flex items-center gap-2 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors duration-200"
+                         >
+                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                             </svg>
+                             Exportar PDF
+                         </button>
                          <a
                              href="https://drive.google.com/file/d/1Pmn-F4dg1XzQ6TFRwomVZTMavj0mFhlJ/view?usp=drive_link"
                              target="_blank"

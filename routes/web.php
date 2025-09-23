@@ -116,6 +116,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('hijos', HijoController::class);
     Route::delete('/hijos/parent/{user}', [HijoController::class, 'destroyParent'])->name('hijos.destroy-parent');
     Route::resource('equipaje', EquipajeController::class);
+    Route::get('/equipaje/export-pdf', [EquipajeController::class, 'exportPdf'])->name('equipaje.export-pdf');
 
     // Ruta específica para equipaje por hijo
     Route::get('/equipaje/hijo/{hijo}', [EquipajeController::class, 'index'])->name('equipaje.index.hijo');

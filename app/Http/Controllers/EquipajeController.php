@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Hijo;
 use App\Models\Equipaje;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class EquipajeController extends Controller
 {
@@ -345,5 +346,49 @@ class EquipajeController extends Controller
         }
 
         return redirect()->route($redirectRoute, $redirectParams)->with('success', 'Equipaje eliminado correctamente.');
+    }
+
+    /**
+     * Export equipajes to PDF
+     */
+    public function exportPdf(Request $request)
+    {
+        $user = auth()->user();
+        $selectedHijo = null;
+
+        // Si se pasa el parámetro hijo (doc_numero), filtrar por ese hijo específico
+        if ($request->has('hijo')) {
+            $selectedHijo = $user->hijos()->where('doc_numero', $request->hijo)->first();
+
+            if (!$selectedHijo) {
+                abort(404, 'Hijo no encontrado o no autorizado');
+            }
+
+            // Obtener solo el hijo seleccionado con sus equipajes
+            $hijos = collect([$selectedHijo->load(['equipajes' => function($query) {
+                $query->orderBy('created_at', 'desc');
+            }])]);
+        } else {
+            // Obtener todos los hijos del usuario con sus equipajes
+            $hijos = $user->hijos()->with(['equipajes' => function($query) {
+                $query->orderBy('created_at', 'desc');
+            }])->get();
+        }
+
+        // Generar el PDF
+        $pdf = Pdf::loadView('equipaje.pdf', [
+            'hijos' => $hijos,
+            'selectedHijo' => $selectedHijo,
+            'user' => $user,
+            'fecha_generacion' => now()->format('d/m/Y H:i')
+        ]);
+
+        // Configurar el PDF
+        $pdf->setPaper('A4', 'portrait');
+        
+        // Nombre del archivo
+        $filename = 'equipajes_' . ($selectedHijo ? $selectedHijo->doc_numero : 'todos') . '_' . now()->format('Y-m-d_H-i-s') . '.pdf';
+
+        return $pdf->download($filename);
     }
 }
