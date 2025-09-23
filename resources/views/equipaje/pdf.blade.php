@@ -199,7 +199,7 @@
                 @foreach($hijo->equipajes as $equipaje)
                     <div class="equipaje-item">
                         <div class="equipaje-header">
-                            <div class="equipaje-id">Equipaje #{{ $equipaje->id }}</div>
+                            <div class="equipaje-id">$equipaje</div>
                             <div class="equipaje-dates">
                                 <div><strong>Creado:</strong> {{ $equipaje->created_at->format('d/m/Y H:i') }}</div>
                                 @if($equipaje->updated_at->format('Y-m-d H:i') !== $equipaje->created_at->format('Y-m-d H:i'))

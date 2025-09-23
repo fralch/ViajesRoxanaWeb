@@ -518,7 +518,7 @@ export default function Index({ auth, hijos, selectedHijo, hijoParam }) {
                                         <div key={equipaje.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-all duration-200 bg-gradient-to-br from-white to-gray-50">
                                             <div className="flex justify-between items-start mb-4">
                                                 <div>
-                                                    <h4 className="font-semibold text-lg text-gray-900">Equipaje #{equipaje.id}</h4>
+                                                    <h4 className="font-semibold text-lg text-gray-900">Equipaje</h4>
                                                      <p className="text-sm text-gray-500">Registrado para {equipaje.hijo?.nombres}</p>
                                                 </div>
                                                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${
