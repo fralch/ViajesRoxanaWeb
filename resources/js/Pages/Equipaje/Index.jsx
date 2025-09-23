@@ -190,9 +190,32 @@ export default function Index({ auth, hijos, selectedHijo, hijoParam }) {
     return (
         <AuthenticatedLayout
             user={auth.user}
-            header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">
-                {selectedHijo ? `Gestión de Equipaje - ${selectedHijo.nombres}` : 'Gestión de Equipaje'}
-            </h2>}
+           header={
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
+                            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M3 12h18M3 17h18" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold text-gray-900">
+                                {selectedHijo ? `Gestión de Equipaje - ${selectedHijo.nombres}` : 'Gestión de Equipaje'}
+                            </h2>
+                            <p className="text-gray-600">Organiza y controla el equipaje de manera sencilla</p>
+                        </div>
+                    </div>
+                    <Link 
+                        href="/" 
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors duration-200"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Volver
+                    </Link>
+                </div>
+            }
         >
             <Head title="Equipaje" />
 
@@ -200,19 +223,19 @@ export default function Index({ auth, hijos, selectedHijo, hijoParam }) {
                 {/* Navegación cuando se está viendo un hijo específico */}
                 {selectedHijo && (
                     <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center">
-                                    <svg className="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
-                                    <span className="text-blue-800 font-medium">
+                                    <span className="text-green-800 font-medium">
                                         Viendo equipaje de: <strong>{selectedHijo.nombres}</strong> ({selectedHijo.doc_numero})
                                     </span>
                                 </div>
                                 <Link
                                     href={route('equipaje.index')}
-                                    className="inline-flex items-center px-3 py-2 border border-blue-300 rounded-md text-sm font-medium text-blue-700 bg-white hover:bg-blue-50 transition-colors duration-200"
+                                    className="inline-flex items-center px-3 py-2 border border-green-300 rounded-md text-sm font-medium text-green-700 bg-white hover:bg-green-50 transition-colors duration-200 ml-4"
                                 >
                                     <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -229,7 +252,7 @@ export default function Index({ auth, hijos, selectedHijo, hijoParam }) {
                         <div className="p-6">
                             <div className="flex items-center mb-6">
                                 <div className="flex-shrink-0">
-                                    <svg className="h-8 w-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                                     </svg>
                                 </div>
@@ -359,7 +382,7 @@ export default function Index({ auth, hijos, selectedHijo, hijoParam }) {
                                              accept="image/*"
                                              capture="environment"
                                              onChange={(e) => handleImageChange('images', e.target.files[0])}
-                                             className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                                              className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
                                          />
                                          <p className="mt-1 text-xs text-gray-500">Formatos: JPG, PNG, GIF. Máx: 2MB</p>
                                          {imagePreviews.images && (
@@ -382,7 +405,7 @@ export default function Index({ auth, hijos, selectedHijo, hijoParam }) {
                                              accept="image/*"
                                              capture="environment"
                                              onChange={(e) => handleImageChange('images1', e.target.files[0])}
-                                             className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                                             className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
                                          />
                                          <p className="mt-1 text-xs text-gray-500">Formatos: JPG, PNG, GIF. Máx: 2MB</p>
                                          {imagePreviews.images1 && (
@@ -405,7 +428,7 @@ export default function Index({ auth, hijos, selectedHijo, hijoParam }) {
                                              accept="image/*"
                                              capture="environment"
                                              onChange={(e) => handleImageChange('images2', e.target.files[0])}
-                                             className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                                            className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
                                          />
                                          <p className="mt-1 text-xs text-gray-500">Formatos: JPG, PNG, GIF. Máx: 2MB</p>
                                          {imagePreviews.images2 && (
