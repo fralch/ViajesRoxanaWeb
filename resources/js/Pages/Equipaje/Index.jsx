@@ -9,11 +9,12 @@ import TextInput from '@/Components/TextInput';
 import InputLabel from '@/Components/InputLabel';
 import InputError from '@/Components/InputError';
 import SelectInput from '@/Components/SelectInput';
+import { showConfirm, showDelete, showSuccess, showError } from '@/utils/swal';
 
 export default function Index({ auth, hijos, selectedHijo, hijoParam }) {
     const [showEditModal, setShowEditModal] = useState(false);
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [selectedEquipaje, setSelectedEquipaje] = useState(null);
+    const [deletingEquipaje, setDeletingEquipaje] = useState(null);
     const [imagePreviews, setImagePreviews] = useState({
         images: null,
         images1: null,
@@ -67,14 +68,8 @@ export default function Index({ auth, hijos, selectedHijo, hijoParam }) {
         setShowEditModal(true);
     };
 
-    const openDeleteModal = (equipaje) => {
-        setSelectedEquipaje(equipaje);
-        setShowDeleteModal(true);
-    };
-
     const closeModals = () => {
         setShowEditModal(false);
-        setShowDeleteModal(false);
         setSelectedEquipaje(null);
         setImagePreviews({
             images: null,
@@ -83,14 +78,26 @@ export default function Index({ auth, hijos, selectedHijo, hijoParam }) {
         });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
+        // Confirmar creación con SweetAlert
+        const result = await showConfirm(
+            '¿Confirmar registro?',
+            '¿Estás seguro de que deseas registrar este equipaje?',
+            'Sí, registrar',
+            'Cancelar'
+        );
+
+        if (!result.isConfirmed) {
+            return;
+        }
+
         console.log('=== EQUIPAJE FORM SUBMISSION DEBUG ===');
         console.log('Form data object:', data);
         console.log('Selected hijo:', selectedHijo);
         console.log('Hijo param:', hijoParam);
-        
+
         const formData = new FormData();
         formData.append('tip_maleta', data.tip_maleta);
         formData.append('color', data.color || '');
@@ -126,7 +133,7 @@ export default function Index({ auth, hijos, selectedHijo, hijoParam }) {
 
         const routeParams = hijoParam ? { hijo: hijoParam } : {};
         const routeUrl = route('equipaje.store', routeParams);
-        
+
         console.log('Route params:', routeParams);
         console.log('Final route URL:', routeUrl);
         console.log('FormData entries:');
@@ -140,18 +147,36 @@ export default function Index({ auth, hijos, selectedHijo, hijoParam }) {
             forceFormData: true,
             onSuccess: () => {
                 console.log('✅ Form submitted successfully');
+                showSuccess('¡Equipaje registrado!', 'El equipaje ha sido registrado exitosamente.');
                 resetForm();
             },
             onError: (errors) => {
                 console.log('❌ Form submission errors:', errors);
+                showError('Error al registrar', 'Ocurrió un error al registrar el equipaje. Por favor, inténtalo de nuevo.');
             }
         });
     };
 
-    const handleDelete = () => {
-        destroy(route('equipaje.destroy', selectedEquipaje.id), {
-            onSuccess: () => closeModals()
-        });
+    const handleDelete = async (equipaje) => {
+        const result = await showDelete(
+            '¿Eliminar equipaje?',
+            `¿Estás seguro de que deseas eliminar el equipaje de ${equipaje?.hijo?.nombres}? Esta acción no se puede deshacer.`
+        );
+
+        if (result.isConfirmed) {
+            setDeletingEquipaje(equipaje.id);
+            destroy(route('equipaje.destroy', equipaje.id), {
+                onSuccess: () => {
+                    showSuccess('¡Equipaje eliminado!', 'El equipaje ha sido eliminado exitosamente.');
+                    closeModals();
+                    setDeletingEquipaje(null);
+                },
+                onError: () => {
+                    showError('Error al eliminar', 'Ocurrió un error al eliminar el equipaje. Por favor, inténtalo de nuevo.');
+                    setDeletingEquipaje(null);
+                }
+            });
+        }
     };
 
     const getTipoMaletaLabel = (tipo) => {
@@ -469,14 +494,26 @@ export default function Index({ auth, hijos, selectedHijo, hijoParam }) {
                                      </div>
                                  </div>
 
-                                <div className="flex justify-end">
-                                    <PrimaryButton disabled={processing} type="submit">
-                                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                        </svg>
-                                        Registrar Equipaje
-                                    </PrimaryButton>
-                                </div>
+                                 <div className="flex justify-end">
+                                     <PrimaryButton disabled={processing} type="submit">
+                                         {processing ? (
+                                             <>
+                                                 <svg className="animate-spin w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24">
+                                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                 </svg>
+                                                 Registrando...
+                                             </>
+                                         ) : (
+                                             <>
+                                                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                                 </svg>
+                                                 Registrar Equipaje
+                                             </>
+                                         )}
+                                     </PrimaryButton>
+                                 </div>
                             </form>
                         </div>
                     </div>
@@ -626,26 +663,39 @@ export default function Index({ auth, hijos, selectedHijo, hijoParam }) {
                                                 </div>
                                             )}
 
-                                            <div className="flex space-x-3 pt-4 border-t border-gray-200">
-                                                <SecondaryButton
-                                                    onClick={() => openEditModal(equipaje)}
-                                                    className="flex-1 text-sm py-2"
-                                                >
-                                                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                    </svg>
-                                                    Editar
-                                                </SecondaryButton>
-                                                <DangerButton
-                                                    onClick={() => openDeleteModal(equipaje)}
-                                                    className="flex-1 text-sm py-2"
-                                                >
-                                                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                    </svg>
-                                                    Eliminar
-                                                </DangerButton>
-                                            </div>
+                                             <div className="flex space-x-3 pt-4 border-t border-gray-200">
+                                                 <SecondaryButton
+                                                     onClick={() => openEditModal(equipaje)}
+                                                     className="flex-1 text-sm py-2"
+                                                 >
+                                                     <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                     </svg>
+                                                     Editar
+                                                 </SecondaryButton>
+                                                  <DangerButton
+                                                      onClick={() => handleDelete(equipaje)}
+                                                      disabled={deletingEquipaje === equipaje.id}
+                                                      className="flex-1 text-sm py-2"
+                                                  >
+                                                     {deletingEquipaje === equipaje.id ? (
+                                                         <>
+                                                             <svg className="animate-spin w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24">
+                                                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                             </svg>
+                                                             Eliminando...
+                                                         </>
+                                                     ) : (
+                                                         <>
+                                                             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                             </svg>
+                                                             Eliminar
+                                                         </>
+                                                     )}
+                                                 </DangerButton>
+                                             </div>
                                         </div>
                                     ))}
                                 </div>
@@ -657,8 +707,21 @@ export default function Index({ auth, hijos, selectedHijo, hijoParam }) {
 
             {/* Modal para Editar */}
             <Modal show={showEditModal} onClose={closeModals}>
-                <form onSubmit={(e) => {
+                <form onSubmit={async (e) => {
                     e.preventDefault();
+
+                    // Confirmar actualización con SweetAlert
+                    const result = await showConfirm(
+                        '¿Confirmar actualización?',
+                        '¿Estás seguro de que deseas actualizar este equipaje?',
+                        'Sí, actualizar',
+                        'Cancelar'
+                    );
+
+                    if (!result.isConfirmed) {
+                        return;
+                    }
+
                      const formData = new FormData();
                      formData.append('_method', 'PUT');
                      formData.append('tip_maleta', data.tip_maleta);
@@ -673,7 +736,13 @@ export default function Index({ auth, hijos, selectedHijo, hijoParam }) {
                     if (data.images2 instanceof File) formData.append('images2', data.images2);
 
                     router.post(route('equipaje.update', selectedEquipaje.id), formData, {
-                        onSuccess: () => closeModals()
+                        onSuccess: () => {
+                            showSuccess('¡Equipaje actualizado!', 'El equipaje ha sido actualizado exitosamente.');
+                            closeModals();
+                        },
+                        onError: () => {
+                            showError('Error al actualizar', 'Ocurrió un error al actualizar el equipaje. Por favor, inténtalo de nuevo.');
+                        }
                     });
                 }} encType="multipart/form-data" className="p-6">
                     <h2 className="text-lg font-medium text-gray-900 mb-4">
@@ -850,37 +919,28 @@ export default function Index({ auth, hijos, selectedHijo, hijoParam }) {
                         </div>
                     </div>
 
-                    <div className="mt-6 flex justify-end space-x-3">
-                        <SecondaryButton onClick={closeModals}>
-                            Cancelar
-                        </SecondaryButton>
-                        <PrimaryButton disabled={processing}>
-                            Actualizar Equipaje
-                        </PrimaryButton>
-                    </div>
+                     <div className="mt-6 flex justify-end space-x-3">
+                         <SecondaryButton onClick={closeModals} disabled={processing}>
+                             Cancelar
+                         </SecondaryButton>
+                         <PrimaryButton disabled={processing}>
+                             {processing ? (
+                                 <>
+                                     <svg className="animate-spin w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24">
+                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                     </svg>
+                                     Actualizando...
+                                 </>
+                             ) : (
+                                 'Actualizar Equipaje'
+                             )}
+                         </PrimaryButton>
+                     </div>
                 </form>
             </Modal>
 
-            {/* Modal para Eliminar */}
-            <Modal show={showDeleteModal} onClose={closeModals}>
-                <div className="p-6">
-                    <h2 className="text-lg font-medium text-gray-900 mb-4">
-                        Eliminar Equipaje
-                    </h2>
-                    <p className="text-sm text-gray-600 mb-6">
-                        ¿Estás seguro de que deseas eliminar el equipaje #{selectedEquipaje?.id}?
-                        Esta acción no se puede deshacer.
-                    </p>
-                    <div className="flex justify-end space-x-3">
-                        <SecondaryButton onClick={closeModals}>
-                            Cancelar
-                        </SecondaryButton>
-                        <DangerButton onClick={handleDelete} disabled={processing}>
-                            Eliminar
-                        </DangerButton>
-                    </div>
-                </div>
-            </Modal>
+
         </AuthenticatedLayout>
     );
 }
