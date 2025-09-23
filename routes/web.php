@@ -115,8 +115,10 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('hijos', HijoController::class);
     Route::delete('/hijos/parent/{user}', [HijoController::class, 'destroyParent'])->name('hijos.destroy-parent');
-    Route::resource('equipaje', EquipajeController::class);
+    
+    // Rutas específicas de equipaje (deben ir antes del resource)
     Route::get('/equipaje/export-pdf', [EquipajeController::class, 'exportPdf'])->name('equipaje.export-pdf');
+    Route::resource('equipaje', EquipajeController::class);
 
     // Ruta específica para equipaje por hijo
     Route::get('/equipaje/hijo/{hijo}', [EquipajeController::class, 'index'])->name('equipaje.index.hijo');
