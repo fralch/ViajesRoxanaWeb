@@ -7,6 +7,7 @@ use Inertia\Inertia;
 use App\Models\Hijo;
 use App\Models\Equipaje;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Services\WhatsAppService;
 
 class EquipajeController extends Controller
 {
@@ -178,6 +179,53 @@ class EquipajeController extends Controller
         try {
             $equipaje = Equipaje::create($equipajeData);
             \Log::info('✅ Equipaje created successfully with ID: ' . $equipaje->id);
+
+            // Enviar notificación por WhatsApp
+            try {
+                $equipajeConHijo = $equipaje->load('hijo');
+
+                // Preparar datos para el WhatsApp
+                $whatsappData = [
+                    'id' => $equipaje->id,
+                    'hijo_nombre' => $equipajeConHijo->hijo->nombres,
+                    'tip_maleta' => $equipaje->tip_maleta,
+                    'color' => $equipaje->color,
+                    'peso' => $equipaje->peso,
+                    'lugar_regis' => $equipaje->lugar_regis,
+                    'caracteristicas' => $equipaje->caracteristicas,
+                ];
+
+                // Obtener el número de teléfono del usuario
+                $userPhone = $user->phone;
+
+                if ($userPhone) {
+                    // Limpiar el número de teléfono (eliminar prefijo +51 si existe)
+                    $cleanPhone = str_replace(['+51', '+', ' ', '-'], '', $userPhone);
+                    if (substr($cleanPhone, 0, 2) === '51') {
+                        $cleanPhone = substr($cleanPhone, 2);
+                    }
+
+                    \Log::info('Enviando WhatsApp de equipaje', [
+                        'phone' => $cleanPhone,
+                        'equipaje_id' => $equipaje->id,
+                        'hijo_nombre' => $equipajeConHijo->hijo->nombres
+                    ]);
+
+                    $whatsappSent = WhatsAppService::enviarNotificacionEquipaje($cleanPhone, $whatsappData);
+
+                    if ($whatsappSent) {
+                        \Log::info('✅ WhatsApp de equipaje enviado exitosamente');
+                    } else {
+                        \Log::warning('⚠️ No se pudo enviar el WhatsApp de equipaje');
+                    }
+                } else {
+                    \Log::warning('⚠️ Usuario sin número de teléfono, no se puede enviar WhatsApp');
+                }
+            } catch (\Exception $e) {
+                \Log::error('❌ Error enviando WhatsApp de equipaje: ' . $e->getMessage());
+                // No interrumpir el flujo principal si falla el WhatsApp
+            }
+
         } catch (\Exception $e) {
             \Log::error('❌ Failed to create equipaje: ' . $e->getMessage());
             throw $e;
