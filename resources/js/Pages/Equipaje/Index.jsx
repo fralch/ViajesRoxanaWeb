@@ -237,9 +237,6 @@ export default function Index({ auth, hijos, selectedHijo, hijoParam }) {
                                     href={route('equipaje.index')}
                                     className="inline-flex items-center px-3 py-2 border border-green-300 rounded-md text-sm font-medium text-green-700 bg-white hover:bg-green-50 transition-colors duration-200 ml-4"
                                 >
-                                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                    </svg>
                                     Ver todos los hijos
                                 </Link>
                             </div>
