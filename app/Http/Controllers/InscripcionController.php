@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Inscripcion;
 use App\Models\Paquete;
 use App\Models\Grupo;
+use App\Models\Subgrupo;
 use App\Models\User;
 use App\Models\Hijo;
 use App\Http\Requests\StoreInscripcionFormRequest;
@@ -23,7 +24,7 @@ class InscripcionController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Inscripcion::with(['hijo', 'paquete', 'grupo', 'user']);
+        $query = Inscripcion::with(['hijo', 'paquete', 'grupo', 'subgrupo', 'user']);
         
         // Si no es admin, solo mostrar sus propias inscripciones
         if (!Auth::user()->is_admin) {
@@ -43,6 +44,9 @@ class InscripcionController extends Controller
                 })
                 ->orWhereHas('grupo', function($gq) use ($search) {
                     $gq->where('nombre', 'like', "%{$search}%");
+                })
+                ->orWhereHas('subgrupo', function($sq) use ($search) {
+                    $sq->where('nombre', 'like', "%{$search}%");
                 });
             });
         }
@@ -62,6 +66,7 @@ class InscripcionController extends Controller
     {
         $paquetes = Paquete::where('activo', true)->get();
         $grupos = Grupo::where('activo', true)->with('paquete')->get();
+        $subgrupos = Subgrupo::activos()->with(['grupo'])->get();
         
         // Si no es admin, solo mostrar sus hijos
         if (Auth::user()->is_admin) {
@@ -73,6 +78,7 @@ class InscripcionController extends Controller
         return Inertia::render('Inscripciones/Create', [
             'paquetes' => $paquetes,
             'grupos' => $grupos,
+            'subgrupos' => $subgrupos,
             'hijos' => $hijos
         ]);
     }
@@ -86,6 +92,7 @@ class InscripcionController extends Controller
             'hijo_id' => 'required|exists:hijos,id',
             'paquete_id' => 'required|exists:paquetes,id',
             'grupo_id' => 'required|exists:grupos,id',
+            'subgrupo_id' => 'nullable|exists:subgrupos,id',
             'usuario_id' => 'required|exists:users,id'
         ]);
         
@@ -94,7 +101,20 @@ class InscripcionController extends Controller
         if ($grupo->paquete_id != $validated['paquete_id']) {
             return back()->withErrors(['grupo_id' => 'El grupo seleccionado no pertenece al paquete.']);
         }
-        
+
+        // Verificar que el subgrupo pertenece al grupo (si se especifica)
+        if (isset($validated['subgrupo_id'])) {
+            $subgrupo = Subgrupo::findOrFail($validated['subgrupo_id']);
+            if ($subgrupo->grupo_id != $validated['grupo_id']) {
+                return back()->withErrors(['subgrupo_id' => 'El subgrupo seleccionado no pertenece al grupo.']);
+            }
+
+            // Verificar capacidad del subgrupo
+            if (!$subgrupo->tieneCapacidad()) {
+                return back()->withErrors(['subgrupo_id' => 'El subgrupo ya no tiene cupos disponibles.']);
+            }
+        }
+
         // Verificar que el hijo pertenece al usuario (si no es admin)
         $hijo = Hijo::findOrFail($validated['hijo_id']);
         if (!Auth::user()->is_admin) {
@@ -111,11 +131,18 @@ class InscripcionController extends Controller
         }
         
         // Verificar que no exista inscripción duplicada
-        $existeInscripcion = Inscripcion::where('hijo_id', $validated['hijo_id'])
-                                      ->where('grupo_id', $validated['grupo_id'])
-                                      ->exists();
-        if ($existeInscripcion) {
-            return back()->withErrors(['hijo_id' => 'Este hijo ya está inscrito en el grupo seleccionado.']);
+        $query = Inscripcion::where('hijo_id', $validated['hijo_id'])
+                           ->where('grupo_id', $validated['grupo_id']);
+
+        if (isset($validated['subgrupo_id'])) {
+            $query->where('subgrupo_id', $validated['subgrupo_id']);
+        }
+
+        if ($query->exists()) {
+            $mensaje = isset($validated['subgrupo_id'])
+                ? 'Este hijo ya está inscrito en el subgrupo seleccionado.'
+                : 'Este hijo ya está inscrito en el grupo seleccionado.';
+            return back()->withErrors(['hijo_id' => $mensaje]);
         }
         
         Inscripcion::create($validated);

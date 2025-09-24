@@ -7,6 +7,7 @@ use Inertia\Inertia;
 use App\Http\Controllers\HijoController;
 use App\Http\Controllers\PaqueteController;
 use App\Http\Controllers\GrupoController;
+use App\Http\Controllers\SubgrupoController;
 use App\Http\Controllers\InscripcionController;
 use App\Http\Controllers\RecorridoPaqueteController;
 use App\Http\Controllers\GeolocalizacionController;
@@ -125,6 +126,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/equipaje/hijo/{hijo}', [EquipajeController::class, 'store'])->name('equipaje.store.hijo');
     Route::resource('paquetes', PaqueteController::class);
     Route::resource('grupos', GrupoController::class);
+    Route::resource('subgrupos', SubgrupoController::class);
+
+    // Rutas específicas de subgrupos
+    Route::get('/subgrupos/grupo/{grupo}', [SubgrupoController::class, 'getByGrupo'])->name('subgrupos.by-grupo');
+    Route::patch('/subgrupos/{subgrupo}/toggle-status', [SubgrupoController::class, 'toggleStatus'])->name('subgrupos.toggle-status');
+
     Route::resource('inscripciones', InscripcionController::class)->parameters(['inscripciones' => 'inscripcion']);
     Route::patch('recorrido-paquetes/update-order', [RecorridoPaqueteController::class, 'updateOrder'])->name('recorrido-paquetes.update-order');
     Route::resource('recorrido-paquetes', RecorridoPaqueteController::class);

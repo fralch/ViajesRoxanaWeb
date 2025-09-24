@@ -12,14 +12,8 @@ class Grupo extends Model
         'paquete_id',
         'nombre',
         'fecha_inicio',
-        'fecha_fin', 
+        'fecha_fin',
         'capacidad',
-        'tipo_encargado',
-        'nombre_encargado',
-        'celular_encargado',
-        'tipo_encargado_agencia',
-        'nombre_encargado_agencia',
-        'celular_encargado_agencia',
         'activo'
     ];
 
@@ -27,13 +21,7 @@ class Grupo extends Model
         'activo' => 'boolean',
         'capacidad' => 'integer',
         'fecha_inicio' => 'date:Y-m-d',
-        'fecha_fin' => 'date:Y-m-d',
-        'tipo_encargado' => 'array',
-        'nombre_encargado' => 'array',
-        'celular_encargado' => 'array',
-        'tipo_encargado_agencia' => 'array',
-        'nombre_encargado_agencia' => 'array',
-        'celular_encargado_agencia' => 'array'
+        'fecha_fin' => 'date:Y-m-d'
     ];
 
     public function paquete()
@@ -49,5 +37,15 @@ class Grupo extends Model
     public function trazabilidades()
     {
         return $this->hasMany(Trazabilidad::class);
+    }
+
+    public function subgrupos()
+    {
+        return $this->hasMany(Subgrupo::class);
+    }
+
+    public function scopeActivos($query)
+    {
+        return $query->where('activo', true);
     }
 }

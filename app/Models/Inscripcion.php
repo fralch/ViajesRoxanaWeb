@@ -12,6 +12,7 @@ class Inscripcion extends Model
         'hijo_id',
         'paquete_id',
         'grupo_id',
+        'subgrupo_id',
         'usuario_id'
     ];
 
@@ -33,5 +34,10 @@ class Inscripcion extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'usuario_id');
+    }
+
+    public function subgrupo()
+    {
+        return $this->belongsTo(Subgrupo::class);
     }
 }
