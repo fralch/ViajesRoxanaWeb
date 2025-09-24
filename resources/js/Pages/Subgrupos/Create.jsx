@@ -56,14 +56,15 @@ export default function Create({ grupos }) {
           </div>
 
           <div>
-            <Link href={route('subgrupos.index')}>
-              <SecondaryButton className="border-gray-300 hover:bg-gray-50 text-gray-700">
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                Volver a Subgrupos
-              </SecondaryButton>
-            </Link>
+            <SecondaryButton 
+              className="border-gray-300 hover:bg-gray-50 text-gray-700"
+              onClick={() => window.history.back()}
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Volver a Subgrupos
+            </SecondaryButton>
           </div>
         </div>
       }
