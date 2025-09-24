@@ -7,11 +7,12 @@ import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
 import Card from '@/Components/Card';
 
-export default function Create({ paquetes, grupos, hijos }) {
+export default function Create({ paquetes, grupos, subgrupos, hijos }) {
     const { data, setData, post, processing, errors } = useForm({
         hijo_id: '',
         paquete_id: '',
         grupo_id: '',
+        subgrupo_id: '',
         usuario_id: '' // This will be set based on the selected hijo
     });
 
@@ -27,6 +28,21 @@ export default function Create({ paquetes, grupos, hijos }) {
             ...prevData,
             hijo_id: hijoId,
             usuario_id: selectedHijo ? selectedHijo.user_id : ''
+        }));
+    };
+
+    const getSubgruposPorGrupo = () => {
+        return subgrupos.filter(subgrupo =>
+            subgrupo.grupo_id == data.grupo_id && subgrupo.activo
+        );
+    };
+
+    const handleGrupoChange = (e) => {
+        const grupoId = e.target.value;
+        setData(prevData => ({
+            ...prevData,
+            grupo_id: grupoId,
+            subgrupo_id: '' // Reset subgrupo when grupo changes
         }));
     };
 
@@ -80,7 +96,7 @@ export default function Create({ paquetes, grupos, hijos }) {
                                     id="grupo_id"
                                     name="grupo_id"
                                     value={data.grupo_id}
-                                    onChange={(e) => setData('grupo_id', e.target.value)}
+                                    onChange={handleGrupoChange}
                                     className="mt-1 block w-full border-gray-300 focus:border-red-500 focus:ring-red-500 rounded-md shadow-sm"
                                     disabled={!data.paquete_id}
                                 >
@@ -92,6 +108,35 @@ export default function Create({ paquetes, grupos, hijos }) {
                                         ))}
                                 </select>
                                 <InputError message={errors.grupo_id} className="mt-2" />
+                            </div>
+
+                            <div className="mb-4">
+                                <InputLabel htmlFor="subgrupo_id" value="Subgrupo *" />
+                                <select
+                                    id="subgrupo_id"
+                                    name="subgrupo_id"
+                                    value={data.subgrupo_id}
+                                    onChange={(e) => setData('subgrupo_id', e.target.value)}
+                                    className="mt-1 block w-full border-gray-300 focus:border-red-500 focus:ring-red-500 rounded-md shadow-sm"
+                                    disabled={!data.grupo_id}
+                                    required
+                                >
+                                    <option value="">Seleccione un subgrupo</option>
+                                    {getSubgruposPorGrupo().map(subgrupo => (
+                                        <option key={subgrupo.id} value={subgrupo.id}>
+                                            {subgrupo.nombre}
+                                            {subgrupo.inscripciones_count !== undefined &&
+                                                ` (${subgrupo.inscripciones_count}/${subgrupo.capacidad_maxima})`
+                                            }
+                                        </option>
+                                    ))}
+                                </select>
+                                <InputError message={errors.subgrupo_id} className="mt-2" />
+                                {data.grupo_id && getSubgruposPorGrupo().length === 0 && (
+                                    <p className="mt-1 text-sm text-amber-600">
+                                        No hay subgrupos activos disponibles para este grupo.
+                                    </p>
+                                )}
                             </div>
 
                             <div className="flex items-center justify-end mt-6">

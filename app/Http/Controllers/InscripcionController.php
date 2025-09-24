@@ -92,7 +92,7 @@ class InscripcionController extends Controller
             'hijo_id' => 'required|exists:hijos,id',
             'paquete_id' => 'required|exists:paquetes,id',
             'grupo_id' => 'required|exists:grupos,id',
-            'subgrupo_id' => 'nullable|exists:subgrupos,id',
+            'subgrupo_id' => 'required|exists:subgrupos,id',
             'usuario_id' => 'required|exists:users,id'
         ]);
         
@@ -102,17 +102,20 @@ class InscripcionController extends Controller
             return back()->withErrors(['grupo_id' => 'El grupo seleccionado no pertenece al paquete.']);
         }
 
-        // Verificar que el subgrupo pertenece al grupo (si se especifica)
-        if (isset($validated['subgrupo_id'])) {
-            $subgrupo = Subgrupo::findOrFail($validated['subgrupo_id']);
-            if ($subgrupo->grupo_id != $validated['grupo_id']) {
-                return back()->withErrors(['subgrupo_id' => 'El subgrupo seleccionado no pertenece al grupo.']);
-            }
+        // Verificar que el subgrupo pertenece al grupo
+        $subgrupo = Subgrupo::findOrFail($validated['subgrupo_id']);
+        if ($subgrupo->grupo_id != $validated['grupo_id']) {
+            return back()->withErrors(['subgrupo_id' => 'El subgrupo seleccionado no pertenece al grupo.']);
+        }
 
-            // Verificar capacidad del subgrupo
-            if (!$subgrupo->tieneCapacidad()) {
-                return back()->withErrors(['subgrupo_id' => 'El subgrupo ya no tiene cupos disponibles.']);
-            }
+        // Verificar que el subgrupo está activo
+        if (!$subgrupo->activo) {
+            return back()->withErrors(['subgrupo_id' => 'El subgrupo seleccionado no está activo.']);
+        }
+
+        // Verificar capacidad del subgrupo
+        if (!$subgrupo->tieneCapacidad()) {
+            return back()->withErrors(['subgrupo_id' => 'El subgrupo ya no tiene cupos disponibles.']);
         }
 
         // Verificar que el hijo pertenece al usuario (si no es admin)
@@ -124,25 +127,15 @@ class InscripcionController extends Controller
             $validated['usuario_id'] = Auth::id();
         }
         
-        // Verificar capacidad del grupo
-        $inscritosCount = Inscripcion::where('grupo_id', $validated['grupo_id'])->count();
-        if ($grupo->capacidad && $inscritosCount >= $grupo->capacidad) {
-            return back()->withErrors(['grupo_id' => 'El grupo ya no tiene cupos disponibles.']);
-        }
+        // Ya no verificamos capacidad del grupo, solo del subgrupo
         
-        // Verificar que no exista inscripción duplicada
-        $query = Inscripcion::where('hijo_id', $validated['hijo_id'])
-                           ->where('grupo_id', $validated['grupo_id']);
+        // Verificar que no exista inscripción duplicada en el subgrupo
+        $existeInscripcion = Inscripcion::where('hijo_id', $validated['hijo_id'])
+                                      ->where('subgrupo_id', $validated['subgrupo_id'])
+                                      ->exists();
 
-        if (isset($validated['subgrupo_id'])) {
-            $query->where('subgrupo_id', $validated['subgrupo_id']);
-        }
-
-        if ($query->exists()) {
-            $mensaje = isset($validated['subgrupo_id'])
-                ? 'Este hijo ya está inscrito en el subgrupo seleccionado.'
-                : 'Este hijo ya está inscrito en el grupo seleccionado.';
-            return back()->withErrors(['hijo_id' => $mensaje]);
+        if ($existeInscripcion) {
+            return back()->withErrors(['hijo_id' => 'Este hijo ya está inscrito en el subgrupo seleccionado.']);
         }
         
         Inscripcion::create($validated);
@@ -160,9 +153,9 @@ class InscripcionController extends Controller
         if (!Auth::user()->is_admin && $inscripcion->usuario_id !== Auth::id()) {
             abort(403, 'No tienes permisos para ver esta inscripción.');
         }
-        
+
         return Inertia::render('Inscripciones/Show', [
-            'inscripcion' => $inscripcion->load(['hijo', 'paquete', 'grupo', 'user'])
+            'inscripcion' => $inscripcion->load(['hijo', 'paquete', 'grupo', 'subgrupo', 'user'])
         ]);
     }
 
@@ -173,7 +166,8 @@ class InscripcionController extends Controller
     {
         $paquetes = Paquete::where('activo', true)->get();
         $grupos = Grupo::where('activo', true)->with('paquete')->get();
-        
+        $subgrupos = Subgrupo::activos()->with(['grupo'])->get();
+
         // Si no es admin, solo mostrar sus hijos
         if (Auth::user()->is_admin) {
             $hijos = Hijo::with('user')->get();
@@ -182,9 +176,10 @@ class InscripcionController extends Controller
         }
 
         return Inertia::render('Inscripciones/Edit', [
-            'inscripcion' => $inscripcion->load(['hijo', 'paquete', 'grupo', 'user']),
+            'inscripcion' => $inscripcion->load(['hijo', 'paquete', 'grupo', 'subgrupo', 'user']),
             'paquetes' => $paquetes,
             'grupos' => $grupos,
+            'subgrupos' => $subgrupos,
             'hijos' => $hijos
         ]);
     }
@@ -203,6 +198,7 @@ class InscripcionController extends Controller
             'hijo_id' => 'required|exists:hijos,id',
             'paquete_id' => 'required|exists:paquetes,id',
             'grupo_id' => 'required|exists:grupos,id',
+            'subgrupo_id' => 'required|exists:subgrupos,id',
             'usuario_id' => 'required|exists:users,id'
         ]);
         
@@ -221,13 +217,32 @@ class InscripcionController extends Controller
             $validated['usuario_id'] = $inscripcion->usuario_id;
         }
         
-        // Verificar que no exista inscripción duplicada (excluyendo la actual)
+        // Verificar que el subgrupo pertenece al grupo
+        $subgrupo = Subgrupo::findOrFail($validated['subgrupo_id']);
+        if ($subgrupo->grupo_id != $validated['grupo_id']) {
+            return back()->withErrors(['subgrupo_id' => 'El subgrupo seleccionado no pertenece al grupo.']);
+        }
+
+        // Verificar que el subgrupo está activo
+        if (!$subgrupo->activo) {
+            return back()->withErrors(['subgrupo_id' => 'El subgrupo seleccionado no está activo.']);
+        }
+
+        // Verificar capacidad del subgrupo (excluyendo la inscripción actual)
+        $inscripcionesEnSubgrupo = Inscripcion::where('subgrupo_id', $validated['subgrupo_id'])
+                                            ->where('id', '!=', $inscripcion->id)
+                                            ->count();
+        if ($inscripcionesEnSubgrupo >= $subgrupo->capacidad_maxima) {
+            return back()->withErrors(['subgrupo_id' => 'El subgrupo ya no tiene cupos disponibles.']);
+        }
+
+        // Verificar que no exista inscripción duplicada en el subgrupo (excluyendo la actual)
         $existeInscripcion = Inscripcion::where('hijo_id', $validated['hijo_id'])
-                                      ->where('grupo_id', $validated['grupo_id'])
+                                      ->where('subgrupo_id', $validated['subgrupo_id'])
                                       ->where('id', '!=', $inscripcion->id)
                                       ->exists();
         if ($existeInscripcion) {
-            return back()->withErrors(['hijo_id' => 'Este hijo ya está inscrito en el grupo seleccionado.']);
+            return back()->withErrors(['hijo_id' => 'Este hijo ya está inscrito en el subgrupo seleccionado.']);
         }
         
         $inscripcion->update($validated);
@@ -253,7 +268,7 @@ class InscripcionController extends Controller
     }
 
     /**
-     * Mostrar formulario público de inscripción
+     * Mostrar formulario público de inscripción (grupo solamente)
      */
     public function showForm(Paquete $paquete, Grupo $grupo)
     {
@@ -267,27 +282,78 @@ class InscripcionController extends Controller
             return Inertia::render('Inscripciones/form', [
                 'paquete' => null,
                 'grupo' => null,
+                'subgrupo' => null,
                 'capacidadDisponible' => 0,
                 'error' => 'Este paquete o grupo no está disponible para inscripciones.'
             ]);
         }
 
-        // Calcular capacidad disponible
-        $inscritosCount = Inscripcion::where('grupo_id', $grupo->id)->count();
-        $capacidadDisponible = $grupo->capacidad ? $grupo->capacidad - $inscritosCount : 999;
+        // Obtener subgrupos activos del grupo con conteos
+        $subgrupos = $grupo->subgrupos()->activos()->withCount('inscripciones')->get();
+
+        // Si no hay subgrupos, mostrar error
+        if ($subgrupos->isEmpty()) {
+            return Inertia::render('Inscripciones/SubgrupoSelection', [
+                'paquete' => $paquete,
+                'grupo' => $grupo,
+                'subgrupos' => [],
+                'error' => 'Este grupo no tiene subgrupos activos disponibles para inscripciones.'
+            ]);
+        }
+
+        // Mostrar página de selección de subgrupos
+        return Inertia::render('Inscripciones/SubgrupoSelection', [
+            'paquete' => $paquete,
+            'grupo' => $grupo,
+            'subgrupos' => $subgrupos,
+            'error' => null
+        ]);
+    }
+
+    /**
+     * Mostrar formulario público de inscripción para subgrupo específico
+     */
+    public function showFormSubgrupo(Paquete $paquete, Grupo $grupo, Subgrupo $subgrupo)
+    {
+        // Verificar que el grupo pertenece al paquete
+        if ($grupo->paquete_id !== $paquete->id) {
+            abort(404, 'El grupo no pertenece a este paquete');
+        }
+
+        // Verificar que el subgrupo pertenece al grupo
+        if ($subgrupo->grupo_id !== $grupo->id) {
+            abort(404, 'El subgrupo no pertenece a este grupo');
+        }
+
+        // Verificar que el paquete, grupo y subgrupo estén activos
+        if (!$paquete->activo || !$grupo->activo || !$subgrupo->activo) {
+            return Inertia::render('Inscripciones/form', [
+                'paquete' => null,
+                'grupo' => null,
+                'subgrupo' => null,
+                'capacidadDisponible' => 0,
+                'error' => 'Este paquete, grupo o subgrupo no está disponible para inscripciones.'
+            ]);
+        }
+
+        // Calcular capacidad disponible del subgrupo
+        $inscritosCount = Inscripcion::where('subgrupo_id', $subgrupo->id)->count();
+        $capacidadDisponible = $subgrupo->capacidad_maxima - $inscritosCount;
 
         if ($capacidadDisponible <= 0) {
             return Inertia::render('Inscripciones/form', [
                 'paquete' => $paquete,
                 'grupo' => $grupo,
+                'subgrupo' => $subgrupo,
                 'capacidadDisponible' => 0,
-                'error' => 'Este grupo ya no tiene cupos disponibles.'
+                'error' => 'Este subgrupo ya no tiene cupos disponibles.'
             ]);
         }
 
         return Inertia::render('Inscripciones/form', [
             'paquete' => $paquete,
             'grupo' => $grupo,
+            'subgrupo' => $subgrupo,
             'capacidadDisponible' => $capacidadDisponible,
             'error' => null
         ]);
@@ -313,15 +379,11 @@ class InscripcionController extends Controller
         // Validar datos (ya validados por el FormRequest)
         $validated = $request->validated();
 
-        // Verificar capacidad disponible
-        $inscritosCount = Inscripcion::where('grupo_id', $grupo->id)->count();
-        $capacidadDisponible = $grupo->capacidad ? $grupo->capacidad - $inscritosCount : 999;
-        
-        if ($capacidadDisponible < count($validated['children'])) {
-            return back()->withErrors([
-                'capacity' => 'No hay suficientes cupos disponibles para todos los niños.'
-            ]);
-        }
+        // Este método ya no debe procesar inscripciones directas
+        // Redirigir a la página de selección de subgrupos
+        return back()->withErrors([
+            'capacity' => 'Debe seleccionar un subgrupo específico para completar la inscripción.'
+        ]);
 
         // Nota: Solo verificamos por DNI del padre. Los hijos pueden tener documentos duplicados entre diferentes padres.
 
@@ -406,6 +468,7 @@ class InscripcionController extends Controller
                         'hijo_id' => $hijo->id,
                         'paquete_id' => $paquete->id,
                         'grupo_id' => $grupo->id,
+                        'subgrupo_id' => $subgrupo->id,
                         'usuario_id' => $user->id,
                     ]);
                 }
@@ -432,7 +495,147 @@ class InscripcionController extends Controller
     }
     }
 
+    /**
+     * Procesar inscripción desde formulario público para subgrupo específico
+     */
+    public function storeFormSubgrupo(StoreInscripcionFormRequest $request, Paquete $paquete, Grupo $grupo, Subgrupo $subgrupo)
+    {
+        // Verificar que el grupo pertenece al paquete
+        if ($grupo->paquete_id !== $paquete->id) {
+            abort(404, 'El grupo no pertenece a este paquete');
+        }
 
+        // Verificar que el subgrupo pertenece al grupo
+        if ($subgrupo->grupo_id !== $grupo->id) {
+            abort(404, 'El subgrupo no pertenece a este grupo');
+        }
+
+        // Verificar que el paquete, grupo y subgrupo estén activos
+        if (!$paquete->activo || !$grupo->activo || !$subgrupo->activo) {
+            return back()->withErrors([
+                'capacity' => 'Este paquete, grupo o subgrupo no está disponible para inscripciones.'
+            ]);
+        }
+
+        // Validar datos (ya validados por el FormRequest)
+        $validated = $request->validated();
+
+        // Verificar capacidad disponible del subgrupo
+        $inscritosCount = Inscripcion::where('subgrupo_id', $subgrupo->id)->count();
+        $capacidadDisponible = $subgrupo->capacidad_maxima - $inscritosCount;
+
+        if ($capacidadDisponible < count($validated['children'])) {
+            return back()->withErrors([
+                'capacity' => 'No hay suficientes cupos disponibles en el subgrupo para todos los niños.'
+            ]);
+        }
+
+        try {
+            DB::transaction(function () use ($validated, $paquete, $grupo, $subgrupo) {
+                // Buscar usuario existente por DNI
+                $user = User::where('dni', $validated['parent_dni'])->first();
+
+                if (!$user) {
+                    // Verificar si ya existe un usuario con el mismo email o teléfono
+                    $existingUserByEmail = User::where('email', $validated['parent_email'])->first();
+                    $existingUserByPhone = User::where('phone', $validated['parent_phone'])->first();
+
+                    if ($existingUserByEmail) {
+                        throw new \Exception('email_exists');
+                    }
+
+                    if ($existingUserByPhone) {
+                        throw new \Exception('phone_exists');
+                    }
+
+                    // Crear contraseña con DNI
+                    $password = $validated['parent_dni'];
+
+                    $user = User::create([
+                        'name' => $validated['parent_name'],
+                        'email' => $validated['parent_email'],
+                        'phone' => $validated['parent_phone'],
+                        'dni' => $validated['parent_dni'],
+                        'password' => Hash::make($password),
+                        'email_verified_at' => now(),
+                        'is_admin' => false,
+                    ]);
+
+                    // Enviar WhatsApp si el usuario fue creado exitosamente
+                    if ($user) {
+                        WhatsAppService::enviarWhatsApp($validated['parent_phone'], $validated['parent_email'], $password);
+                    }
+                } else {
+                    // Si el usuario ya existe, actualizar datos si es necesario
+                    $user->update([
+                        'name' => $validated['parent_name'],
+                        'email' => $validated['parent_email'],
+                        'phone' => $validated['parent_phone'],
+                        'dni' => $validated['parent_dni'],
+                    ]);
+                }
+
+                // Crear hijos e inscripciones
+                foreach ($validated['children'] as $childData) {
+                    // Verificar si ya existe un hijo con el mismo documento para este usuario
+                    $hijoExistente = Hijo::where('user_id', $user->id)
+                                        ->where('doc_tipo', $childData['docType'])
+                                        ->where('doc_numero', $childData['docNumber'])
+                                        ->first();
+
+                    if ($hijoExistente) {
+                        $hijo = $hijoExistente;
+                        // Actualizar datos del hijo si es necesario
+                        $hijo->update([
+                            'nombres' => $childData['name'],
+                            'nums_emergencia' => [$validated['parent_phone']], // Actualizar contacto de emergencia
+                        ]);
+                    } else {
+                        $hijo = Hijo::create([
+                            'nombres' => $childData['name'],
+                            'doc_tipo' => $childData['docType'],
+                            'doc_numero' => $childData['docNumber'],
+                            'user_id' => $user->id,
+                            'nums_emergencia' => [$validated['parent_phone']], // Teléfono del padre como contacto de emergencia
+                        ]);
+                    }
+
+                    // Verificar que no exista inscripción duplicada en el subgrupo
+                    $existeInscripcion = Inscripcion::where('hijo_id', $hijo->id)
+                                                  ->where('subgrupo_id', $subgrupo->id)
+                                                  ->exists();
+
+                    if (!$existeInscripcion) {
+                        Inscripcion::create([
+                            'hijo_id' => $hijo->id,
+                            'paquete_id' => $paquete->id,
+                            'grupo_id' => $grupo->id,
+                            'subgrupo_id' => $subgrupo->id,
+                            'usuario_id' => $user->id,
+                        ]);
+                    }
+                }
+            });
+
+            return redirect()->route('inscripcion.subgrupo.form', [$paquete->id, $grupo->id, $subgrupo->id])
+                ->with('success', 'Inscripción realizada exitosamente. Recibirás un correo con los detalles.');
+        } catch (\Exception $e) {
+            if ($e->getMessage() === 'email_exists') {
+                return back()->withErrors([
+                    'parent_email' => 'Ya existe un usuario registrado con este correo electrónico.'
+                ]);
+            }
+
+            if ($e->getMessage() === 'phone_exists') {
+                return back()->withErrors([
+                    'parent_phone' => 'Ya existe un usuario registrado con este número de teléfono.'
+                ]);
+            }
+
+            // Re-lanzar la excepción si no es una de las que manejamos
+            throw $e;
+        }
+    }
 
     /**
      * Verificar si existe un usuario por DNI

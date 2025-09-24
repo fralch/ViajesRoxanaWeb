@@ -44,9 +44,11 @@ Route::get('/', function () {
     ]);
 });
 
-// Ruta pública para formulario de inscripción
+// Rutas públicas para formulario de inscripción
 Route::get('/paquete/{paquete}/grupo/{grupo}/form', [InscripcionController::class, 'showForm'])->name('inscripcion.form');
 Route::post('/paquete/{paquete}/grupo/{grupo}/form', [InscripcionController::class, 'storeForm'])->name('inscripcion.store');
+Route::get('/paquete/{paquete}/grupo/{grupo}/subgrupo/{subgrupo}/form', [InscripcionController::class, 'showFormSubgrupo'])->name('inscripcion.subgrupo.form');
+Route::post('/paquete/{paquete}/grupo/{grupo}/subgrupo/{subgrupo}/form', [InscripcionController::class, 'storeFormSubgrupo'])->name('inscripcion.subgrupo.store');
 
 // Ruta para verificar si existe un usuario
 Route::post('/check-user-exists', [InscripcionController::class, 'checkUserExists'])->name('check.user.exists');

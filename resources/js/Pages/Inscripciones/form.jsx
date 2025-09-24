@@ -178,7 +178,7 @@ const ChildCard = ({ index, child, updateChild, removeChild, canRemove, complete
   );
 };
 
-export default function Index({ paquete, grupo, capacidadDisponible, error, flash }) {
+export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, error, flash }) {
   const { data, setData, post, processing, errors, clearErrors } = useForm({
     parent_name: "",
     parent_phone: "",
@@ -470,7 +470,9 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
     }
 
     // Determinar la URL según si es inscripción específica o formulario general
-    const submitUrl = paquete && grupo 
+    const submitUrl = paquete && grupo && subgrupo
+      ? `/paquete/${paquete.id}/grupo/${grupo.id}/subgrupo/${subgrupo.id}/form`
+      : paquete && grupo
       ? `/paquete/${paquete.id}/grupo/${grupo.id}/form`
       : "/inscripciones";
 
@@ -542,7 +544,7 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
               />
             </div>
 
-            {/* Información del paquete y grupo */}
+            {/* Información del paquete, grupo y subgrupo */}
             {paquete && grupo && (
               <div className="mb-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
                 <div className="flex items-start gap-3 mb-4">
@@ -556,9 +558,19 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
                     <h3 className="text-xl font-bold text-blue-900 mb-1">
                       {paquete.nombre}
                     </h3>
-                    <p className="text-sm text-blue-600 font-medium">
-                      Grupo: {grupo.nombre}
-                    </p>
+                    <div className="space-y-1">
+                      <p className="text-sm text-blue-600 font-medium">
+                        Grupo: {grupo.nombre}
+                      </p>
+                      {subgrupo && (
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex h-2 w-2 rounded-full bg-green-500"></span>
+                          <p className="text-sm text-green-700 font-semibold">
+                            Subgrupo: {subgrupo.nombre}
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
                 

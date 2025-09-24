@@ -241,7 +241,7 @@ export default function Index({ grupos, filters }) {
                                   ? 'text-green-700 bg-green-50'
                                   : 'text-gray-700 hover:text-purple-700 hover:bg-purple-50'
                               }`}
-                              title="Copiar enlace del formulario"
+                              title="Copiar enlace de selección de subgrupos"
                             >
                               {copiedGrupoId === grupo.id ? (
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -359,7 +359,7 @@ export default function Index({ grupos, filters }) {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center justify-center w-9 h-9 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors duration-200"
-                                title="Abrir formulario público"
+                                title="Ver subgrupos para inscripción"
                               >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-2M13 5h8m0 0v8m0-8l-8 8" />
