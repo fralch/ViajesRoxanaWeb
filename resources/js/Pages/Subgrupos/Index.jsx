@@ -7,7 +7,7 @@ import TextInput from '@/Components/TextInput';
 import Card from '@/Components/Card';
 import { showDelete, showSuccess, showError } from '@/utils/swal';
 
-export default function Index({ subgrupos, filters }) {
+export default function Index({ subgrupos, filters = {} }) {
   const [search, setSearch] = useState(filters.search || '');
 
   const handleSearch = (e) => {

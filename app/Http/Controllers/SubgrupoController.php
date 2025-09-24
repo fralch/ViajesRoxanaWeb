@@ -14,9 +14,23 @@ class SubgrupoController extends Controller
 {
     public function index(): Response|JsonResponse
     {
+        $search = request('search');
+
         $subgrupos = Subgrupo::with(['grupo.paquete', 'inscripciones.hijo'])
+            ->withCount('inscripciones')
+            ->when($search, function ($query, $search) {
+                return $query->where(function ($q) use ($search) {
+                    $q->where('nombre', 'like', '%' . $search . '%')
+                      ->orWhere('nombre_encargado_principal', 'like', '%' . $search . '%')
+                      ->orWhere('nombre_encargado_secundario', 'like', '%' . $search . '%')
+                      ->orWhereHas('grupo', function ($query) use ($search) {
+                          $query->where('nombre', 'like', '%' . $search . '%');
+                      });
+                });
+            })
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->paginate(12)
+            ->withQueryString();
 
         if (request()->wantsJson()) {
             return response()->json([
@@ -25,7 +39,9 @@ class SubgrupoController extends Controller
             ]);
         }
 
-        return Inertia::render('Subgrupos/Index', compact('subgrupos'));
+        $filters = request()->only(['search']);
+
+        return Inertia::render('Subgrupos/Index', compact('subgrupos', 'filters'));
     }
 
     public function show(Subgrupo $subgrupo): Response|JsonResponse
