@@ -7,7 +7,7 @@ import TextInput from '@/Components/TextInput';
 import Card from '@/Components/Card';
 import { showDelete, showSuccess, showError } from '@/utils/swal';
 
-export default function Show({ subgrupo, inscripciones, filters }) {
+export default function Show({ subgrupo, inscripciones = {}, filters = {} }) {
   const [search, setSearch] = useState(filters.search || '');
 
   const handleSearch = (e) => {
@@ -409,10 +409,10 @@ export default function Show({ subgrupo, inscripciones, filters }) {
               {inscripciones.links && inscripciones.links.length > 3 && (
                 <div className="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="text-xs sm:text-sm text-gray-700">
-                    Mostrando <span className="font-medium">{inscripciones.from}</span> a <span className="font-medium">{inscripciones.to}</span> de <span className="font-medium">{inscripciones.total}</span> resultados
+                    Mostrando <span className="font-medium">{inscripciones.from || 0}</span> a <span className="font-medium">{inscripciones.to || 0}</span> de <span className="font-medium">{inscripciones.total || 0}</span> resultados
                   </div>
                   <div className="flex flex-wrap gap-1">
-                    {inscripciones.links.map((link, index) => {
+                    {(inscripciones.links || []).map((link, index) => {
                       if (link.url === null) {
                         return (
                           <span
