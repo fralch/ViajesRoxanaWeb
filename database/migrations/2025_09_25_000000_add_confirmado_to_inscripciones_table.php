@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('hijos', function (Blueprint $table) {
-            $table->unsignedBigInteger('user_id')->nullable()->change();
+        Schema::table('inscripciones', function (Blueprint $table) {
+            $table->boolean('confirmado')->default(false);
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('hijos', function (Blueprint $table) {
-            $table->unsignedBigInteger('user_id')->nullable(false)->change();
+        Schema::table('inscripciones', function (Blueprint $table) {
+            $table->dropColumn('confirmado');
         });
     }
 };

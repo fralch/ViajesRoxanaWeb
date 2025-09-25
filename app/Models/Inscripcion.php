@@ -13,7 +13,8 @@ class Inscripcion extends Model
         'paquete_id',
         'grupo_id',
         'subgrupo_id',
-        'usuario_id'
+        'usuario_id',
+        'confirmado'
     ];
 
     public function hijo()
