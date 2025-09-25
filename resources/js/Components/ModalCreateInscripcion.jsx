@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { router, usePage } from '@inertiajs/react';
 import { useForm } from '@inertiajs/react';
 import Modal from '@/Components/Modal';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -17,45 +18,85 @@ export default function ModalCreateInscripcion({
     subgrupos = [],
     hijos = []
 }) {
+    const { auth } = usePage().props;
     const [showCreateHijoModal, setShowCreateHijoModal] = useState(false);
     const [hijosDisponibles, setHijosDisponibles] = useState(hijos);
-    const [hijoCreado, setHijoCreado] = useState(null); // Nuevo estado para el hijo recién creado
 
-    const { data, setData, post, processing, errors, reset } = useForm({
-        hijo_id: '',
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedHijos, setSelectedHijos] = useState([]);
+
+    const { data, setData, processing, errors, reset } = useForm({
         paquete_id: '',
         grupo_id: '',
         subgrupo_id: subgrupo?.id || '',
-        usuario_id: ''
     });
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        post(route('inscripciones.store'), {
-            onSuccess: () => {
-                onClose();
-                reset();
-                setHijoCreado(null); // Limpiar el hijo creado
-                showSuccess('¡Inscripción creada!', 'La inscripción ha sido creada exitosamente.');
-                // Reload the page to show the new inscription
-                window.location.reload();
-            },
-            onError: () => {
-                showError('Error', 'No se pudo crear la inscripción. Verifica los datos e intenta nuevamente.');
-            }
-        });
+    const addHijo = (hijo) => {
+        if (!selectedHijos.some(s => s.id === hijo.id)) {
+            setSelectedHijos([...selectedHijos, hijo]);
+        }
     };
 
-    const handleHijoChange = (e) => {
-        const hijoId = e.target.value;
-        const selectedHijo = hijosDisponibles.find(h => h.id == hijoId);
-        setData(prevData => ({
-            ...prevData,
-            hijo_id: hijoId,
-            usuario_id: selectedHijo ? selectedHijo.user_id : ''
-        }));
-        // Si selecciona un hijo de la lista, limpiar el hijo creado
-        setHijoCreado(null);
+    const removeHijo = (id) => {
+        setSelectedHijos(selectedHijos.filter(s => s.id !== id));
+    };
+
+    const filteredHijos = hijosDisponibles.filter(h =>
+        h.nombres.toLowerCase().includes(searchTerm.toLowerCase()) &&
+        !selectedHijos.some(s => s.id === h.id)
+    );
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        if (selectedHijos.length === 0) {
+            showError('Error', 'Debe seleccionar al menos un hijo.');
+            return;
+        }
+
+        if (!data.paquete_id || !data.grupo_id || !data.subgrupo_id) {
+            showError('Error', 'Debe seleccionar paquete, grupo y subgrupo.');
+            return;
+        }
+
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (const hijo of selectedHijos) {
+            const inscriptionData = {
+                paquete_id: data.paquete_id,
+                grupo_id: data.grupo_id,
+                subgrupo_id: data.subgrupo_id,
+                hijo_id: hijo.id,
+                usuario_id: hijo.user_id || ''
+            };
+
+            try {
+                await new Promise((resolve, reject) => {
+                    router.post(route('inscripciones.store'), inscriptionData, {
+                        onSuccess: () => resolve(),
+                        onError: () => reject()
+                    });
+                });
+                successCount++;
+            } catch (error) {
+                errorCount++;
+            }
+        }
+
+        onClose();
+        reset();
+        setSelectedHijos([]);
+        setSearchTerm('');
+
+        if (successCount > 0) {
+            showSuccess('¡Inscripciones creadas!', `${successCount} inscripciones creadas exitosamente.`);
+        }
+        if (errorCount > 0) {
+            showError('Error', `${errorCount} inscripciones fallaron. Verifica los datos.`);
+        }
+
+        window.location.reload();
     };
 
     const getSubgruposPorGrupo = () => {
@@ -69,36 +110,21 @@ export default function ModalCreateInscripcion({
         setData(prevData => ({
             ...prevData,
             grupo_id: grupoId,
-            subgrupo_id: subgrupo?.id || '' // Keep the current subgrupo selected
+            subgrupo_id: subgrupo?.id || ''
         }));
     };
 
     const handleClose = () => {
         reset();
-        setHijoCreado(null); // Limpiar el hijo creado al cerrar
+        setSelectedHijos([]);
+        setSearchTerm('');
         onClose();
     };
 
     const handleHijoCreated = (newHijo) => {
-        // Establecer el hijo creado y seleccionarlo automáticamente
-        setHijoCreado(newHijo);
-        setData(prevData => ({
-            ...prevData,
-            hijo_id: newHijo.id,
-            usuario_id: newHijo.user_id
-        }));
-        // Cerrar el modal de crear hijo
+        addHijo(newHijo);
+        setHijosDisponibles([...hijosDisponibles, newHijo]);
         setShowCreateHijoModal(false);
-    };
-
-    const handleCambiarHijo = () => {
-        // Limpiar la selección del hijo creado para mostrar la lista
-        setHijoCreado(null);
-        setData(prevData => ({
-            ...prevData,
-            hijo_id: '',
-            usuario_id: ''
-        }));
     };
 
     return (
@@ -184,76 +210,68 @@ export default function ModalCreateInscripcion({
                             )}
                         </div>
 
-                        {/* Selector de hijo al final */}
+                        {/* Selector de hijos múltiple */}
                         <div className="border-t pt-6">
                             <div className="flex items-center justify-between mb-4">
-                                <InputLabel htmlFor="hijo_id" value="Hijo *" />
-                                {!hijoCreado && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowCreateHijoModal(true)}
-                                        className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                                    >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                        </svg>
-                                        Registrar nuevo hijo
-                                    </button>
-                                )}
+                                <InputLabel value="Hijos *" />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowCreateHijoModal(true)}
+                                    className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                    </svg>
+                                    Registrar nuevo hijo
+                                </button>
                             </div>
 
-                            {hijoCreado ? (
-                                // Mostrar el hijo recién creado como "ya agregado"
-                                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                                                <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                </svg>
-                                            </div>
-                                            <div>
-                                                <p className="font-medium text-green-800">{hijoCreado.nombres}</p>
-                                                <p className="text-sm text-green-600">Hijo agregado y listo para inscribirse</p>
-                                            </div>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={handleCambiarHijo}
-                                            className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                            <input
+                                type="text"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                placeholder="Buscar hijo por nombre..."
+                                className="mt-1 block w-full border-gray-300 focus:border-red-500 focus:ring-red-500 rounded-md shadow-sm"
+                            />
+
+                            {searchTerm && (
+                                <div className="mt-2 max-h-40 overflow-y-auto border rounded-md bg-white">
+                                    {filteredHijos.map(hijo => (
+                                        <div
+                                            key={hijo.id}
+                                            className="p-2 hover:bg-gray-100 cursor-pointer flex justify-between items-center"
+                                            onClick={() => addHijo(hijo)}
                                         >
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                            {hijo.nombres}
+                                            <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                                             </svg>
-                                            Cambiar hijo
-                                        </button>
-                                    </div>
-                                </div>
-                            ) : (
-                                // Mostrar el selector normal
-                                <select
-                                    id="hijo_id"
-                                    name="hijo_id"
-                                    value={data.hijo_id}
-                                    onChange={handleHijoChange}
-                                    className="mt-1 block w-full border-gray-300 focus:border-red-500 focus:ring-red-500 rounded-md shadow-sm"
-                                    required
-                                >
-                                    <option value="">Seleccione un hijo</option>
-                                    {hijosDisponibles.map(hijo => (
-                                        <option key={hijo.id} value={hijo.id}>{hijo.nombres} (Usuario: {hijo.user?.name || 'Usuario actual'})</option>
+                                        </div>
                                     ))}
-                                </select>
+                                    {filteredHijos.length === 0 && <p className="p-2 text-gray-500">No se encontraron hijos</p>}
+                                </div>
                             )}
-                            <InputError message={errors.hijo_id} className="mt-2" />
+
+                            <div className="mt-4">
+                                <p className="font-medium mb-2">Hijos seleccionados ({selectedHijos.length}):</p>
+                                {selectedHijos.map(hijo => (
+                                    <div key={hijo.id} className="flex items-center justify-between bg-gray-50 p-2 rounded mb-1">
+                                        <span>{hijo.nombres}</span>
+                                        <button onClick={() => removeHijo(hijo.id)} className="text-red-500 hover:text-red-700">Eliminar</button>
+                                    </div>
+                                ))}
+                                {selectedHijos.length === 0 && <p className="text-gray-500">No hay hijos seleccionados</p>}
+                            </div>
+
+                            <InputError message={errors.general} className="mt-2" /> {/* Adjust for general errors */}
                         </div>
 
                         <div className="flex items-center justify-end gap-3 pt-4 border-t">
                             <SecondaryButton type="button" onClick={handleClose}>
                                 Cancelar
                             </SecondaryButton>
-                            <PrimaryButton type="submit" disabled={processing}>
-                                {processing ? 'Creando...' : 'Crear Inscripción'}
+                            <PrimaryButton type="submit" disabled={processing || selectedHijos.length === 0}>
+                                {processing ? 'Creando...' : `Crear ${selectedHijos.length > 1 ? 'Inscripciones' : 'Inscripción'}`}
                             </PrimaryButton>
                         </div>
                     </form>
@@ -265,7 +283,7 @@ export default function ModalCreateInscripcion({
                 show={showCreateHijoModal}
                 onClose={() => setShowCreateHijoModal(false)}
                 onHijoCreated={handleHijoCreated}
-                currentUserId={data.usuario_id}
+                currentUserId={auth.user?.id}
             />
         </>
     );
