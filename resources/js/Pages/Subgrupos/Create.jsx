@@ -30,6 +30,7 @@ export default function Create({ grupos }) {
     { value: 'madre', label: 'Madre' },
     { value: 'tutor_legal', label: 'Tutor Legal' },
     { value: 'familiar', label: 'Familiar' },
+    { value: 'viajes_roxana', label: 'Viajes Roxana' },
     { value: 'otro', label: 'Otro' }
   ];
 
@@ -252,7 +253,7 @@ export default function Create({ grupos }) {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900">Encargado Secundario (Opcional)</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">Encargado de Agencia de Viajes</h3>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

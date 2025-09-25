@@ -175,7 +175,7 @@ export default function SubgrupoSelection({ paquete, grupo, subgrupos, error }) 
                             <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             </svg>
-                            <span className="text-xs text-gray-500 font-medium">Secundario</span>
+                            <span className="text-xs text-gray-500 font-medium">Secundario de Agencia de Viajes</span>
                           </div>
                           <p className="text-sm font-medium text-gray-900">{encargados.secundario.nombre}</p>
                           <p className="text-xs text-gray-600">{getTipoEncargadoLabel(encargados.secundario.tipo)}</p>

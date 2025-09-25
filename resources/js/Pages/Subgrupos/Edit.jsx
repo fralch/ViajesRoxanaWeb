@@ -267,7 +267,7 @@ export default function Edit({ subgrupo, grupos }) {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                       </svg>
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900">Encargado Secundario</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">Encargado  de Agencia de Viajes</h3>
                   </div>
 
                   <div className="mb-4">
@@ -278,7 +278,7 @@ export default function Edit({ subgrupo, grupos }) {
                         onChange={(e) => setData('tiene_encargado_secundario', e.target.checked)}
                         className="rounded border-gray-300 text-amber-600 shadow-sm focus:border-amber-500 focus:ring-amber-500"
                       />
-                      <span className="ml-2 text-sm text-gray-700">Agregar encargado secundario</span>
+                      <span className="ml-2 text-sm text-gray-700">Agregar encargado de Agencia de Viajes</span>
                     </label>
                   </div>
 
@@ -293,10 +293,7 @@ export default function Edit({ subgrupo, grupos }) {
                           className="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:border-amber-500 focus:ring-amber-500 bg-white"
                         >
                           <option value="">Seleccionar tipo...</option>
-                          <option value="padre">Padre</option>
-                          <option value="madre">Madre</option>
-                          <option value="tutor_legal">Tutor Legal</option>
-                          <option value="familiar">Familiar</option>
+                          <option value="viajes_roxana">Viajes Roxana</option>
                           <option value="otro">Otro</option>
                         </select>
                         <InputError message={errors.tipo_encargado_secundario} className="mt-2" />

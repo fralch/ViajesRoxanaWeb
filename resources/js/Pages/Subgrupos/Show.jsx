@@ -227,7 +227,7 @@ export default function Show({ subgrupo, inscripciones = {}, filters = {}, paque
                 {/* Encargado Secundario */}
                 {subgrupo.nombre_encargado_secundario && (
                   <div>
-                    <h4 className="text-sm font-medium text-gray-900 mb-3">Encargado Secundario</h4>
+                    <h4 className="text-sm font-medium text-gray-900 mb-3">Encargado de Agencia de Viajes</h4>
                     <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
                       <div className="space-y-2">
                         <div>

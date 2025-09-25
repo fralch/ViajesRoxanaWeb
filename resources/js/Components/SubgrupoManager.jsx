@@ -12,7 +12,7 @@ export default function SubgrupoManager({ subgrupos = [], onChange, errors = {} 
     { value: 'padre', label: 'Padre' },
     { value: 'madre', label: 'Madre' },
     { value: 'tutor_legal', label: 'Tutor Legal' },
-    { value: 'familiar', label: 'Familiar' },
+    { value: 'viajes_roxana', label: 'Viajes Roxana' },
     { value: 'otro', label: 'Otro' }
   ];
 
@@ -208,7 +208,7 @@ export default function SubgrupoManager({ subgrupos = [], onChange, errors = {} 
 
               {/* Encargado Secundario */}
               <div className="border-t border-gray-200 pt-4 mb-4">
-                <h5 className="text-sm font-medium text-gray-900 mb-3">Encargado Secundario (Opcional)</h5>
+                <h5 className="text-sm font-medium text-gray-900 mb-3">Encargado Agencia de Viajes</h5>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <InputLabel htmlFor={`tipo_encargado_secundario_${index}`} value="Tipo de Encargado" />
