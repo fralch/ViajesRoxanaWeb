@@ -715,7 +715,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-3">
                     {hijosInscritos.map((hijo) => (
                       <div
                         key={hijo.id}
@@ -726,34 +726,49 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                         }`}
                         onClick={() => handleChildSelection(hijo.id.toString())}
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-start gap-4">
                           <input
                             type="radio"
                             name="selected_child"
                             value={hijo.id}
                             checked={selectedChildId === hijo.id.toString()}
                             onChange={() => handleChildSelection(hijo.id.toString())}
-                            className="h-4 w-4 text-green-600 focus:ring-green-500"
+                            className="h-4 w-4 mt-1 text-green-600 focus:ring-green-500"
                           />
                           <div className="flex-1">
-                            <h4 className="font-semibold text-gray-900">{hijo.nombres}</h4>
-                            <p className="text-sm text-gray-600">
-                              {hijo.doc_tipo}: {hijo.doc_numero}
-                            </p>
-                            {hijo.fecha_nacimiento && (
-                              <p className="text-xs text-gray-500">
-                                Nació: {new Date(hijo.fecha_nacimiento).toLocaleDateString('es-CO')}
-                              </p>
-                            )}
-                            {hijo.user && (
-                              <p className="text-xs text-blue-600 mt-1">
-                                Apoderado: {hijo.user.name}
-                                {hijo.user_id === 1 && (
-                                  <span className="ml-2 px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs">
-                                    Necesita apoderado
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="font-semibold text-gray-900">{hijo.nombres}</h4>
+                              {hijo.user_id === 1 && (
+                                <span className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-xs font-medium">
+                                  Sin apoderado
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <span className="text-gray-500">Documento:</span>
+                                <span className="ml-2 text-gray-900">{hijo.doc_tipo}: {hijo.doc_numero}</span>
+                              </div>
+                              {hijo.fecha_nacimiento && (
+                                <div>
+                                  <span className="text-gray-500">Fecha nacimiento:</span>
+                                  <span className="ml-2 text-gray-900">
+                                    {new Date(hijo.fecha_nacimiento).toLocaleDateString('es-CO')}
                                   </span>
+                                </div>
+                              )}
+                            </div>
+
+                            {hijo.user && hijo.user_id !== 1 && (
+                              <div className="mt-2 p-2 bg-blue-50 rounded-lg">
+                                <p className="text-sm text-blue-800">
+                                  <span className="font-medium">Apoderado actual:</span> {hijo.user.name}
+                                </p>
+                                {hijo.user.email && (
+                                  <p className="text-xs text-blue-600">{hijo.user.email}</p>
                                 )}
-                              </p>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -772,11 +787,12 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
               </section>
             )}
 
-            {/* Datos del padre/madre/tutor */}
-            <section className={`mb-8 ${!selectedChildId ? 'opacity-50 pointer-events-none' : ''}`}>
-              <SectionTitle subtitle="Usaremos estos datos para crear tu cuenta.">
-               Datos del apoderado
-              </SectionTitle>
+            {/* Datos del padre/madre/tutor - Solo mostrar cuando NO esté en modo de creación de usuario */}
+            {!userCreationMode && (
+              <section className={`mb-8 ${!selectedChildId ? 'opacity-50 pointer-events-none' : ''}`}>
+                <SectionTitle subtitle="Usaremos estos datos para crear tu cuenta.">
+                 Datos del apoderado
+                </SectionTitle>
 
               <div className="grid grid-cols-1 gap-4">
                 {/* Nombre */}
@@ -905,7 +921,8 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                   />
                 </div>
               </div>
-            </section>
+              </section>
+            )}
 
             {/* Advertencia de usuario existente */}
             {showUserExistsWarning && existingUserData && (
@@ -990,123 +1007,150 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
             )}
 
             {/* Formulario para crear nuevo usuario cuando es necesario */}
-            {userCreationMode && showUserCreationForm && selectedChild && (
-              <section className="mb-6">
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                  <div className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <div className="flex-1">
-                      <h3 className="text-sm font-semibold text-blue-800 mb-2">
-                        Crear Apoderado para {selectedChild.nombres}
-                      </h3>
-                      <p className="text-xs text-blue-700 mb-4">
-                        Este niño actualmente no tiene un apoderado asignado. Proporciona los datos del apoderado responsable.
-                      </p>
+            {userCreationMode && selectedChild && (
+              <section className="mb-8">
+                <SectionTitle subtitle="Complete los datos del nuevo apoderado responsable">
+                  Crear Apoderado para {selectedChild.nombres}
+                </SectionTitle>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Nombre completo</label>
-                          <input
-                            type="text"
-                            value={newUserData.name}
-                            onChange={(e) => {
-                              setNewUserData({...newUserData, name: e.target.value});
-                              setData('parent_name', e.target.value);
-                            }}
-                            placeholder="Nombre y apellidos del apoderado"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">DNI</label>
-                          <input
-                            type="text"
-                            value={newUserData.dni}
-                            onChange={(e) => {
-                              const value = e.target.value.replace(/[^0-9]/g, "");
-                              setNewUserData({...newUserData, dni: value});
-                              setData('parent_dni', value);
-                            }}
-                            placeholder="12345678"
-                            maxLength="8"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Teléfono</label>
-                          <input
-                            type="text"
-                            value={newUserData.phone}
-                            onChange={(e) => {
-                              const value = e.target.value.replace(/[^0-9]/g, "");
-                              setNewUserData({...newUserData, phone: value});
-                              setData('parent_phone', value);
-                            }}
-                            placeholder="987654321"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Correo electrónico</label>
-                          <input
-                            type="email"
-                            value={newUserData.email}
-                            onChange={(e) => {
-                              setNewUserData({...newUserData, email: e.target.value});
-                              setData('parent_email', e.target.value);
-                            }}
-                            placeholder="correo@ejemplo.com"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="mt-4 flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (newUserData.name && newUserData.dni && newUserData.phone && newUserData.email) {
-                              setDniValidated(true);
-                              setShowUserCreationForm(false);
-                              showToast('Datos del apoderado completados', 'success');
-                            } else {
-                              showError('Campos incompletos', 'Complete todos los datos del apoderado');
-                            }
-                          }}
-                          className="px-3 py-2 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 focus:ring-2 focus:ring-blue-500"
-                        >
-                          Confirmar Apoderado
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setShowUserCreationForm(false);
-                            setSelectedChildId(null);
-                            setSelectedChild(null);
-                          }}
-                          className="px-3 py-2 rounded-lg border border-gray-300 text-gray-700 text-xs font-medium hover:bg-gray-50 focus:ring-2 focus:ring-gray-500"
-                        >
-                          Cancelar
-                        </button>
-                      </div>
+                <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
                     </div>
+                    <div>
+                      <h4 className="font-semibold text-blue-900">Nuevo Apoderado</h4>
+                      <p className="text-sm text-blue-700">
+                        {selectedChild.nombres} necesita un apoderado responsable
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4">
+                    <TextField
+                      id="new_parent_name"
+                      label="Nombre completo del apoderado"
+                      value={newUserData.name}
+                      onChange={(e) => {
+                        setNewUserData({...newUserData, name: e.target.value});
+                        setData('parent_name', e.target.value);
+                      }}
+                      placeholder="Nombre y apellidos del apoderado responsable"
+                      required
+                    />
+
+                    <TextField
+                      id="new_parent_dni"
+                      label="DNI del apoderado"
+                      value={newUserData.dni}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^0-9]/g, "");
+                        if (value.length <= 8) {
+                          setNewUserData({...newUserData, dni: value});
+                          setData('parent_dni', value);
+                          if (value.length === 8) {
+                            setDniValidated(true);
+                          } else {
+                            setDniValidated(false);
+                          }
+                        }
+                      }}
+                      placeholder="12345678"
+                      required
+                      inputMode="numeric"
+                      pattern="^\d{8}$"
+                    />
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <TextField
+                        id="new_parent_phone"
+                        label="Teléfono del apoderado"
+                        value={newUserData.phone}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/[^0-9]/g, "");
+                          setNewUserData({...newUserData, phone: value});
+                          setData('parent_phone', value);
+                        }}
+                        placeholder="987654321"
+                        required
+                        inputMode="numeric"
+                        pattern="^9\\d{8}$"
+                      />
+
+                      <TextField
+                        id="new_parent_email"
+                        label="Correo electrónico"
+                        type="email"
+                        value={newUserData.email}
+                        onChange={(e) => {
+                          setNewUserData({...newUserData, email: e.target.value});
+                          setData('parent_email', e.target.value);
+                        }}
+                        placeholder="correo@ejemplo.com"
+                        required
+                        autoComplete="email"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-6 flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (newUserData.name && newUserData.dni && newUserData.phone && newUserData.email) {
+                          if (newUserData.dni.length === 8) {
+                            setDniValidated(true);
+                            showToast('Datos del apoderado completados correctamente', 'success');
+                          } else {
+                            showError('DNI incompleto', 'El DNI debe tener 8 dígitos');
+                          }
+                        } else {
+                          showError('Campos incompletos', 'Complete todos los datos del apoderado');
+                        }
+                      }}
+                      className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Confirmar Datos del Apoderado
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUserCreationMode(false);
+                        setShowUserCreationForm(false);
+                        setSelectedChildId(null);
+                        setSelectedChild(null);
+                        setNewUserData({name: '', email: '', phone: '', dni: ''});
+                        setData({
+                          ...data,
+                          parent_name: '',
+                          parent_email: '',
+                          parent_phone: '',
+                          parent_dni: ''
+                        });
+                        setDniValidated(false);
+                      }}
+                      className="px-4 py-3 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 focus:ring-4 focus:ring-gray-300 transition"
+                    >
+                      Cancelar
+                    </button>
                   </div>
                 </div>
               </section>
             )}
 
-            {/* Hijos */}
-            <section
-              className={classNames(
-                "mb-8 transition-opacity",
-                !dniValidated && "opacity-50 pointer-events-none"
-              )}
-            >
+            {/* Hijos - Solo mostrar cuando NO esté en modo de creación de usuario */}
+            {!userCreationMode && (
+              <section
+                className={classNames(
+                  "mb-8 transition-opacity",
+                  !dniValidated && "opacity-50 pointer-events-none"
+                )}
+              >
               <SectionTitle
                 subtitle={
                   dniValidated
@@ -1151,7 +1195,8 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                   <p className="text-sm text-red-600 font-medium">{errors.children}</p>
                 </div>
               )}
-            </section>
+              </section>
+            )}
 
             {/* Consentimiento y políticas */}
             <section className="mb-6">
