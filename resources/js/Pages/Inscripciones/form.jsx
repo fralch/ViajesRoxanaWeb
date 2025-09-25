@@ -204,6 +204,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
   const [dniValidated, setDniValidated] = useState(false);
   const [dniLoading, setDniLoading] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
+  const [isExistingGuardian, setIsExistingGuardian] = useState(false);
 
   // New states for child selection and user creation
   const [selectedChildId, setSelectedChildId] = useState(null);
@@ -274,20 +275,22 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
         // Mostrar formulario para crear nuevo usuario
         setUserCreationMode(true);
         setShowUserCreationForm(true);
+        setIsExistingGuardian(false);
         showToast('Este niño necesita un apoderado responsable', 'info');
       } else if (child.user) {
-        // Usuario existe y no es admin, cargar sus datos
+        // Usuario existe y no es admin, cargar sus datos y marcar como existing
         setUserCreationMode(false);
         setShowUserCreationForm(false);
+        setIsExistingGuardian(true);
         setData({
           ...data,
           parent_name: child.user.name,
           parent_email: child.user.email,
           parent_phone: child.user.phone || "",
-          parent_dni: "",
+          parent_dni: child.user.dni || "",
         });
         setDniValidated(true);
-        showToast('Datos del apoderado cargados', 'success');
+        showToast('Datos del apoderado cargados. Solo confirma la inscripción.', 'success');
       }
     }
   };
@@ -515,30 +518,27 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
       ? `/paquete/${paquete.id}/grupo/${grupo.id}/form`
       : "/inscripciones";
 
-    // Si el hijo ya tiene apoderado (no es admin), solo necesita confirmación
-    if (selectedChild.user_id !== 1) {
-      // Solo confirmar el apoderado existente
+    // Si es guardian existente, solo confirmar
+    if (isExistingGuardian) {
       const submitData = {
         selected_child_id: selectedChildId,
         confirm_existing_guardian: true,
         assign_guardian: true
       };
 
-      // Enviar confirmación
-      post(submitUrl, {
-        data: submitData,
-        preserveScroll: true,
-        onSuccess: () => {
-          showSuccess('¡Confirmado!', 'Apoderado confirmado correctamente.');
-        },
-        onError: () => {
-          showError('Error', 'No se pudo confirmar el apoderado.');
-        }
-      });
+      // Use axios directly to avoid sending form data
+      axios.post(submitUrl, submitData)
+        .then(() => {
+          showSuccess('¡Inscripción confirmada!', 'La inscripción se ha confirmado y se ha enviado un mensaje al apoderado.');
+        })
+        .catch((error) => {
+          console.error('Confirmation error:', error.response?.data || error);
+          showError('Error', 'No se pudo confirmar la inscripción.');
+        });
       return;
     }
 
-    // Si necesita crear apoderado, validar que esté completo
+    // Resto del handleSubmit para creación de nuevo usuario
     if (userCreationMode && !dniValidated) {
       showWarning('DNI no validado', 'Debes completar y validar el DNI del apoderado.');
       return;
@@ -1126,7 +1126,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                 ) : userCreationMode ? (
                   <>Crear y Asignar Apoderado</>
                 ) : (
-                  <>Confirmar Apoderado Actual</>
+                  <>Confirmar Inscripcion</>
                 )}
               </button>
 

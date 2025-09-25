@@ -86,7 +86,7 @@ class InscripcionController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request, $paqueteId = null, $grupoId = null, $subgrupoId = null)
     {
         $validated = $request->validate([
             'hijo_id' => 'required|exists:hijos,id',
@@ -691,10 +691,32 @@ class InscripcionController extends Controller
             ]);
         }
 
-        // If just confirming existing guardian, no changes needed
+        // If just confirming existing guardian, confirm inscription and send WhatsApp message
         if ($confirmExistingGuardian && $child->user_id !== 1) {
-            return redirect()->route('inscripcion.subgrupo.form', [$paquete->id, $grupo->id, $subgrupo->id])
-                ->with('success', 'Apoderado confirmado exitosamente.');
+            $existingUser = User::find($child->user_id);
+
+            if ($existingUser) {
+                // Confirm the inscription
+                $inscription->update(['confirmado' => true]);
+
+                // Send WhatsApp confirmation message
+                WhatsAppService::enviarConfirmacionInscripcion(
+                    $existingUser->phone,
+                    $child->nombres,
+                    $subgrupo->nombre,
+                    $paquete->nombre
+                );
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Inscripción confirmada exitosamente. Se ha enviado un mensaje de confirmación por WhatsApp.'
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'No se pudo encontrar el apoderado del niño.'
+            ], 400);
         }
 
         try {
@@ -730,8 +752,11 @@ class InscripcionController extends Controller
                     // Update child's user_id
                     $child->update(['user_id' => $newUser->id]);
 
-                    // Update inscription's usuario_id
-                    $inscription->update(['usuario_id' => $newUser->id]);
+                    // Update inscription's usuario_id and confirm it
+                    $inscription->update([
+                        'usuario_id' => $newUser->id,
+                        'confirmado' => true
+                    ]);
 
                     // Send WhatsApp notification
                     if ($newUser) {
@@ -744,8 +769,15 @@ class InscripcionController extends Controller
                         // Update child's user_id
                         $child->update(['user_id' => $existingUser->id]);
 
-                        // Update inscription's usuario_id
-                        $inscription->update(['usuario_id' => $existingUser->id]);
+                        // Update inscription's usuario_id and confirm it
+                        $inscription->update([
+                            'usuario_id' => $existingUser->id,
+                            'confirmado' => true
+                        ]);
+
+                        // Send WhatsApp with existing user credentials (password is DNI)
+                        $password = $existingUser->dni;
+                        WhatsAppService::enviarWhatsApp($existingUser->phone, $existingUser->email, $password);
                     } else {
                         throw new \Exception('user_not_found');
                     }
@@ -753,7 +785,7 @@ class InscripcionController extends Controller
             });
 
             return redirect()->route('inscripcion.subgrupo.form', [$paquete->id, $grupo->id, $subgrupo->id])
-                ->with('success', 'Apoderado asignado exitosamente al niño.');
+                ->with('success', 'Inscripción confirmada exitosamente. Se han enviado las credenciales por WhatsApp.');
 
         } catch (\Exception $e) {
             if ($e->getMessage() === 'email_exists') {
