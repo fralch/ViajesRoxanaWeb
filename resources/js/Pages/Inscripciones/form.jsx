@@ -178,7 +178,7 @@ const ChildCard = ({ index, child, updateChild, removeChild, canRemove, complete
   );
 };
 
-export default function Index({ paquete, grupo, capacidadDisponible, error, flash }) {
+export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, hijosInscritos = [], error, flash }) {
   const { data, setData, post, processing, errors, clearErrors } = useForm({
     parent_name: "",
     parent_phone: "",
@@ -204,6 +204,22 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
   const [dniValidated, setDniValidated] = useState(false);
   const [dniLoading, setDniLoading] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
+  const [isExistingGuardian, setIsExistingGuardian] = useState(false);
+  const [assignmentProcessing, setAssignmentProcessing] = useState(false);
+
+  // New states for child selection and user creation
+  const [selectedChildId, setSelectedChildId] = useState(null);
+  const [selectedChild, setSelectedChild] = useState(null);
+  const [showUserCreationForm, setShowUserCreationForm] = useState(false);
+  const [userCreationMode, setUserCreationMode] = useState(false);
+
+  // New user creation form data
+  const [newUserData, setNewUserData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    dni: ''
+  });
 
   // Memo: ¿hay al menos un hijo completo?
   const hasAtLeastOneCompleteChild = useMemo(
@@ -248,6 +264,38 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
     }
   };
 
+  // Función para manejar la selección de hijo inscrito
+  const handleChildSelection = (childId) => {
+    const child = hijosInscritos.find(h => h.id === parseInt(childId));
+    setSelectedChildId(childId);
+    setSelectedChild(child);
+
+    if (child) {
+      // Verificar si el user relacionado es admin (user_id === 1)
+      if (child.user_id === 1) {
+        // Mostrar formulario para crear nuevo usuario
+        setUserCreationMode(true);
+        setShowUserCreationForm(true);
+        setIsExistingGuardian(false);
+        showToast('Este niño necesita un apoderado responsable', 'info');
+      } else if (child.user) {
+        // Usuario existe y no es admin, cargar sus datos y marcar como existing
+        setUserCreationMode(false);
+        setShowUserCreationForm(false);
+        setIsExistingGuardian(true);
+        setData({
+          ...data,
+          parent_name: child.user.name,
+          parent_email: child.user.email,
+          parent_phone: child.user.phone || "",
+          parent_dni: child.user.dni || "",
+        });
+        setDniValidated(true);
+        showToast('Datos del apoderado cargados. Solo confirma la inscripción.', 'success');
+      }
+    }
+  };
+
   // Función para usar los datos del usuario existente
   const useExistingUserData = () => {
     if (existingUserData) {
@@ -257,7 +305,7 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
         parent_email: existingUserData.user.email,
         parent_phone: existingUserData.user.phone,
         parent_dni: existingUserData.user.dni || "",
-        children: existingUserData.children.length > 0 
+        children: existingUserData.children.length > 0
           ? existingUserData.children.map(child => ({
               ...child,
               errors: {}
@@ -453,54 +501,137 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
   const handleSubmit = (e) => {
     e.preventDefault();
     clearErrors();
-    
-    if (!validateClient()) {
-      showWarning('Formulario incompleto', 'Por favor completa todos los campos requeridos correctamente.');
-      return;
-    }
 
-    if (!dniValidated) {
-      showWarning('DNI no validado', 'Debes completar y validar el DNI antes de enviar el formulario.');
-      return;
-    }
+     if (!selectedChildId) {
+       showWarning('Niño no seleccionado', 'Selecciona un niño del listado para continuar.');
+       return;
+     }
 
-    if (!hasAtLeastOneCompleteChild) {
-      showWarning('Hijos incompletos', 'Debes completar al menos un hijo (nombre, tipo y número de documento).');
+    if (!selectedChild) {
+      showWarning('Error', 'Error al obtener los datos del niño seleccionado.');
       return;
     }
 
     // Determinar la URL según si es inscripción específica o formulario general
-    const submitUrl = paquete && grupo 
+    const submitUrl = paquete && grupo && subgrupo
+      ? `/paquete/${paquete.id}/grupo/${grupo.id}/subgrupo/${subgrupo.id}/form`
+      : paquete && grupo
       ? `/paquete/${paquete.id}/grupo/${grupo.id}/form`
       : "/inscripciones";
 
-    post(submitUrl, {
-      preserveScroll: true,
-      onSuccess: () => {
-        // Mostrar alerta de éxito y redirigir al login
-        showSuccess(
-          '¡Inscripción exitosa!', 
-          'Los datos se han guardado correctamente. Recibirás un correo con los detalles.'
-        ).then(() => {
-          router.visit('/login');
+    // Si es guardian existente, solo confirmar
+    if (isExistingGuardian) {
+      const submitData = {
+        selected_child_id: selectedChildId,
+        confirm_existing_guardian: true,
+        assign_guardian: true
+      };
+
+      // Use axios directly to avoid sending form data
+      axios.post(submitUrl, submitData)
+        .then(() => {
+          showSuccess('¡Inscripción confirmada!', 'La inscripción se ha confirmado y se ha enviado un mensaje al apoderado.');
+          // Reload the page to update the child list
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
+        })
+        .catch((error) => {
+          console.error('Confirmation error:', error.response?.data || error);
+          showError('Error', 'No se pudo confirmar la inscripción.');
         });
-        
-        // Resetear formulario
+      return;
+    }
+
+    // Validación para creación de nuevo usuario
+    if (userCreationMode) {
+      // Validar que todos los campos requeridos estén completos
+      if (!data.parent_name || !data.parent_dni || !data.parent_phone || !data.parent_email) {
+        showWarning('Campos incompletos', 'Complete todos los datos del apoderado para continuar.');
+        return;
+      }
+
+      // Validar formato del DNI
+      if (data.parent_dni.length !== 8) {
+        showWarning('DNI inválido', 'El DNI debe tener exactamente 8 dígitos.');
+        return;
+      }
+
+      // Validar formato del teléfono
+      const cleanPhone = data.parent_phone.replace(/\D/g, "");
+      if (!/^9\d{8}$/.test(cleanPhone)) {
+        showWarning('Teléfono inválido', 'El teléfono debe ser un número peruano válido (9 dígitos empezando en 9).');
+        return;
+      }
+
+      // Validar formato del email
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.parent_email.trim())) {
+        showWarning('Email inválido', 'Ingrese un correo electrónico válido.');
+        return;
+      }
+
+      // Validar formato del nombre
+      if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(data.parent_name.trim())) {
+        showWarning('Nombre inválido', 'El nombre solo puede contener letras y espacios.');
+        return;
+      }
+    }
+
+    if (selectedChild.user_id === 1 && !userCreationMode) {
+      showWarning('Apoderado requerido', 'Este niño necesita que completes los datos del apoderado.');
+      return;
+    }
+
+    // Preparar datos específicos para asignación de apoderado
+    const submitData = {
+      selected_child_id: selectedChildId,
+      user_creation_mode: userCreationMode,
+      assign_guardian: true,
+      parent_name: data.parent_name,
+      parent_dni: data.parent_dni,
+      parent_phone: data.parent_phone,
+      parent_email: data.parent_email
+    };
+
+    console.log('=== GUARDIAN ASSIGNMENT DEBUG ===');
+    console.log('Submit URL:', submitUrl);
+    console.log('Submit Data:', submitData);
+    console.log('Selected Child:', selectedChild);
+    console.log('User Creation Mode:', userCreationMode);
+
+    setAssignmentProcessing(true);
+
+    router.post(submitUrl, submitData, {
+      preserveScroll: true,
+      onSuccess: (response) => {
+        // Mostrar alerta de éxito
+        showSuccess(
+          '¡Apoderado asignado exitosamente!',
+          'El niño ahora tiene un apoderado responsable y se han enviado las credenciales por WhatsApp.'
+        );
+
+        // Resetear formulario y estados
+        setSelectedChildId(null);
+        setSelectedChild(null);
+        setUserCreationMode(false);
+        setShowUserCreationForm(false);
+        setIsExistingGuardian(false);
+        setNewUserData({name: '', email: '', phone: '', dni: ''});
         setData({
           parent_name: "",
           parent_phone: "",
           parent_email: "",
           parent_dni: "",
-          children: [{ 
-            name: "", 
-            docType: "DNI", 
+          children: [{
+            name: "",
+            docType: "DNI",
             docNumber: "",
             hobbies: "",
             sports: "",
             favoriteDish: "",
             favoriteColor: "",
             additionalInfo: "",
-            errors: {} 
+            errors: {}
           }],
         });
         // Resetear estados de validación
@@ -508,21 +639,37 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
         setShowUserExistsWarning(false);
         setExistingUserData(null);
         setConsentChecked(false);
+
+        // Reload the page to update the child list
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+
+        setAssignmentProcessing(false);
       },
       onError: (errors) => {
-        if (errors.capacity) {
-          showError('Sin cupos disponibles', errors.capacity);
+        console.error('Assignment errors:', errors);
+
+        if (errors.parent_name) {
+          showError('Error en datos del apoderado', errors.parent_name);
         } else if (errors.parent_email) {
           showError('Correo electrónico duplicado', errors.parent_email);
         } else if (errors.parent_phone) {
           showError('Teléfono duplicado', errors.parent_phone);
-        } else if (errors.children) {
-          showError('Error en datos de hijos', errors.children);
+        } else if (errors.parent_dni) {
+          showError('DNI duplicado', errors.parent_dni);
+        } else if (errors.selected_child_id) {
+          showError('Error con el niño seleccionado', errors.selected_child_id);
         } else if (Object.keys(errors).length > 0) {
           showError('Error en el formulario', 'Por favor revisa los datos ingresados.');
         } else {
-          showError('Error inesperado', 'No se pudo procesar la inscripción. Intenta nuevamente.');
+          showError('Error inesperado', 'No se pudo procesar la asignación. Intenta nuevamente.');
         }
+
+        setAssignmentProcessing(false);
+      },
+      onFinish: () => {
+        setAssignmentProcessing(false);
       }
     });
   };
@@ -542,7 +689,7 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
               />
             </div>
 
-            {/* Información del paquete y grupo */}
+            {/* Información del paquete, grupo y subgrupo */}
             {paquete && grupo && (
               <div className="mb-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
                 <div className="flex items-start gap-3 mb-4">
@@ -556,9 +703,19 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
                     <h3 className="text-xl font-bold text-blue-900 mb-1">
                       {paquete.nombre}
                     </h3>
-                    <p className="text-sm text-blue-600 font-medium">
-                      Grupo: {grupo.nombre}
-                    </p>
+                    <div className="space-y-1">
+                      <p className="text-sm text-blue-600 font-medium">
+                        Grupo: {grupo.nombre}
+                      </p>
+                      {subgrupo && (
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex h-2 w-2 rounded-full bg-green-500"></span>
+                          <p className="text-sm text-green-700 font-semibold">
+                            Subgrupo: {subgrupo.nombre}
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
                 
@@ -630,140 +787,114 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
               </div>
             )}
 
-            {/* Datos del padre/madre/tutor */}
-            <section className="mb-8">
-              <SectionTitle subtitle="Usaremos estos datos para crear tu cuenta.">
-               Datos del apoderado
-              </SectionTitle>
-
-              <div className="grid grid-cols-1 gap-4">
-                {/* Nombre */}
-                <TextField
-                  id="parent_name"
-                  label="Nombre completo"
-                  value={data.parent_name}
-                  onChange={(e) => setData("parent_name", e.target.value)}
-                  placeholder="Nombre y apellidos"
-                  required
-                  autoComplete="name"
-                  error={errors.parent_name}
-                />
-
-                {/* DNI */}
-                <div className="space-y-1">
-                  <label htmlFor="parent_dni" className={labelStyles}>
-                    DNI
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="parent_dni"
-                      type="text"
-                      value={data.parent_dni}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/[^0-9]/g, "");
-                        setData("parent_dni", value);
-                        if (value.length !== 8) {
-                          setDniValidated(false);
-                        }
-                      }}
-                      placeholder="12345678"
-                      required
-                      inputMode="numeric"
-                      pattern="^\d{8}$"
-                      maxLength="8"
-                      className={classNames(
-                        inputBase,
-                        "bg-white/80 backdrop-blur border-gray-300 focus:ring-red-500 focus:border-red-500 placeholder-gray-400 pr-10",
-                        errors.parent_dni && "border-red-400 focus:ring-red-400 focus:border-red-400",
-                        dniLoading && "opacity-70"
-                      )}
-                      disabled={dniLoading}
-                    />
-                    
-                    {/* Indicadores en el campo */}
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                      {dniLoading && (
-                        <svg className="animate-spin h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                      )}
-                      {!dniLoading && dniValidated && data.parent_dni.length === 8 && (
-                        <svg className="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      )}
-                      {!dniLoading && data.parent_dni.length === 8 && !dniValidated && (
-                        <svg className="h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      )}
+            {/* Lista de hijos inscritos para seleccionar */}
+            {hijosInscritos && hijosInscritos.length > 0 && (
+              <section className="mb-8">
+                <div className="p-6 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl">
+                  <div className="flex items-start gap-3 mb-4">
+                    <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                      <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-xl font-bold text-green-900 mb-1">
+                        Niños Inscritos en este Subgrupo
+                      </h3>
+                      <p className="text-sm text-green-700 mb-4">
+                        Selecciona el niño para asignarle un apoderado responsable
+                      </p>
                     </div>
                   </div>
-                  
-                  {/* Mensajes de estado */}
-                  {dniLoading && (
-                    <p className="text-xs text-blue-600 flex items-center gap-1">
-                      <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Verificando DNI...
-                    </p>
-                  )}
-                  {!dniLoading && dniValidated && data.parent_dni.length === 8 && !showUserExistsWarning && (
-                    <p className="text-xs text-green-600">✓ DNI disponible</p>
-                  )}
-                  {errors.parent_dni && (
-                    <p role="alert" className="text-xs text-red-600">
-                      {errors.parent_dni}
-                    </p>
-                  )}
-                </div>
 
-                {/* Mensaje informativo si DNI no está validado */}
-                {!dniValidated && data.parent_dni.length > 0 && data.parent_dni.length < 8 && (
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl">
-                    <p className="text-xs text-blue-700">
-                      ℹ️ Complete el DNI de 8 dígitos para habilitar los demás campos
+                   <div className="space-y-4">
+                     <div>
+                       <label htmlFor="child_select" className="block text-sm font-medium text-gray-700 mb-2">
+                         Seleccionar niño
+                       </label>
+                       <select
+                         id="child_select"
+                         value={selectedChildId || ""}
+                         onChange={(e) => handleChildSelection(e.target.value)}
+                         className={classNames(
+                           inputBase,
+                           "bg-white/80 backdrop-blur border-gray-300 focus:ring-green-500 focus:border-green-500"
+                         )}
+                       >
+                         <option value="">-- Seleccionar un niño --</option>
+                         {hijosInscritos.map((hijo) => (
+                           <option key={hijo.id} value={hijo.id.toString()}>
+                             {hijo.nombres} - {hijo.doc_tipo}: {hijo.doc_numero}
+                             {hijo.user_id === 1 ? " (Sin apoderado)" : " (✓ Con apoderado)"}
+                           </option>
+                         ))}
+                       </select>
+                     </div>
+                  </div>
+
+                   {!selectedChildId && (
+                     <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                       <p className="text-sm text-yellow-800">
+                         ⚠️ Selecciona un niño del listado para continuar con la asignación de apoderado
+                       </p>
+                     </div>
+                   )}
+                </div>
+              </section>
+            )}
+
+            {/* Información del apoderado actual - Solo mostrar cuando el hijo tiene apoderado y NO esté en modo de creación */}
+            {selectedChild && selectedChild.user_id !== 1 && !userCreationMode && (
+              <section className="mb-8">
+                <div className="p-6 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                      <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-green-900">Apoderado Confirmado</h3>
+                      <p className="text-sm text-green-700">
+                        {selectedChild.nombres} ya tiene un apoderado asignado
+                      </p>
+                    </div>
+                  </div>
+
+                  {selectedChild.user && (
+                    <div className="bg-white/60 rounded-lg p-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Apoderado</span>
+                          <p className="text-base font-semibold text-gray-900">{selectedChild.user.name}</p>
+                        </div>
+                        {selectedChild.user.email && (
+                          <div>
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Correo</span>
+                            <p className="text-sm text-gray-700">{selectedChild.user.email}</p>
+                          </div>
+                        )}
+                        {selectedChild.user.phone && (
+                          <div>
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Teléfono</span>
+                            <p className="text-sm text-gray-700">{selectedChild.user.phone}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                    <p className="text-sm text-blue-800 flex items-center gap-2">
+                      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Este niño ya está correctamente asignado a un apoderado responsable.
                     </p>
                   </div>
-                )}
-
-                {/* Celular + Correo */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <TextField
-                    id="parent_phone"
-                    label="Celular"
-                    value={data.parent_phone}
-                    onChange={(e) =>
-                      setData("parent_phone", e.target.value.replace(/[^0-9]/g, ""))
-                    }
-                    placeholder={dniValidated ? "9XXXXXXXX" : "Primero complete el DNI"}
-                    required
-                    inputMode="numeric"
-                    pattern="^9\\d{8}$"
-                    autoComplete="tel"
-                    describedby="phone_help"
-                    error={errors.parent_phone}
-                    disabled={!dniValidated}
-                  />
-
-                  <TextField
-                    id="parent_email"
-                    label="Correo"
-                    type="email"
-                    value={data.parent_email}
-                    onChange={(e) => setData("parent_email", e.target.value)}
-                    placeholder={dniValidated ? "correo@ejemplo.com" : "Primero complete el DNI"}
-                    required
-                    autoComplete="email"
-                    error={errors.parent_email}
-                    disabled={!dniValidated}
-                  />
                 </div>
-              </div>
-            </section>
+              </section>
+            )}
 
             {/* Advertencia de usuario existente */}
             {showUserExistsWarning && existingUserData && (
@@ -847,58 +978,143 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
               </section>
             )}
 
-            {/* Hijos */}
-            <section
-              className={classNames(
-                "mb-8 transition-opacity",
-                !dniValidated && "opacity-50 pointer-events-none"
-              )}
-            >
-              <SectionTitle
-                subtitle={
-                  dniValidated
-                    ? "Debe completar los datos de su hijo para poder inscribirse correctamente. El numero del apoderado será usado como contacto de emergencia."
-                    : "Complete y valide el DNI del tutor para habilitar esta sección."
-                }
-              >
-                Datos de hijo(s)
-              </SectionTitle>
+            {/* Formulario para crear nuevo usuario cuando es necesario */}
+            {userCreationMode && selectedChild && (
+              <section className="mb-8">
+                <SectionTitle subtitle="Complete los datos del nuevo apoderado responsable">
+                  Crear Apoderado para {selectedChild.nombres}
+                </SectionTitle>
 
-            
+                <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-blue-900">Nuevo Apoderado</h4>
+                      <p className="text-sm text-blue-700">
+                        {selectedChild.nombres} necesita un apoderado responsable
+                      </p>
+                    </div>
+                  </div>
 
-              {!dniValidated && (
-                <div className=" bg-gray-50 border border-gray-200 rounded-xl"></div>
-              )}
+                  <div className="grid grid-cols-1 gap-4">
+                    <TextField
+                      id="new_parent_name"
+                      label="Nombre completo del apoderado"
+                      value={newUserData.name}
+                      onChange={(e) => {
+                        setNewUserData({...newUserData, name: e.target.value});
+                        setData('parent_name', e.target.value);
+                      }}
+                      placeholder="Nombre y apellidos del apoderado responsable"
+                      required
+                    />
 
-              {data.children.map((child, index) => (
-                <ChildCard
-                  key={index}
-                  index={index}
-                  child={child}
-                  updateChild={updateChild}
-                  removeChild={() => removeChild(index)}
-                  canRemove={data.children.length > 1}
-                  complete={isChildComplete(child)}
-                />
-              ))}
+                    <TextField
+                      id="new_parent_dni"
+                      label="DNI del apoderado"
+                      value={newUserData.dni}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^0-9]/g, "");
+                        if (value.length <= 8) {
+                          setNewUserData({...newUserData, dni: value});
+                          setData('parent_dni', value);
+                          if (value.length === 8) {
+                            setDniValidated(true);
+                          } else {
+                            setDniValidated(false);
+                          }
+                        }
+                      }}
+                      placeholder="12345678"
+                      required
+                      inputMode="numeric"
+                      pattern="^\d{8}$"
+                    />
 
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={addChild}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 focus:ring-2 focus:ring-red-500"
-                >
-                  <span aria-hidden>＋</span> Agregar hijo
-                </button>
-              </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <TextField
+                        id="new_parent_phone"
+                        label="Teléfono del apoderado"
+                        value={newUserData.phone}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/[^0-9]/g, "");
+                          setNewUserData({...newUserData, phone: value});
+                          setData('parent_phone', value);
+                        }}
+                        placeholder="987654321"
+                        required
+                        inputMode="numeric"
+                        pattern="^9\\d{8}$"
+                      />
 
-              {/* Mostrar error si no hay hijos completados (de validación del servidor/cliente) */}
-              {errors.children && (
-                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl">
-                  <p className="text-sm text-red-600 font-medium">{errors.children}</p>
+                      <TextField
+                        id="new_parent_email"
+                        label="Correo electrónico"
+                        type="email"
+                        value={newUserData.email}
+                        onChange={(e) => {
+                          setNewUserData({...newUserData, email: e.target.value});
+                          setData('parent_email', e.target.value);
+                        }}
+                        placeholder="correo@ejemplo.com"
+                        required
+                        autoComplete="email"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-6 flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (newUserData.name && newUserData.dni && newUserData.phone && newUserData.email) {
+                          if (newUserData.dni.length === 8) {
+                            setDniValidated(true);
+                            showToast('Datos del apoderado completados correctamente', 'success');
+                          } else {
+                            showError('DNI incompleto', 'El DNI debe tener 8 dígitos');
+                          }
+                        } else {
+                          showError('Campos incompletos', 'Complete todos los datos del apoderado');
+                        }
+                      }}
+                      className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Confirmar Datos del Apoderado
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUserCreationMode(false);
+                        setShowUserCreationForm(false);
+                        setSelectedChildId(null);
+                        setSelectedChild(null);
+                        setNewUserData({name: '', email: '', phone: '', dni: ''});
+                        setData({
+                          ...data,
+                          parent_name: '',
+                          parent_email: '',
+                          parent_phone: '',
+                          parent_dni: ''
+                        });
+                        setDniValidated(false);
+                      }}
+                      className="px-4 py-3 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 focus:ring-4 focus:ring-gray-300 transition"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
                 </div>
-              )}
-            </section>
+              </section>
+            )}
+
 
             {/* Consentimiento y políticas */}
             <section className="mb-6">
@@ -921,15 +1137,23 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
             <div className="sticky bottom-0 pt-4 bg-gradient-to-t from-white/80 to-transparent">
               <button
                 type="submit"
-                disabled={processing || !dniValidated || !consentChecked || !hasAtLeastOneCompleteChild}
+                disabled={
+                  processing || assignmentProcessing ||
+                  !selectedChildId ||
+                  !consentChecked ||
+                  (userCreationMode && !dniValidated) ||
+                  (selectedChild && selectedChild.user_id === 1 && !userCreationMode)
+                }
                 className={classNames(
                   "w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-semibold text-white",
                   "bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-300",
-                  (processing || !dniValidated || !consentChecked || !hasAtLeastOneCompleteChild) &&
+                  (processing || assignmentProcessing || !selectedChildId || !consentChecked ||
+                    (userCreationMode && !dniValidated) ||
+                    (selectedChild && selectedChild.user_id === 1 && !userCreationMode)) &&
                     "opacity-70 cursor-not-allowed"
                 )}
               >
-                {processing ? (
+                {processing || assignmentProcessing ? (
                   <>
                     <svg
                       className="animate-spin -ml-1 mr-2 h-5 w-5 text-white"
@@ -954,14 +1178,18 @@ export default function Index({ paquete, grupo, capacidadDisponible, error, flas
                     </svg>
                     Enviando…
                   </>
-                ) : !dniValidated ? (
-                  <>Complete el DNI para continuar</>
-                ) : !consentChecked ? (
+                 ) : !selectedChildId ? (
+                   <>Selecciona un niño</>
+                 ) : !consentChecked ? (
                   <>Acepte los términos para continuar</>
-                ) : !hasAtLeastOneCompleteChild ? (
-                  <>Complete al menos un hijo</>
+                ) : selectedChild && selectedChild.user_id === 1 && !userCreationMode ? (
+                  <>Complete los datos del apoderado</>
+                ) : userCreationMode && !dniValidated ? (
+                  <>Complete el DNI del apoderado</>
+                ) : userCreationMode ? (
+                  <>Crear y Asignar Apoderado</>
                 ) : (
-                  <>Enviar datos</>
+                  <>Confirmar Inscripcion</>
                 )}
               </button>
 

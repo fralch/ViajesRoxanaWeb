@@ -19,6 +19,63 @@ class StoreInscripcionFormRequest extends FormRequest
      */
     public function rules(): array
     {
+        \Log::info('=== FORM REQUEST VALIDATION START ===');
+        \Log::info('Request data in FormRequest:', $this->all());
+        \Log::info('Has assign_guardian?', ['has_assign_guardian' => $this->has('assign_guardian')]);
+        \Log::info('assign_guardian value:', ['assign_guardian' => $this->assign_guardian]);
+
+        // If this is just a guardian assignment/confirmation request
+        if ($this->has('assign_guardian') && $this->assign_guardian) {
+            \Log::info('Processing guardian assignment validation rules');
+
+            // Always require these for guardian assignment
+            $rules = [
+                'selected_child_id' => 'required|integer',
+                'assign_guardian' => 'required|boolean',
+            ];
+
+            // If confirming existing guardian, don't validate parent/children data
+            if ($this->has('confirm_existing_guardian') && $this->confirm_existing_guardian) {
+                \Log::info('Confirming existing guardian - minimal validation');
+                $rules['confirm_existing_guardian'] = 'required|boolean';
+                return $rules;
+            }
+
+            // If creating new user, validate parent data only
+            if ($this->has('user_creation_mode') && $this->user_creation_mode) {
+                \Log::info('User creation mode - validating parent data');
+                $rules['user_creation_mode'] = 'required|boolean';
+                $rules['parent_name'] = [
+                    'required',
+                    'string',
+                    'max:255',
+                    'min:3',
+                    'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/'
+                ];
+                $rules['parent_phone'] = [
+                    'required',
+                    'string',
+                    'regex:/^9\d{8}$/'
+                    // Remove unique validation for guardian assignment since we might be updating existing users
+                ];
+                $rules['parent_email'] = [
+                    'required',
+                    'email',
+                    'max:255'
+                    // Remove unique validation for guardian assignment since we might be updating existing users
+                ];
+                $rules['parent_dni'] = [
+                    'required',
+                    'string',
+                    'regex:/^\d{8}$/'
+                ];
+                return $rules;
+            }
+
+            return $rules;
+        }
+
+        // Regular inscription validation (original behavior)
         return [
             'parent_name' => [
                 'required',

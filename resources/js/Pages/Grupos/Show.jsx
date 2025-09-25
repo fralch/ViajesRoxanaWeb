@@ -7,10 +7,11 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import Modal from '@/Components/Modal';
 import Card from '@/Components/Card';
+import SubgrupoDisplay from '@/Components/SubgrupoDisplay';
 import { formatDateSafe, formatDateRange } from '@/utils/dateUtils';
 import { showDelete, showSuccess, showError } from '../../utils/swal';
 
-export default function Show({ grupo, inscripciones, filters }) {
+export default function Show({ grupo, inscripciones, filters, auth }) {
   const [search, setSearch] = useState(filters.search || '');
 
   const handleSearch = (e) => {
@@ -61,40 +62,21 @@ export default function Show({ grupo, inscripciones, filters }) {
     );
   };
 
-  const EncargadosPills = ({ grupo }) => {
-    const hasInternos = Array.isArray(grupo.nombre_encargado) && grupo.nombre_encargado.length > 0;
-    const hasAgencias = Array.isArray(grupo.nombre_encargado_agencia) && grupo.nombre_encargado_agencia.length > 0;
-
-    if (!hasInternos && !hasAgencias) {
-      return <span className="text-gray-400 text-sm">Sin encargados</span>;
+  const SubgruposPills = ({ subgrupos }) => {
+    if (!subgrupos || subgrupos.length === 0) {
+      return <span className="text-gray-400 text-sm">Sin subgrupos configurados</span>;
     }
 
     return (
       <div className="space-y-1">
-        {hasInternos && (
-          <div>
-            <div className="text-[11px] font-medium text-gray-600 mb-1">Internos:</div>
-            <div className="flex flex-wrap gap-1">
-              {grupo.nombre_encargado.map((nombre, index) => (
-                <span key={`int-${index}`} className="inline-flex items-center px-2 py-1 rounded-full text-[11px] font-medium bg-green-100 text-green-800">
-                  {grupo.tipo_encargado?.[index] ? `${grupo.tipo_encargado[index]} - ` : ''}{nombre}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-        {hasAgencias && (
-          <div className={hasInternos ? 'pt-1' : ''}>
-            <div className="text-[11px] font-medium text-gray-600 mb-1">Agencia:</div>
-            <div className="flex flex-wrap gap-1">
-              {grupo.nombre_encargado_agencia.map((nombre, index) => (
-                <span key={`ag-${index}`} className="inline-flex items-center px-2 py-1 rounded-full text-[11px] font-medium bg-amber-100 text-amber-800">
-                  {grupo.tipo_encargado_agencia?.[index] ? `${grupo.tipo_encargado_agencia[index]} - ` : ''}{nombre}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
+        <div className="text-[11px] font-medium text-gray-600 mb-1">Subgrupos:</div>
+        <div className="flex flex-wrap gap-1">
+          {subgrupos.map((subgrupo) => (
+            <span key={subgrupo.id} className="inline-flex items-center px-2 py-1 rounded-full text-[11px] font-medium bg-blue-100 text-blue-800">
+              {subgrupo.nombre} ({subgrupo.inscripciones_count || 0}/{subgrupo.capacidad_maxima})
+            </span>
+          ))}
+        </div>
       </div>
     );
   };
@@ -160,11 +142,18 @@ export default function Show({ grupo, inscripciones, filters }) {
                 </div>
               </div>
               <div className="mt-4">
-                <span className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Encargados</span>
-                <EncargadosPills grupo={grupo} />
+                <span className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Resumen de Subgrupos</span>
+                <SubgruposPills subgrupos={grupo.subgrupos} />
               </div>
             </div>
           </Card>
+
+          {/* Subgrupos */}
+          <SubgrupoDisplay
+            subgrupos={grupo.subgrupos || []}
+            grupoId={grupo.id}
+            canManage={auth?.user?.is_admin}
+          />
 
           {/* Inscripciones */}
           <Card className="overflow-hidden">

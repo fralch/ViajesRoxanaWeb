@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Grupo;
+use App\Models\Subgrupo;
 use App\Models\Paquete;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Redirect;
 
@@ -21,10 +23,14 @@ class GrupoController extends Controller
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('nombre', 'like', "%{$search}%")
-                  ->orWhereJsonContains('nombre_encargado', $search)
-                  ->orWhereJsonContains('nombre_encargado_agencia', $search)
                   ->orWhereHas('paquete', function($pq) use ($search) {
-                      $pq->where('nombre', 'like', "%{$search}%");
+                      $pq->where('nombre', 'like', "%{$search}%")
+                        ->orWhere('destino', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('subgrupos', function($sq) use ($search) {
+                      $sq->where('nombre', 'like', "%{$search}%")
+                        ->orWhere('nombre_encargado_principal', 'like', "%{$search}%")
+                        ->orWhere('nombre_encargado_secundario', 'like', "%{$search}%");
                   });
             });
         }
@@ -62,25 +68,43 @@ class GrupoController extends Controller
             'fecha_inicio' => 'required|date|after_or_equal:today',
             'fecha_fin' => 'required|date|after_or_equal:fecha_inicio',
             'capacidad' => 'required|integer|min:1|max:100',
-            'tipo_encargado' => 'required|array',
-            'tipo_encargado.*' => 'required|string|max:255',
-            'nombre_encargado' => 'required|array',
-            'nombre_encargado.*' => 'required|string|max:255',
-            'celular_encargado' => 'required|array',
-            'celular_encargado.*' => 'required|string|max:20',
-            'tipo_encargado_agencia' => 'nullable|array',
-            'tipo_encargado_agencia.*' => 'nullable|string|max:255',
-            'nombre_encargado_agencia' => 'nullable|array',
-            'nombre_encargado_agencia.*' => 'nullable|string|max:255',
-            'celular_encargado_agencia' => 'nullable|array',
-            'celular_encargado_agencia.*' => 'nullable|string|max:20',
-            'activo' => 'boolean'
+            'activo' => 'boolean',
+            'subgrupos' => 'nullable|array',
+            'subgrupos.*.nombre' => 'required|string|max:255',
+            'subgrupos.*.descripcion' => 'nullable|string',
+            'subgrupos.*.tipo_encargado_principal' => 'required|in:padre,madre,tutor_legal,familiar,otro',
+            'subgrupos.*.nombre_encargado_principal' => 'required|string|max:255',
+            'subgrupos.*.celular_encargado_principal' => 'required|string|max:20',
+            'subgrupos.*.email_encargado_principal' => 'nullable|email|max:255',
+            'subgrupos.*.tipo_encargado_secundario' => 'nullable|in:padre,madre,tutor_legal,familiar,otro',
+            'subgrupos.*.nombre_encargado_secundario' => 'nullable|string|max:255',
+            'subgrupos.*.celular_encargado_secundario' => 'nullable|string|max:20',
+            'subgrupos.*.email_encargado_secundario' => 'nullable|email|max:255',
+            'subgrupos.*.capacidad_maxima' => 'required|integer|min:1|max:50',
+            'subgrupos.*.activo' => 'boolean',
+            'subgrupos.*.observaciones' => 'nullable|string'
         ]);
         
         $validated['activo'] = $request->boolean('activo', true);
-        
-        Grupo::create($validated);
-        
+
+        DB::transaction(function () use ($validated, $request) {
+            // Extract subgroups data before creating the group
+            $subgruposData = $validated['subgrupos'] ?? [];
+            unset($validated['subgrupos']);
+
+            // Create the group
+            $grupo = Grupo::create($validated);
+
+            // Create subgroups if any
+            if (!empty($subgruposData)) {
+                foreach ($subgruposData as $subgrupoData) {
+                    $subgrupoData['grupo_id'] = $grupo->id;
+                    $subgrupoData['activo'] = $subgrupoData['activo'] ?? true;
+                    Subgrupo::create($subgrupoData);
+                }
+            }
+        });
+
         return Redirect::route('grupos.index')
                       ->with('success', 'Grupo creado exitosamente.');
     }
@@ -90,9 +114,9 @@ class GrupoController extends Controller
      */
     public function show(Request $request, Grupo $grupo)
     {
-        $grupo->load('paquete');
-        
-        $inscripcionesQuery = $grupo->inscripciones()->with(['hijo', 'user']);
+        $grupo->load(['paquete', 'subgrupos']);
+
+        $inscripcionesQuery = $grupo->inscripciones()->with(['hijo', 'user', 'subgrupo']);
         
         if ($request->has('search') && $request->search) {
             $search = $request->search;
@@ -123,9 +147,9 @@ class GrupoController extends Controller
         $paquetes = Paquete::where('activo', true)
                           ->orderBy('nombre')
                           ->get(['id', 'nombre', 'destino']);
-                          
+
         return Inertia::render('Grupos/Edit', [
-            'grupo' => $grupo->load('paquete'),
+            'grupo' => $grupo->load(['paquete', 'subgrupos']),
             'paquetes' => $paquetes
         ]);
     }
@@ -141,25 +165,13 @@ class GrupoController extends Controller
             'fecha_inicio' => 'required|date',
             'fecha_fin' => 'required|date|after_or_equal:fecha_inicio',
             'capacidad' => 'required|integer|min:1|max:100',
-            'tipo_encargado' => 'required|array',
-            'tipo_encargado.*' => 'required|string|max:255',
-            'nombre_encargado' => 'required|array',
-            'nombre_encargado.*' => 'required|string|max:255',
-            'celular_encargado' => 'required|array',
-            'celular_encargado.*' => 'required|string|max:20',
-            'tipo_encargado_agencia' => 'nullable|array',
-            'tipo_encargado_agencia.*' => 'nullable|string|max:255',
-            'nombre_encargado_agencia' => 'nullable|array',
-            'nombre_encargado_agencia.*' => 'nullable|string|max:255',
-            'celular_encargado_agencia' => 'nullable|array',
-            'celular_encargado_agencia.*' => 'nullable|string|max:20',
             'activo' => 'boolean'
         ]);
-        
+
         $validated['activo'] = $request->boolean('activo', $grupo->activo);
-        
+
         $grupo->update($validated);
-        
+
         return Redirect::route('grupos.index')
                       ->with('success', 'Grupo actualizado exitosamente.');
     }
