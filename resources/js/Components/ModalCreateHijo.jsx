@@ -96,10 +96,9 @@ export default function ModalCreateHijo({
                                 className="mt-1 block w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-md shadow-sm"
                                 required
                             >
-                                <option value="CC">Cédula de Ciudadanía</option>
-                                <option value="TI">Tarjeta de Identidad</option>
-                                <option value="RC">Registro Civil</option>
-                                <option value="CE">Cédula de Extranjería</option>
+                                <option value="dni">DNI</option>
+                                <option value="carnet_extranjeria">Carnet de Extranjería</option>
+                                <option value="pasaporte">Pasaporte</option>
                             </select>
                             <InputError message={errors.doc_tipo} className="mt-2" />
                         </div>
