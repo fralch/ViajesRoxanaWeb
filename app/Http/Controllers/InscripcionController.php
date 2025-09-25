@@ -345,7 +345,7 @@ class InscripcionController extends Controller
             ->whereHas('inscripciones', function($query) use ($subgrupo) {
                 $query->where('subgrupo_id', $subgrupo->id);
             })
-            ->with('user:id,name,email')
+            ->with('user:id,name,email,phone')
             ->get()
             ->map(function($hijo) {
                 return [
@@ -358,7 +358,8 @@ class InscripcionController extends Controller
                     'user' => $hijo->user ? [
                         'id' => $hijo->user->id,
                         'name' => $hijo->user->name,
-                        'email' => $hijo->user->email
+                        'email' => $hijo->user->email,
+                        'phone' => $hijo->user->phone
                     ] : null
                 ];
             });

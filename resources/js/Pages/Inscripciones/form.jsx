@@ -811,6 +811,12 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                             <p className="text-sm text-gray-700">{selectedChild.user.email}</p>
                           </div>
                         )}
+                        {selectedChild.user.phone && (
+                          <div>
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Teléfono</span>
+                            <p className="text-sm text-gray-700">{selectedChild.user.phone}</p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
