@@ -513,9 +513,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
     }
 
     // Determinar la URL según si es inscripción específica o formulario general
-    const submitUrl = paquete && grupo && subgrupo
-      ? `/paquete/${paquete.id}/grupo/${grupo.id}/subgrupo/${subgrupo.id}/form`
-      : paquete && grupo
+    const submitUrl = paquete && grupo
       ? `/paquete/${paquete.id}/grupo/${grupo.id}/form`
       : "/inscripciones";
 
@@ -704,17 +702,15 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                       {paquete.nombre}
                     </h3>
                     <div className="space-y-1">
-                      <p className="text-sm text-blue-600 font-medium">
-                        Grupo: {grupo.nombre}
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex h-2 w-2 rounded-full bg-blue-500"></span>
+                        <p className="text-sm text-blue-600 font-medium">
+                          Grupo: {grupo.nombre}
+                        </p>
+                      </div>
+                      <p className="text-xs text-blue-500 mt-1">
+                        Confirmación de inscripciones a nivel de grupo
                       </p>
-                      {subgrupo && (
-                        <div className="flex items-center gap-2">
-                          <span className="inline-flex h-2 w-2 rounded-full bg-green-500"></span>
-                          <p className="text-sm text-green-700 font-semibold">
-                            Subgrupo: {subgrupo.nombre}
-                          </p>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -799,7 +795,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                     </div>
                     <div className="flex-1">
                       <h3 className="text-xl font-bold text-green-900 mb-1">
-                        Niños Inscritos en este Subgrupo
+                        Niños Inscritos en este Grupo
                       </h3>
                       <p className="text-sm text-green-700 mb-4">
                         Selecciona el niño para asignarle un apoderado responsable
@@ -824,7 +820,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                          <option value="">-- Seleccionar un niño --</option>
                          {hijosInscritos.map((hijo) => (
                            <option key={hijo.id} value={hijo.id.toString()}>
-                             {hijo.nombres} - {hijo.doc_tipo}: {hijo.doc_numero}
+                             {hijo.nombres} - {hijo.doc_tipo}: {hijo.doc_numero} - {hijo.subgrupo_nombre}
                              {hijo.user_id === 1 ? " (Sin apoderado)" : " (✓ Con apoderado)"}
                            </option>
                          ))}
