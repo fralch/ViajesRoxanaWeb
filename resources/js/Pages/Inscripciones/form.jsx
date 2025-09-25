@@ -498,10 +498,10 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
     e.preventDefault();
     clearErrors();
 
-    if (!selectedChildId) {
-      showWarning('Niño no seleccionado', 'Debes seleccionar un niño de la lista.');
-      return;
-    }
+     if (!selectedChildId) {
+       showWarning('Niño no seleccionado', 'Selecciona un niño del listado para continuar.');
+       return;
+     }
 
     if (!selectedChild) {
       showWarning('Error', 'Error al obtener los datos del niño seleccionado.');
@@ -744,74 +744,38 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                     </div>
                   </div>
 
-                  <div className="space-y-3">
-                    {hijosInscritos.map((hijo) => (
-                      <div
-                        key={hijo.id}
-                        className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                          selectedChildId === hijo.id.toString()
-                            ? 'border-green-500 bg-green-100 shadow-md'
-                            : 'border-gray-200 bg-white hover:border-green-300 hover:bg-green-50'
-                        }`}
-                        onClick={() => handleChildSelection(hijo.id.toString())}
-                      >
-                        <div className="flex items-start gap-4">
-                          <input
-                            type="radio"
-                            name="selected_child"
-                            value={hijo.id}
-                            checked={selectedChildId === hijo.id.toString()}
-                            onChange={() => handleChildSelection(hijo.id.toString())}
-                            className="h-4 w-4 mt-1 text-green-600 focus:ring-green-500"
-                          />
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between mb-2">
-                              <h4 className="font-semibold text-gray-900">{hijo.nombres}</h4>
-                              {hijo.user_id === 1 && (
-                                <span className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-xs font-medium">
-                                  Sin apoderado
-                                </span>
-                              )}
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4 text-sm">
-                              <div>
-                                <span className="text-gray-500">Documento:</span>
-                                <span className="ml-2 text-gray-900">{hijo.doc_tipo}: {hijo.doc_numero}</span>
-                              </div>
-                              {hijo.fecha_nacimiento && (
-                                <div>
-                                  <span className="text-gray-500">Fecha nacimiento:</span>
-                                  <span className="ml-2 text-gray-900">
-                                    {new Date(hijo.fecha_nacimiento).toLocaleDateString('es-CO')}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-
-                            {hijo.user && hijo.user_id !== 1 && (
-                              <div className="mt-2 p-2 bg-blue-50 rounded-lg">
-                                <p className="text-sm text-blue-800">
-                                  <span className="font-medium">Apoderado actual:</span> {hijo.user.name}
-                                </p>
-                                {hijo.user.email && (
-                                  <p className="text-xs text-blue-600">{hijo.user.email}</p>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                   <div className="space-y-4">
+                     <div>
+                       <label htmlFor="child_select" className="block text-sm font-medium text-gray-700 mb-2">
+                         Seleccionar niño
+                       </label>
+                       <select
+                         id="child_select"
+                         value={selectedChildId || ""}
+                         onChange={(e) => handleChildSelection(e.target.value)}
+                         className={classNames(
+                           inputBase,
+                           "bg-white/80 backdrop-blur border-gray-300 focus:ring-green-500 focus:border-green-500"
+                         )}
+                       >
+                         <option value="">-- Seleccionar un niño --</option>
+                         {hijosInscritos.map((hijo) => (
+                           <option key={hijo.id} value={hijo.id.toString()}>
+                             {hijo.nombres} - {hijo.doc_tipo}: {hijo.doc_numero}
+                             {hijo.user_id === 1 ? " (Sin apoderado)" : " (✓ Con apoderado)"}
+                           </option>
+                         ))}
+                       </select>
+                     </div>
                   </div>
 
-                  {!selectedChildId && (
-                    <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <p className="text-sm text-yellow-800">
-                        ⚠️ Debes seleccionar un niño para continuar con la asignación de apoderado
-                      </p>
-                    </div>
-                  )}
+                   {!selectedChildId && (
+                     <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                       <p className="text-sm text-yellow-800">
+                         ⚠️ Selecciona un niño del listado para continuar con la asignación de apoderado
+                       </p>
+                     </div>
+                   )}
                 </div>
               </section>
             )}
@@ -1145,9 +1109,9 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                     </svg>
                     Enviando…
                   </>
-                ) : !selectedChildId ? (
-                  <>Seleccione un niño</>
-                ) : !consentChecked ? (
+                 ) : !selectedChildId ? (
+                   <>Selecciona un niño</>
+                 ) : !consentChecked ? (
                   <>Acepte los términos para continuar</>
                 ) : selectedChild && selectedChild.user_id === 1 && !userCreationMode ? (
                   <>Complete los datos del apoderado</>
