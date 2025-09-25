@@ -5,10 +5,12 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import Card from '@/Components/Card';
+import ModalCreateInscripcion from '@/Components/ModalCreateInscripcion';
 import { showDelete, showSuccess, showError } from '@/utils/swal';
 
-export default function Show({ subgrupo, inscripciones = {}, filters = {} }) {
+export default function Show({ subgrupo, inscripciones = {}, filters = {}, paquetes = [], grupos = [], subgrupos = [], hijos = [] }) {
   const [search, setSearch] = useState(filters.search || '');
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -69,6 +71,14 @@ export default function Show({ subgrupo, inscripciones = {}, filters = {} }) {
     return tipos[tipo] || tipo;
   };
 
+  const openCreateModal = () => {
+    setShowCreateModal(true);
+  };
+
+  const closeCreateModal = () => {
+    setShowCreateModal(false);
+  };
+
   return (
     <AuthenticatedLayout>
       <Head title={`Subgrupo: ${subgrupo.nombre} - Inscripciones`} />
@@ -101,14 +111,16 @@ export default function Show({ subgrupo, inscripciones = {}, filters = {} }) {
                   Editar
                 </SecondaryButton>
               </Link>
-              <Link href={route('inscripciones.create')} className="w-full sm:w-auto">
-                <PrimaryButton size="lg" className="w-full sm:w-auto gap-2 bg-blue-600 hover:bg-blue-700 focus:ring-blue-500">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  Agregar Inscripción
-                </PrimaryButton>
-              </Link>
+               <PrimaryButton
+                 size="lg"
+                 className="w-full sm:w-auto gap-2 bg-blue-600 hover:bg-blue-700 focus:ring-blue-500"
+                 onClick={openCreateModal}
+               >
+                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                 </svg>
+                 Agregar Inscripción
+               </PrimaryButton>
             </div>
           </div>
 
@@ -443,6 +455,17 @@ export default function Show({ subgrupo, inscripciones = {}, filters = {} }) {
           </Card>
         </div>
       </div>
+
+      {/* Create Inscription Modal */}
+      <ModalCreateInscripcion
+        show={showCreateModal}
+        onClose={closeCreateModal}
+        subgrupo={subgrupo}
+        paquetes={paquetes}
+        grupos={grupos}
+        subgrupos={subgrupos}
+        hijos={hijos}
+      />
     </AuthenticatedLayout>
   );
 }

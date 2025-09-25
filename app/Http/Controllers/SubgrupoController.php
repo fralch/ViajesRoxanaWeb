@@ -55,7 +55,19 @@ class SubgrupoController extends Controller
             ]);
         }
 
-        return Inertia::render('Subgrupos/Show', compact('subgrupo'));
+        // Load data needed for inscription creation modal
+        $paquetes = \App\Models\Paquete::where('activo', true)->get();
+        $grupos = \App\Models\Grupo::where('activo', true)->with('paquete')->get();
+        $subgrupos = \App\Models\Subgrupo::activos()->with(['grupo'])->get();
+
+        // Si no es admin, solo mostrar sus hijos
+        if (\Illuminate\Support\Facades\Auth::user()->is_admin) {
+            $hijos = \App\Models\Hijo::with('user')->get();
+        } else {
+            $hijos = \App\Models\Hijo::where('user_id', \Illuminate\Support\Facades\Auth::id())->get();
+        }
+
+        return Inertia::render('Subgrupos/Show', compact('subgrupo', 'paquetes', 'grupos', 'subgrupos', 'hijos'));
     }
 
     public function create(): Response
