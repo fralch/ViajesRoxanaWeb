@@ -32,30 +32,18 @@ export default function ModalCreateHijo({
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        console.log('=== MODAL CREATE HIJO DEBUG ===');
-        console.log('Form data being submitted:', data);
-        console.log('Current user ID prop:', currentUserId);
-        console.log('Processing state:', processing);
-        console.log('Current errors:', errors);
-
-        // Prepare data for submission - remove user_id if it's null or empty
         const submitData = { ...data };
         if (!submitData.user_id) {
             delete submitData.user_id;
         }
 
-        console.log('Final submission data:', submitData);
-
         post(route('hijos.store'), submitData, {
             onSuccess: (response) => {
-                console.log('SUCCESS - Response received:', response);
                 showSuccess('¡Hijo registrado!', 'El hijo ha sido registrado exitosamente.');
-                onHijoCreated(response.props.hijo || response.data);
+                onHijoCreated(response.props?.hijo || response.data);
                 handleClose();
             },
-            onError: (errors) => {
-                console.log('ERROR - Validation errors:', errors);
-                console.log('ERROR - Form data that failed:', submitData);
+            onError: () => {
                 showError('Error', 'No se pudo registrar el hijo. Verifica los datos e intenta nuevamente.');
             }
         });
@@ -65,8 +53,6 @@ export default function ModalCreateHijo({
         reset();
         onClose();
     };
-
-
 
     return (
         <Modal show={show} onClose={handleClose} maxWidth="2xl">
