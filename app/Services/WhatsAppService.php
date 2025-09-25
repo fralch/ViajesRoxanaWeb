@@ -356,7 +356,7 @@ class WhatsAppService
             $mensaje .= "📍 Paquete: {$paqueteName}\n";
             $mensaje .= "👥 Subgrupo: {$subgrupoName}\n\n";
             $mensaje .= "🔐 Sus credenciales de acceso son:\n";
-            $mensaje .= "📧 Email: {$email}\n";
+            $mensaje .= "📧 Usuario: {$email}\n";
             $mensaje .= "🔑 Contraseña: {$password}\n\n";
             $mensaje .= "Para más detalles, ingrese a: https://grupoviajesroxana.com\n\n";
             $mensaje .= "¡Gracias por confiar en nosotros! 🌟";
