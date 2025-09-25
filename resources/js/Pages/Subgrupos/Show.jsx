@@ -71,6 +71,29 @@ export default function Show({ subgrupo, inscripciones = {}, filters = {}, paque
     return tipos[tipo] || tipo;
   };
 
+  const calculateAge = (fechaNacimiento) => {
+    if (!fechaNacimiento) return 'N/A';
+    const today = new Date();
+    const birthDate = new Date(fechaNacimiento);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return `${age} años`;
+  };
+
+  const formatDocumentType = (tipo) => {
+    const tipos = {
+      cedula: 'C.C.',
+      tarjeta_identidad: 'T.I.',
+      cedula_extranjeria: 'C.E.',
+      pasaporte: 'Pasaporte',
+      registro_civil: 'R.C.'
+    };
+    return tipos[tipo] || tipo;
+  };
+
   const openCreateModal = () => {
     setShowCreateModal(true);
   };
@@ -292,45 +315,117 @@ export default function Show({ subgrupo, inscripciones = {}, filters = {}, paque
               {/* Mobile list (cards) */}
               <div className="md:hidden">
                 {inscripciones.data && inscripciones.data.length > 0 ? (
-                  <ul className="space-y-3">
+                  <ul className="space-y-4">
                     {inscripciones.data.map((inscripcion) => (
                       <li key={inscripcion.id}>
-                        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-                          <div className="flex items-start justify-between gap-3">
+                        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+                          {/* Header with child name and actions */}
+                          <div className="flex items-start justify-between gap-3 mb-4">
                             <div>
-                              <div className="text-base font-semibold text-gray-900">{inscripcion.hijo.nombres}</div>
-                              <div className="text-xs text-gray-500">ID: {inscripcion.id}</div>
+                              <div className="text-lg font-semibold text-gray-900">{inscripcion.hijo.nombres}</div>
+                              <div className="text-xs text-gray-500">Inscripción ID: {inscripcion.id}</div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Link
+                                href={route('inscripciones.edit', inscripcion.id)}
+                                className="inline-flex items-center justify-center h-9 px-3 rounded-lg text-blue-700 hover:text-blue-800 hover:bg-blue-50 transition-colors"
+                                title="Editar inscripción"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                              </Link>
+                              <button
+                                onClick={() => confirmDelete(inscripcion)}
+                                className="inline-flex items-center justify-center h-9 px-3 rounded-lg text-red-700 hover:text-red-800 hover:bg-red-50 transition-colors"
+                                title="Eliminar inscripción"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
                             </div>
                           </div>
 
-                          <div className="mt-3 grid grid-cols-1 gap-2">
+                          {/* Child Information Grid */}
+                          <div className="grid grid-cols-2 gap-4 mb-4">
                             <div className="text-sm">
-                              <span className="block text-[11px] uppercase tracking-wide text-gray-500">Usuario</span>
+                              <span className="block text-[11px] uppercase tracking-wide text-gray-500 mb-1">Documento</span>
+                              <span className="font-medium text-gray-900">
+                                {formatDocumentType(inscripcion.hijo.doc_tipo)} {inscripcion.hijo.doc_numero}
+                              </span>
+                            </div>
+                            <div className="text-sm">
+                              <span className="block text-[11px] uppercase tracking-wide text-gray-500 mb-1">Edad</span>
+                              <span className="font-medium text-gray-900">
+                                {calculateAge(inscripcion.hijo.fecha_nacimiento)}
+                              </span>
+                            </div>
+                            <div className="text-sm">
+                              <span className="block text-[11px] uppercase tracking-wide text-gray-500 mb-1">Usuario Responsable</span>
                               <span className="font-medium text-gray-900">{inscripcion.user.name}</span>
                             </div>
+                            <div className="text-sm">
+                              <span className="block text-[11px] uppercase tracking-wide text-gray-500 mb-1">Paquete</span>
+                              <span className="font-medium text-gray-900">{inscripcion.paquete?.nombre || '—'}</span>
+                            </div>
                           </div>
 
-                          <div className="mt-4 flex items-center justify-end gap-2">
-                            <Link
-                              href={route('inscripciones.edit', inscripcion.id)}
-                              className="inline-flex items-center justify-center h-10 px-3 rounded-lg text-blue-700 hover:text-blue-800 hover:bg-blue-50 transition-colors"
-                              title="Editar inscripción"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          {/* Child Details - Collapsible */}
+                          <details className="group">
+                            <summary className="flex cursor-pointer list-none items-center justify-between py-2 text-sm font-medium text-gray-700 group-open:text-blue-600">
+                              <span>Ver detalles del niño</span>
+                              <svg className="h-4 w-4 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                               </svg>
-                            </Link>
-
-                            <button
-                              onClick={() => confirmDelete(inscripcion)}
-                              className="inline-flex items-center justify-center h-10 px-3 rounded-lg text-red-700 hover:text-red-800 hover:bg-red-50 transition-colors"
-                              title="Eliminar inscripción"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
-                          </div>
+                            </summary>
+                            <div className="pt-3 pb-1">
+                              <div className="grid grid-cols-1 gap-3">
+                                {inscripcion.hijo.pasatiempos && (
+                                  <div className="text-sm">
+                                    <span className="block text-[11px] uppercase tracking-wide text-gray-500 mb-1">Pasatiempos</span>
+                                    <p className="text-gray-900">{inscripcion.hijo.pasatiempos}</p>
+                                  </div>
+                                )}
+                                {inscripcion.hijo.deportes && (
+                                  <div className="text-sm">
+                                    <span className="block text-[11px] uppercase tracking-wide text-gray-500 mb-1">Deportes</span>
+                                    <p className="text-gray-900">{inscripcion.hijo.deportes}</p>
+                                  </div>
+                                )}
+                                <div className="grid grid-cols-2 gap-3">
+                                  {inscripcion.hijo.plato_favorito && (
+                                    <div className="text-sm">
+                                      <span className="block text-[11px] uppercase tracking-wide text-gray-500 mb-1">Plato Favorito</span>
+                                      <p className="text-gray-900">{inscripcion.hijo.plato_favorito}</p>
+                                    </div>
+                                  )}
+                                  {inscripcion.hijo.color_favorito && (
+                                    <div className="text-sm">
+                                      <span className="block text-[11px] uppercase tracking-wide text-gray-500 mb-1">Color Favorito</span>
+                                      <p className="text-gray-900">{inscripcion.hijo.color_favorito}</p>
+                                    </div>
+                                  )}
+                                </div>
+                                {inscripcion.hijo.informacion_adicional && (
+                                  <div className="text-sm">
+                                    <span className="block text-[11px] uppercase tracking-wide text-gray-500 mb-1">Información Adicional</span>
+                                    <p className="text-gray-900">{inscripcion.hijo.informacion_adicional}</p>
+                                  </div>
+                                )}
+                                {inscripcion.hijo.nums_emergencia && inscripcion.hijo.nums_emergencia.length > 0 && (
+                                  <div className="text-sm">
+                                    <span className="block text-[11px] uppercase tracking-wide text-gray-500 mb-1">Números de Emergencia</span>
+                                    <div className="space-y-1">
+                                      {inscripcion.hijo.nums_emergencia.map((num, index) => (
+                                        <p key={index} className="text-gray-900">{num}</p>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </details>
                         </div>
                       </li>
                     ))}
@@ -356,7 +451,11 @@ export default function Show({ subgrupo, inscripciones = {}, filters = {}, paque
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hijo</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Documento</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Edad</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario Responsable</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paquete</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Detalles</th>
                       <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                     </tr>
                   </thead>
@@ -364,14 +463,76 @@ export default function Show({ subgrupo, inscripciones = {}, filters = {}, paque
                     {inscripciones.data && inscripciones.data.length > 0 ? (
                       inscripciones.data.map((inscripcion) => (
                         <tr key={inscripcion.id} className="hover:bg-gray-50 transition-colors duration-150">
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-6 py-4">
                             <div className="text-sm font-medium text-gray-900">{inscripcion.hijo.nombres}</div>
-                            <div className="text-sm text-gray-500">ID: {inscripcion.id}</div>
+                            <div className="text-xs text-gray-500">ID: {inscripcion.id}</div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-6 py-4">
+                            <div className="text-sm text-gray-900">
+                              {formatDocumentType(inscripcion.hijo.doc_tipo)}
+                            </div>
+                            <div className="text-xs text-gray-500">{inscripcion.hijo.doc_numero}</div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm text-gray-900">
+                              {calculateAge(inscripcion.hijo.fecha_nacimiento)}
+                            </div>
+                            {inscripcion.hijo.fecha_nacimiento && (
+                              <div className="text-xs text-gray-500">
+                                {new Date(inscripcion.hijo.fecha_nacimiento).toLocaleDateString('es-CO')}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4">
                             <div className="text-sm text-gray-900">{inscripcion.user.name}</div>
+                            {inscripcion.user.email && (
+                              <div className="text-xs text-gray-500">{inscripcion.user.email}</div>
+                            )}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <td className="px-6 py-4">
+                            <div className="text-sm text-gray-900">{inscripcion.paquete?.nombre || '—'}</div>
+                            {inscripcion.paquete?.destino && (
+                              <div className="text-xs text-gray-500">{inscripcion.paquete.destino}</div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="space-y-1">
+                              {inscripcion.hijo.pasatiempos && (
+                                <div className="text-xs">
+                                  <span className="text-gray-500">Pasatiempos:</span>
+                                  <span className="ml-1 text-gray-900">{inscripcion.hijo.pasatiempos.substring(0, 30)}{inscripcion.hijo.pasatiempos.length > 30 ? '...' : ''}</span>
+                                </div>
+                              )}
+                              {inscripcion.hijo.deportes && (
+                                <div className="text-xs">
+                                  <span className="text-gray-500">Deportes:</span>
+                                  <span className="ml-1 text-gray-900">{inscripcion.hijo.deportes.substring(0, 30)}{inscripcion.hijo.deportes.length > 30 ? '...' : ''}</span>
+                                </div>
+                              )}
+                              <div className="flex gap-2 text-xs">
+                                {inscripcion.hijo.plato_favorito && (
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-800">
+                                    🍽️ {inscripcion.hijo.plato_favorito}
+                                  </span>
+                                )}
+                                {inscripcion.hijo.color_favorito && (
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+                                    🎨 {inscripcion.hijo.color_favorito}
+                                  </span>
+                                )}
+                              </div>
+                              {inscripcion.hijo.nums_emergencia && inscripcion.hijo.nums_emergencia.length > 0 && (
+                                <div className="text-xs">
+                                  <span className="text-gray-500">Emergencia:</span>
+                                  <span className="ml-1 text-gray-900">{inscripcion.hijo.nums_emergencia[0]}</span>
+                                  {inscripcion.hijo.nums_emergencia.length > 1 && (
+                                    <span className="text-gray-500"> (+{inscripcion.hijo.nums_emergencia.length - 1})</span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-center">
                             <div className="flex items-center justify-center gap-2">
                               <Link
                                 href={route('inscripciones.edit', inscripcion.id)}
@@ -398,7 +559,7 @@ export default function Show({ subgrupo, inscripciones = {}, filters = {}, paque
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={3} className="px-6 py-12 text-center">
+                        <td colSpan={7} className="px-6 py-12 text-center">
                           <div className="flex flex-col items-center justify-center text-gray-500">
                             <svg className="w-12 h-12 mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />

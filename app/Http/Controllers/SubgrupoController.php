@@ -46,7 +46,7 @@ class SubgrupoController extends Controller
 
     public function show(Subgrupo $subgrupo): Response|JsonResponse
     {
-        $subgrupo->load(['grupo.paquete', 'inscripciones.hijo']);
+        $subgrupo->load(['grupo.paquete']);
 
         if (request()->wantsJson()) {
             return response()->json([
@@ -54,6 +54,38 @@ class SubgrupoController extends Controller
                 'data' => $subgrupo
             ]);
         }
+
+        // Get search parameter
+        $search = request('search');
+
+        // Load paginated inscriptions with detailed hijo information
+        $inscripciones = $subgrupo->inscripciones()
+            ->with([
+                'hijo' => function($query) {
+                    $query->select('id', 'nombres', 'doc_tipo', 'doc_numero', 'fecha_nacimiento',
+                                   'pasatiempos', 'deportes', 'plato_favorito', 'color_favorito',
+                                   'informacion_adicional', 'user_id', 'nums_emergencia');
+                },
+                'hijo.user:id,name,email',
+                'user:id,name,email',
+                'paquete:id,nombre,destino,descripcion',
+                'grupo:id,nombre'
+            ])
+            ->when($search, function ($query, $search) {
+                return $query->where(function ($q) use ($search) {
+                    $q->whereHas('hijo', function ($hijoQuery) use ($search) {
+                        $hijoQuery->where('nombres', 'like', '%' . $search . '%')
+                                  ->orWhere('doc_numero', 'like', '%' . $search . '%');
+                    })
+                    ->orWhereHas('user', function ($userQuery) use ($search) {
+                        $userQuery->where('name', 'like', '%' . $search . '%')
+                                  ->orWhere('email', 'like', '%' . $search . '%');
+                    });
+                });
+            })
+            ->orderBy('created_at', 'desc')
+            ->paginate(15)
+            ->withQueryString();
 
         // Load data needed for inscription creation modal
         $paquetes = \App\Models\Paquete::where('activo', true)->get();
@@ -67,7 +99,10 @@ class SubgrupoController extends Controller
             $hijos = \App\Models\Hijo::where('user_id', \Illuminate\Support\Facades\Auth::id())->get();
         }
 
-        return Inertia::render('Subgrupos/Show', compact('subgrupo', 'paquetes', 'grupos', 'subgrupos', 'hijos'));
+        // Pass search filters
+        $filters = request()->only(['search']);
+
+        return Inertia::render('Subgrupos/Show', compact('subgrupo', 'inscripciones', 'filters', 'paquetes', 'grupos', 'subgrupos', 'hijos'));
     }
 
     public function create(): Response
