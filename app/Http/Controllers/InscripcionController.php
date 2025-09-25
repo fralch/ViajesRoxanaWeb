@@ -340,12 +340,36 @@ class InscripcionController extends Controller
         $inscritosCount = Inscripcion::where('subgrupo_id', $subgrupo->id)->count();
         $capacidadDisponible = $subgrupo->capacidad_maxima - $inscritosCount;
 
+        // Obtener hijos inscritos en este subgrupo con información completa
+        $hijosInscritos = Hijo::select('id', 'nombres', 'doc_tipo', 'doc_numero', 'user_id', 'fecha_nacimiento')
+            ->whereHas('inscripciones', function($query) use ($subgrupo) {
+                $query->where('subgrupo_id', $subgrupo->id);
+            })
+            ->with('user:id,name,email')
+            ->get()
+            ->map(function($hijo) {
+                return [
+                    'id' => $hijo->id,
+                    'nombres' => $hijo->nombres,
+                    'doc_tipo' => $hijo->doc_tipo,
+                    'doc_numero' => $hijo->doc_numero,
+                    'fecha_nacimiento' => $hijo->fecha_nacimiento,
+                    'user_id' => $hijo->user_id,
+                    'user' => $hijo->user ? [
+                        'id' => $hijo->user->id,
+                        'name' => $hijo->user->name,
+                        'email' => $hijo->user->email
+                    ] : null
+                ];
+            });
+
         if ($capacidadDisponible <= 0) {
             return Inertia::render('Inscripciones/form', [
                 'paquete' => $paquete,
                 'grupo' => $grupo,
                 'subgrupo' => $subgrupo,
                 'capacidadDisponible' => 0,
+                'hijosInscritos' => $hijosInscritos,
                 'error' => 'Este subgrupo ya no tiene cupos disponibles.'
             ]);
         }
@@ -355,6 +379,7 @@ class InscripcionController extends Controller
             'grupo' => $grupo,
             'subgrupo' => $subgrupo,
             'capacidadDisponible' => $capacidadDisponible,
+            'hijosInscritos' => $hijosInscritos,
             'error' => null
         ]);
     }
@@ -520,6 +545,11 @@ class InscripcionController extends Controller
         // Validar datos (ya validados por el FormRequest)
         $validated = $request->validated();
 
+        // Check if this is a guardian assignment request
+        if ($request->has('assign_guardian') && $request->assign_guardian) {
+            return $this->handleGuardianAssignment($request, $paquete, $grupo, $subgrupo);
+        }
+
         // Verificar capacidad disponible del subgrupo
         $inscritosCount = Inscripcion::where('subgrupo_id', $subgrupo->id)->count();
         $capacidadDisponible = $subgrupo->capacidad_maxima - $inscritosCount;
@@ -633,6 +663,112 @@ class InscripcionController extends Controller
             }
 
             // Re-lanzar la excepción si no es una de las que manejamos
+            throw $e;
+        }
+    }
+
+    /**
+     * Handle guardian assignment to an existing child
+     */
+    private function handleGuardianAssignment(Request $request, Paquete $paquete, Grupo $grupo, Subgrupo $subgrupo)
+    {
+        $childId = $request->selected_child_id;
+        $userCreationMode = $request->user_creation_mode;
+
+        // Find the child
+        $child = Hijo::findOrFail($childId);
+
+        // Verify the child is enrolled in this subgroup
+        $inscription = Inscripcion::where('hijo_id', $childId)
+            ->where('subgrupo_id', $subgrupo->id)
+            ->first();
+
+        if (!$inscription) {
+            return back()->withErrors([
+                'selected_child_id' => 'El niño seleccionado no está inscrito en este subgrupo.'
+            ]);
+        }
+
+        try {
+            DB::transaction(function () use ($request, $child, $inscription, $userCreationMode) {
+                if ($userCreationMode) {
+                    // Create new user
+                    $existingUserByEmail = User::where('email', $request->parent_email)->first();
+                    $existingUserByPhone = User::where('phone', $request->parent_phone)->first();
+                    $existingUserByDni = User::where('dni', $request->parent_dni)->first();
+
+                    if ($existingUserByEmail) {
+                        throw new \Exception('email_exists');
+                    }
+                    if ($existingUserByPhone) {
+                        throw new \Exception('phone_exists');
+                    }
+                    if ($existingUserByDni) {
+                        throw new \Exception('dni_exists');
+                    }
+
+                    $password = $request->parent_dni;
+
+                    $newUser = User::create([
+                        'name' => $request->parent_name,
+                        'email' => $request->parent_email,
+                        'phone' => $request->parent_phone,
+                        'dni' => $request->parent_dni,
+                        'password' => Hash::make($password),
+                        'email_verified_at' => now(),
+                        'is_admin' => false,
+                    ]);
+
+                    // Update child's user_id
+                    $child->update(['user_id' => $newUser->id]);
+
+                    // Update inscription's usuario_id
+                    $inscription->update(['usuario_id' => $newUser->id]);
+
+                    // Send WhatsApp notification
+                    if ($newUser) {
+                        WhatsAppService::enviarWhatsApp($request->parent_phone, $request->parent_email, $password);
+                    }
+                } else {
+                    // Find existing user by email (since we loaded their data)
+                    $existingUser = User::where('email', $request->parent_email)->first();
+                    if ($existingUser) {
+                        // Update child's user_id
+                        $child->update(['user_id' => $existingUser->id]);
+
+                        // Update inscription's usuario_id
+                        $inscription->update(['usuario_id' => $existingUser->id]);
+                    } else {
+                        throw new \Exception('user_not_found');
+                    }
+                }
+            });
+
+            return redirect()->route('inscripcion.subgrupo.form', [$paquete->id, $grupo->id, $subgrupo->id])
+                ->with('success', 'Apoderado asignado exitosamente al niño.');
+
+        } catch (\Exception $e) {
+            if ($e->getMessage() === 'email_exists') {
+                return back()->withErrors([
+                    'parent_email' => 'Ya existe un usuario registrado con este correo electrónico.'
+                ]);
+            }
+            if ($e->getMessage() === 'phone_exists') {
+                return back()->withErrors([
+                    'parent_phone' => 'Ya existe un usuario registrado con este número de teléfono.'
+                ]);
+            }
+            if ($e->getMessage() === 'dni_exists') {
+                return back()->withErrors([
+                    'parent_dni' => 'Ya existe un usuario registrado con este DNI.'
+                ]);
+            }
+            if ($e->getMessage() === 'user_not_found') {
+                return back()->withErrors([
+                    'parent_email' => 'No se pudo encontrar el usuario existente.'
+                ]);
+            }
+
             throw $e;
         }
     }
