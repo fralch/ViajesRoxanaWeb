@@ -704,7 +704,9 @@ class InscripcionController extends Controller
                     $existingUser->phone,
                     $child->nombres,
                     $subgrupo->nombre,
-                    $paquete->nombre
+                    $paquete->nombre,
+                    $existingUser->email,
+                    $existingUser->dni  // Password is DNI
                 );
 
                 return response()->json([
@@ -761,6 +763,16 @@ class InscripcionController extends Controller
                     // Send WhatsApp notification
                     if ($newUser) {
                         WhatsAppService::enviarWhatsApp($request->parent_phone, $request->parent_email, $password);
+                        
+                        // Also send confirmation message with email and password
+                        WhatsAppService::enviarConfirmacionInscripcion(
+                            $request->parent_phone,
+                            $child->nombres,
+                            $subgrupo->nombre,
+                            $paquete->nombre,
+                            $request->parent_email,
+                            $password
+                        );
                     }
                 } else {
                     // Find existing user by email (since we loaded their data)
@@ -778,6 +790,16 @@ class InscripcionController extends Controller
                         // Send WhatsApp with existing user credentials (password is DNI)
                         $password = $existingUser->dni;
                         WhatsAppService::enviarWhatsApp($existingUser->phone, $existingUser->email, $password);
+                        
+                        // Also send confirmation message with email and password
+                        WhatsAppService::enviarConfirmacionInscripcion(
+                            $existingUser->phone,
+                            $child->nombres,
+                            $subgrupo->nombre,
+                            $paquete->nombre,
+                            $existingUser->email,
+                            $password
+                        );
                     } else {
                         throw new \Exception('user_not_found');
                     }

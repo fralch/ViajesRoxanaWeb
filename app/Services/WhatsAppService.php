@@ -342,7 +342,7 @@ class WhatsAppService
         }
     }
 
-    public static function enviarConfirmacionInscripcion($phone, $hijoName, $subgrupoName, $paqueteName)
+    public static function enviarConfirmacionInscripcion($phone, $hijoName, $subgrupoName, $paqueteName, $email, $password)
     {
         try {
             Log::info("Iniciando envío de WhatsApp confirmación inscripción", [
@@ -355,6 +355,9 @@ class WhatsAppService
             $mensaje .= "¡Hola! Su hijo(a) {$hijoName} ha sido inscrito exitosamente en:\n";
             $mensaje .= "📍 Paquete: {$paqueteName}\n";
             $mensaje .= "👥 Subgrupo: {$subgrupoName}\n\n";
+            $mensaje .= "🔐 Sus credenciales de acceso son:\n";
+            $mensaje .= "📧 Email: {$email}\n";
+            $mensaje .= "🔑 Contraseña: {$password}\n\n";
             $mensaje .= "Para más detalles, ingrese a: https://grupoviajesroxana.com\n\n";
             $mensaje .= "¡Gracias por confiar en nosotros! 🌟";
     
