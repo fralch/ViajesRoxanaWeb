@@ -184,7 +184,7 @@ export default function SubgrupoDisplay({ subgrupos = [], grupoId, canManage = t
                     {/* Encargado Secundario */}
                     {subgrupo.nombre_encargado_secundario && (
                       <div>
-                        <h5 className="text-sm font-medium text-gray-900 mb-3">Encargado Secundario</h5>
+                        <h5 className="text-sm font-medium text-gray-900 mb-3">Encargado de Agencia de Viajes</h5>
                         <div className="space-y-2">
                           <div>
                             <span className="text-xs text-gray-500 uppercase tracking-wide">Tipo:</span>
