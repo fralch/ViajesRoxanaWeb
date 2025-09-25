@@ -205,6 +205,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
   const [dniLoading, setDniLoading] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
   const [isExistingGuardian, setIsExistingGuardian] = useState(false);
+  const [assignmentProcessing, setAssignmentProcessing] = useState(false);
 
   // New states for child selection and user creation
   const [selectedChildId, setSelectedChildId] = useState(null);
@@ -530,6 +531,10 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
       axios.post(submitUrl, submitData)
         .then(() => {
           showSuccess('¡Inscripción confirmada!', 'La inscripción se ha confirmado y se ha enviado un mensaje al apoderado.');
+          // Reload the page to update the child list
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
         })
         .catch((error) => {
           console.error('Confirmation error:', error.response?.data || error);
@@ -538,10 +543,38 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
       return;
     }
 
-    // Resto del handleSubmit para creación de nuevo usuario
-    if (userCreationMode && !dniValidated) {
-      showWarning('DNI no validado', 'Debes completar y validar el DNI del apoderado.');
-      return;
+    // Validación para creación de nuevo usuario
+    if (userCreationMode) {
+      // Validar que todos los campos requeridos estén completos
+      if (!data.parent_name || !data.parent_dni || !data.parent_phone || !data.parent_email) {
+        showWarning('Campos incompletos', 'Complete todos los datos del apoderado para continuar.');
+        return;
+      }
+
+      // Validar formato del DNI
+      if (data.parent_dni.length !== 8) {
+        showWarning('DNI inválido', 'El DNI debe tener exactamente 8 dígitos.');
+        return;
+      }
+
+      // Validar formato del teléfono
+      const cleanPhone = data.parent_phone.replace(/\D/g, "");
+      if (!/^9\d{8}$/.test(cleanPhone)) {
+        showWarning('Teléfono inválido', 'El teléfono debe ser un número peruano válido (9 dígitos empezando en 9).');
+        return;
+      }
+
+      // Validar formato del email
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.parent_email.trim())) {
+        showWarning('Email inválido', 'Ingrese un correo electrónico válido.');
+        return;
+      }
+
+      // Validar formato del nombre
+      if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(data.parent_name.trim())) {
+        showWarning('Nombre inválido', 'El nombre solo puede contener letras y espacios.');
+        return;
+      }
     }
 
     if (selectedChild.user_id === 1 && !userCreationMode) {
@@ -551,40 +584,54 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
 
     // Preparar datos específicos para asignación de apoderado
     const submitData = {
-      ...data,
       selected_child_id: selectedChildId,
       user_creation_mode: userCreationMode,
-      assign_guardian: true
+      assign_guardian: true,
+      parent_name: data.parent_name,
+      parent_dni: data.parent_dni,
+      parent_phone: data.parent_phone,
+      parent_email: data.parent_email
     };
 
-    post(submitUrl, {
-      data: submitData,
+    console.log('=== GUARDIAN ASSIGNMENT DEBUG ===');
+    console.log('Submit URL:', submitUrl);
+    console.log('Submit Data:', submitData);
+    console.log('Selected Child:', selectedChild);
+    console.log('User Creation Mode:', userCreationMode);
+
+    setAssignmentProcessing(true);
+
+    router.post(submitUrl, submitData, {
       preserveScroll: true,
-      onSuccess: () => {
-        // Mostrar alerta de éxito y redirigir al login
+      onSuccess: (response) => {
+        // Mostrar alerta de éxito
         showSuccess(
-          '¡Inscripción exitosa!', 
-          'Los datos se han guardado correctamente. Recibirás un correo con los detalles.'
-        ).then(() => {
-          router.visit('/login');
-        });
-        
-        // Resetear formulario
+          '¡Apoderado asignado exitosamente!',
+          'El niño ahora tiene un apoderado responsable y se han enviado las credenciales por WhatsApp.'
+        );
+
+        // Resetear formulario y estados
+        setSelectedChildId(null);
+        setSelectedChild(null);
+        setUserCreationMode(false);
+        setShowUserCreationForm(false);
+        setIsExistingGuardian(false);
+        setNewUserData({name: '', email: '', phone: '', dni: ''});
         setData({
           parent_name: "",
           parent_phone: "",
           parent_email: "",
           parent_dni: "",
-          children: [{ 
-            name: "", 
-            docType: "DNI", 
+          children: [{
+            name: "",
+            docType: "DNI",
             docNumber: "",
             hobbies: "",
             sports: "",
             favoriteDish: "",
             favoriteColor: "",
             additionalInfo: "",
-            errors: {} 
+            errors: {}
           }],
         });
         // Resetear estados de validación
@@ -592,21 +639,37 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
         setShowUserExistsWarning(false);
         setExistingUserData(null);
         setConsentChecked(false);
+
+        // Reload the page to update the child list
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+
+        setAssignmentProcessing(false);
       },
       onError: (errors) => {
-        if (errors.capacity) {
-          showError('Sin cupos disponibles', errors.capacity);
+        console.error('Assignment errors:', errors);
+
+        if (errors.parent_name) {
+          showError('Error en datos del apoderado', errors.parent_name);
         } else if (errors.parent_email) {
           showError('Correo electrónico duplicado', errors.parent_email);
         } else if (errors.parent_phone) {
           showError('Teléfono duplicado', errors.parent_phone);
-        } else if (errors.children) {
-          showError('Error en datos de hijos', errors.children);
+        } else if (errors.parent_dni) {
+          showError('DNI duplicado', errors.parent_dni);
+        } else if (errors.selected_child_id) {
+          showError('Error con el niño seleccionado', errors.selected_child_id);
         } else if (Object.keys(errors).length > 0) {
           showError('Error en el formulario', 'Por favor revisa los datos ingresados.');
         } else {
-          showError('Error inesperado', 'No se pudo procesar la inscripción. Intenta nuevamente.');
+          showError('Error inesperado', 'No se pudo procesar la asignación. Intenta nuevamente.');
         }
+
+        setAssignmentProcessing(false);
+      },
+      onFinish: () => {
+        setAssignmentProcessing(false);
       }
     });
   };
@@ -1075,7 +1138,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
               <button
                 type="submit"
                 disabled={
-                  processing ||
+                  processing || assignmentProcessing ||
                   !selectedChildId ||
                   !consentChecked ||
                   (userCreationMode && !dniValidated) ||
@@ -1084,13 +1147,13 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                 className={classNames(
                   "w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-semibold text-white",
                   "bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-300",
-                  (processing || !selectedChildId || !consentChecked ||
+                  (processing || assignmentProcessing || !selectedChildId || !consentChecked ||
                     (userCreationMode && !dniValidated) ||
                     (selectedChild && selectedChild.user_id === 1 && !userCreationMode)) &&
                     "opacity-70 cursor-not-allowed"
                 )}
               >
-                {processing ? (
+                {processing || assignmentProcessing ? (
                   <>
                     <svg
                       className="animate-spin -ml-1 mr-2 h-5 w-5 text-white"
