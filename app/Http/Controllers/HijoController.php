@@ -134,10 +134,42 @@ class HijoController extends Controller
         try {
             $hijo = Hijo::create($validated);
 
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Hijo registrado exitosamente.',
+                    'hijo' => $hijo->load('user')
+                ], 201);
+            }
+
+            // Si es una petición de Inertia (como las de modales), responder con datos para el modal
+            if ($request->header('X-Inertia')) {
+                return back()->with([
+                    'success' => 'Hijo registrado exitosamente.',
+                    'hijo' => $hijo->load('user')
+                ]);
+            }
+
+            // Si es una petición normal, redireccionar como antes
             return Redirect::route('hijos.index')
                           ->with('success', 'Hijo registrado exitosamente.')
                           ->with('hijo', $hijo);
         } catch (\Exception $e) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error interno al crear el hijo: ' . $e->getMessage()
+                ], 500);
+            }
+            
+            // Si es una petición AJAX, responder con JSON de error
+            if ($request->wantsJson() || $request->header('X-Inertia')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error interno al crear el hijo: ' . $e->getMessage()
+                ], 500);
+            }
+            
             return back()->withErrors(['error' => 'Error interno al crear el hijo: ' . $e->getMessage()]);
         }
     }

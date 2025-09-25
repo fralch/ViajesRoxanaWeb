@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useForm } from '@inertiajs/react';
 import Modal from '@/Components/Modal';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
@@ -14,7 +13,7 @@ export default function ModalCreateHijo({
     onHijoCreated = () => {},
     currentUserId = null
 }) {
-    const { data, setData, post, processing, errors, reset } = useForm({
+    const [data, setData] = useState({
         user_id: currentUserId || null,
         nombres: '',
         doc_tipo: 'CC',
@@ -29,28 +28,81 @@ export default function ModalCreateHijo({
         informacion_adicional: ''
     });
 
-    const handleSubmit = (e) => {
+    const [errors, setErrors] = useState({});
+    const [processing, setProcessing] = useState(false);
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
+        setProcessing(true);
+        setErrors({});
 
-        const submitData = { ...data };
-        if (!submitData.user_id) {
-            delete submitData.user_id;
-        }
-
-        post(route('hijos.store'), submitData, {
-            onSuccess: (response) => {
-                showSuccess('¡Hijo registrado!', 'El hijo ha sido registrado exitosamente.');
-                onHijoCreated(response.props?.hijo || response.data);
-                handleClose();
-            },
-            onError: () => {
-                showError('Error', 'No se pudo registrar el hijo. Verifica los datos e intenta nuevamente.');
+        const formData = new FormData();
+        Object.keys(data).forEach(key => {
+            if (data[key] !== null && data[key] !== undefined) {
+                formData.append(key, data[key]);
             }
         });
+
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+            const response = await fetch(route('hijos.store'), {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                if (result.errors) {
+                    setErrors(result.errors);
+                }
+                showError('Error', 'No se pudo registrar el hijo. Verifica los datos e intenta nuevamente.');
+                return;
+            }
+
+            showSuccess('¡Hijo registrado!', 'El hijo ha sido registrado exitosamente.');
+
+            const newHijo = result.hijo || result;
+
+            const hijoCompleto = {
+                ...newHijo,
+                user_id: currentUserId || newHijo.user_id,
+                user: newHijo.user || {
+                    id: currentUserId || newHijo.user_id,
+                    name: 'Usuario actual'
+                }
+            };
+
+            onHijoCreated(hijoCompleto);
+            handleClose();
+        } catch (error) {
+            showError('Error', 'Ocurrió un error inesperado. Intenta nuevamente.');
+        } finally {
+            setProcessing(false);
+        }
     };
 
     const handleClose = () => {
-        reset();
+        setData({
+            user_id: currentUserId || null,
+            nombres: '',
+            doc_tipo: 'CC',
+            doc_numero: '',
+            nums_emergencia: [''],
+            fecha_nacimiento: '',
+            foto: '',
+            pasatiempos: '',
+            deportes: '',
+            plato_favorito: '',
+            color_favorito: '',
+            informacion_adicional: ''
+        });
+        setErrors({});
         onClose();
     };
 
@@ -77,7 +129,7 @@ export default function ModalCreateHijo({
                             id="nombres"
                             name="nombres"
                             value={data.nombres}
-                            onChange={(e) => setData('nombres', e.target.value)}
+                            onChange={(e) => setData({...data, nombres: e.target.value})}
                             className="mt-1 block w-full"
                             required
                         />
@@ -92,7 +144,7 @@ export default function ModalCreateHijo({
                                 id="doc_tipo"
                                 name="doc_tipo"
                                 value={data.doc_tipo}
-                                onChange={(e) => setData('doc_tipo', e.target.value)}
+                                onChange={(e) => setData({...data, doc_tipo: e.target.value})}
                                 className="mt-1 block w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-md shadow-sm"
                                 required
                             >
@@ -109,7 +161,7 @@ export default function ModalCreateHijo({
                                 id="doc_numero"
                                 name="doc_numero"
                                 value={data.doc_numero}
-                                onChange={(e) => setData('doc_numero', e.target.value)}
+                                onChange={(e) => setData({...data, doc_numero: e.target.value})}
                                 className="mt-1 block w-full"
                                 required
                             />
