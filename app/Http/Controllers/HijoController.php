@@ -96,8 +96,13 @@ class HijoController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'user_id' => 'required|exists:users,id',
+        \Log::info('=== HIJO CONTROLLER STORE DEBUG ===');
+        \Log::info('Request data received:', $request->all());
+        \Log::info('User authenticated: ' . (Auth::check() ? 'true' : 'false'));
+        \Log::info('Current user ID: ' . (Auth::id() ?? 'null'));
+        \Log::info('Is admin: ' . ((Auth::user()->is_admin ?? false) ? 'true' : 'false'));
+
+        $validationRules = [
             'nombres' => 'required|string|max:255',
             'doc_tipo' => 'required|in:CC,TI,RC,CE',
             'doc_numero' => 'required|string|max:20|unique:hijos,doc_numero',
@@ -110,18 +115,44 @@ class HijoController extends Controller
             'plato_favorito' => 'nullable|string|max:255',
             'color_favorito' => 'nullable|string|max:100',
             'informacion_adicional' => 'nullable|string'
-        ]);
+        ];
+
+        // Solo requerir user_id si el usuario es admin
+        if (Auth::user()->is_admin) {
+            $validationRules['user_id'] = 'required|exists:users,id';
+        } else {
+            // Para usuarios no admin, no validar user_id ya que lo asignaremos automáticamente
+            $validationRules['user_id'] = 'sometimes|nullable|exists:users,id';
+        }
+
+        $validated = $request->validate($validationRules);
+        
+        \Log::info('Validation passed. Validated data:', $validated);
         
         // Si no es admin, asignar al usuario autenticado
         if (!Auth::user()->is_admin) {
+            \Log::info('User is not admin, overriding user_id with authenticated user ID');
             $validated['user_id'] = Auth::id();
         }
         
-        $hijo = Hijo::create($validated);
+        \Log::info('Final data to be stored:', $validated);
 
-        return Redirect::route('hijos.index')
-                      ->with('success', 'Hijo registrado exitosamente.')
-                      ->with('hijo', $hijo);
+        try {
+            $hijo = Hijo::create($validated);
+            \Log::info('Hijo created successfully:', $hijo->toArray());
+
+            return Redirect::route('hijos.index')
+                          ->with('success', 'Hijo registrado exitosamente.')
+                          ->with('hijo', $hijo);
+        } catch (\Exception $e) {
+            \Log::error('Error creating hijo:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'data' => $validated
+            ]);
+            
+            return back()->withErrors(['error' => 'Error interno al crear el hijo: ' . $e->getMessage()]);
+        }
     }
 
     /**
