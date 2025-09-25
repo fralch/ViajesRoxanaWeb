@@ -102,8 +102,8 @@ class HijoController extends Controller
             'doc_tipo' => 'required|in:CC,TI,RC,CE',
             'doc_numero' => 'required|string|max:20|unique:hijos,doc_numero',
             'nums_emergencia' => 'nullable|array|max:5',
-            'nums_emergencia.*' => 'required|string|max:20',
-            'fecha_nacimiento' => 'required|date|before:today',
+            'nums_emergencia.*' => 'nullable|string|max:20',
+            'fecha_nacimiento' => 'nullable|date|before:today',
             'foto' => 'nullable|string',
             'pasatiempos' => 'nullable|string',
             'deportes' => 'nullable|string',
@@ -117,10 +117,11 @@ class HijoController extends Controller
             $validated['user_id'] = Auth::id();
         }
         
-        Hijo::create($validated);
-        
+        $hijo = Hijo::create($validated);
+
         return Redirect::route('hijos.index')
-                      ->with('success', 'Hijo registrado exitosamente.');
+                      ->with('success', 'Hijo registrado exitosamente.')
+                      ->with('hijo', $hijo);
     }
 
     /**
