@@ -508,8 +508,44 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
       return;
     }
 
-    if (!dniValidated) {
-      showWarning('DNI no validado', 'Debes completar y validar el DNI antes de enviar el formulario.');
+    // Determinar la URL según si es inscripción específica o formulario general
+    const submitUrl = paquete && grupo && subgrupo
+      ? `/paquete/${paquete.id}/grupo/${grupo.id}/subgrupo/${subgrupo.id}/form`
+      : paquete && grupo
+      ? `/paquete/${paquete.id}/grupo/${grupo.id}/form`
+      : "/inscripciones";
+
+    // Si el hijo ya tiene apoderado (no es admin), solo necesita confirmación
+    if (selectedChild.user_id !== 1) {
+      // Solo confirmar el apoderado existente
+      const submitData = {
+        selected_child_id: selectedChildId,
+        confirm_existing_guardian: true,
+        assign_guardian: true
+      };
+
+      // Enviar confirmación
+      post(submitUrl, {
+        data: submitData,
+        preserveScroll: true,
+        onSuccess: () => {
+          showSuccess('¡Confirmado!', 'Apoderado confirmado correctamente.');
+        },
+        onError: () => {
+          showError('Error', 'No se pudo confirmar el apoderado.');
+        }
+      });
+      return;
+    }
+
+    // Si necesita crear apoderado, validar que esté completo
+    if (userCreationMode && !dniValidated) {
+      showWarning('DNI no validado', 'Debes completar y validar el DNI del apoderado.');
+      return;
+    }
+
+    if (selectedChild.user_id === 1 && !userCreationMode) {
+      showWarning('Apoderado requerido', 'Este niño necesita que completes los datos del apoderado.');
       return;
     }
 
@@ -520,13 +556,6 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
       user_creation_mode: userCreationMode,
       assign_guardian: true
     };
-
-    // Determinar la URL según si es inscripción específica o formulario general
-    const submitUrl = paquete && grupo && subgrupo
-      ? `/paquete/${paquete.id}/grupo/${grupo.id}/subgrupo/${subgrupo.id}/form`
-      : paquete && grupo
-      ? `/paquete/${paquete.id}/grupo/${grupo.id}/form`
-      : "/inscripciones";
 
     post(submitUrl, {
       data: submitData,
@@ -787,140 +816,50 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
               </section>
             )}
 
-            {/* Datos del padre/madre/tutor - Solo mostrar cuando NO esté en modo de creación de usuario */}
-            {!userCreationMode && (
-              <section className={`mb-8 ${!selectedChildId ? 'opacity-50 pointer-events-none' : ''}`}>
-                <SectionTitle subtitle="Usaremos estos datos para crear tu cuenta.">
-                 Datos del apoderado
-                </SectionTitle>
-
-              <div className="grid grid-cols-1 gap-4">
-                {/* Nombre */}
-                <TextField
-                  id="parent_name"
-                  label="Nombre completo"
-                  value={data.parent_name}
-                  onChange={(e) => setData("parent_name", e.target.value)}
-                  placeholder="Nombre y apellidos"
-                  required
-                  autoComplete="name"
-                  error={errors.parent_name}
-                />
-
-                {/* DNI */}
-                <div className="space-y-1">
-                  <label htmlFor="parent_dni" className={labelStyles}>
-                    DNI
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="parent_dni"
-                      type="text"
-                      value={data.parent_dni}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/[^0-9]/g, "");
-                        setData("parent_dni", value);
-                        if (value.length !== 8) {
-                          setDniValidated(false);
-                        }
-                      }}
-                      placeholder="12345678"
-                      required
-                      inputMode="numeric"
-                      pattern="^\d{8}$"
-                      maxLength="8"
-                      className={classNames(
-                        inputBase,
-                        "bg-white/80 backdrop-blur border-gray-300 focus:ring-red-500 focus:border-red-500 placeholder-gray-400 pr-10",
-                        errors.parent_dni && "border-red-400 focus:ring-red-400 focus:border-red-400",
-                        dniLoading && "opacity-70"
-                      )}
-                      disabled={dniLoading}
-                    />
-                    
-                    {/* Indicadores en el campo */}
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                      {dniLoading && (
-                        <svg className="animate-spin h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                      )}
-                      {!dniLoading && dniValidated && data.parent_dni.length === 8 && (
-                        <svg className="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      )}
-                      {!dniLoading && data.parent_dni.length === 8 && !dniValidated && (
-                        <svg className="h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      )}
+            {/* Información del apoderado actual - Solo mostrar cuando el hijo tiene apoderado y NO esté en modo de creación */}
+            {selectedChild && selectedChild.user_id !== 1 && !userCreationMode && (
+              <section className="mb-8">
+                <div className="p-6 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                      <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-green-900">Apoderado Confirmado</h3>
+                      <p className="text-sm text-green-700">
+                        {selectedChild.nombres} ya tiene un apoderado asignado
+                      </p>
                     </div>
                   </div>
-                  
-                  {/* Mensajes de estado */}
-                  {dniLoading && (
-                    <p className="text-xs text-blue-600 flex items-center gap-1">
-                      <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Verificando DNI...
-                    </p>
-                  )}
-                  {!dniLoading && dniValidated && data.parent_dni.length === 8 && !showUserExistsWarning && (
-                    <p className="text-xs text-green-600">✓ DNI disponible</p>
-                  )}
-                  {errors.parent_dni && (
-                    <p role="alert" className="text-xs text-red-600">
-                      {errors.parent_dni}
-                    </p>
-                  )}
-                </div>
 
-                {/* Mensaje informativo si DNI no está validado */}
-                {!dniValidated && data.parent_dni.length > 0 && data.parent_dni.length < 8 && (
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl">
-                    <p className="text-xs text-blue-700">
-                      ℹ️ Complete el DNI de 8 dígitos para habilitar los demás campos
+                  {selectedChild.user && (
+                    <div className="bg-white/60 rounded-lg p-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Apoderado</span>
+                          <p className="text-base font-semibold text-gray-900">{selectedChild.user.name}</p>
+                        </div>
+                        {selectedChild.user.email && (
+                          <div>
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Correo</span>
+                            <p className="text-sm text-gray-700">{selectedChild.user.email}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                    <p className="text-sm text-blue-800 flex items-center gap-2">
+                      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Este niño ya está correctamente asignado a un apoderado responsable.
                     </p>
                   </div>
-                )}
-
-                {/* Celular + Correo */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <TextField
-                    id="parent_phone"
-                    label="Celular"
-                    value={data.parent_phone}
-                    onChange={(e) =>
-                      setData("parent_phone", e.target.value.replace(/[^0-9]/g, ""))
-                    }
-                    placeholder={dniValidated ? "9XXXXXXXX" : "Primero complete el DNI"}
-                    required
-                    inputMode="numeric"
-                    pattern="^9\\d{8}$"
-                    autoComplete="tel"
-                    describedby="phone_help"
-                    error={errors.parent_phone}
-                    disabled={!dniValidated}
-                  />
-
-                  <TextField
-                    id="parent_email"
-                    label="Correo"
-                    type="email"
-                    value={data.parent_email}
-                    onChange={(e) => setData("parent_email", e.target.value)}
-                    placeholder={dniValidated ? "correo@ejemplo.com" : "Primero complete el DNI"}
-                    required
-                    autoComplete="email"
-                    error={errors.parent_email}
-                    disabled={!dniValidated}
-                  />
                 </div>
-              </div>
               </section>
             )}
 
@@ -1143,60 +1082,6 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
               </section>
             )}
 
-            {/* Hijos - Solo mostrar cuando NO esté en modo de creación de usuario */}
-            {!userCreationMode && (
-              <section
-                className={classNames(
-                  "mb-8 transition-opacity",
-                  !dniValidated && "opacity-50 pointer-events-none"
-                )}
-              >
-              <SectionTitle
-                subtitle={
-                  dniValidated
-                    ? "Debe completar los datos de su hijo para poder inscribirse correctamente. El numero del apoderado será usado como contacto de emergencia."
-                    : "Complete y valide el DNI del tutor para habilitar esta sección."
-                }
-              >
-                Datos de hijo(s)
-              </SectionTitle>
-
-            
-
-              {!dniValidated && (
-                <div className=" bg-gray-50 border border-gray-200 rounded-xl"></div>
-              )}
-
-              {data.children.map((child, index) => (
-                <ChildCard
-                  key={index}
-                  index={index}
-                  child={child}
-                  updateChild={updateChild}
-                  removeChild={() => removeChild(index)}
-                  canRemove={data.children.length > 1}
-                  complete={isChildComplete(child)}
-                />
-              ))}
-
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={addChild}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 focus:ring-2 focus:ring-red-500"
-                >
-                  <span aria-hidden>＋</span> Agregar hijo
-                </button>
-              </div>
-
-              {/* Mostrar error si no hay hijos completados (de validación del servidor/cliente) */}
-              {errors.children && (
-                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl">
-                  <p className="text-sm text-red-600 font-medium">{errors.children}</p>
-                </div>
-              )}
-              </section>
-            )}
 
             {/* Consentimiento y políticas */}
             <section className="mb-6">
@@ -1219,11 +1104,19 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
             <div className="sticky bottom-0 pt-4 bg-gradient-to-t from-white/80 to-transparent">
               <button
                 type="submit"
-                disabled={processing || !selectedChildId || !dniValidated || !consentChecked}
+                disabled={
+                  processing ||
+                  !selectedChildId ||
+                  !consentChecked ||
+                  (userCreationMode && !dniValidated) ||
+                  (selectedChild && selectedChild.user_id === 1 && !userCreationMode)
+                }
                 className={classNames(
                   "w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-semibold text-white",
                   "bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-300",
-                  (processing || !selectedChildId || !dniValidated || !consentChecked) &&
+                  (processing || !selectedChildId || !consentChecked ||
+                    (userCreationMode && !dniValidated) ||
+                    (selectedChild && selectedChild.user_id === 1 && !userCreationMode)) &&
                     "opacity-70 cursor-not-allowed"
                 )}
               >
@@ -1254,12 +1147,16 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                   </>
                 ) : !selectedChildId ? (
                   <>Seleccione un niño</>
-                ) : !dniValidated ? (
-                  <>Complete el DNI para continuar</>
                 ) : !consentChecked ? (
                   <>Acepte los términos para continuar</>
+                ) : selectedChild && selectedChild.user_id === 1 && !userCreationMode ? (
+                  <>Complete los datos del apoderado</>
+                ) : userCreationMode && !dniValidated ? (
+                  <>Complete el DNI del apoderado</>
+                ) : userCreationMode ? (
+                  <>Crear y Asignar Apoderado</>
                 ) : (
-                  <>Asignar Apoderado</>
+                  <>Confirmar Apoderado Actual</>
                 )}
               </button>
 

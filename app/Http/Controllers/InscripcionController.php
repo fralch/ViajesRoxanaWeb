@@ -674,6 +674,7 @@ class InscripcionController extends Controller
     {
         $childId = $request->selected_child_id;
         $userCreationMode = $request->user_creation_mode;
+        $confirmExistingGuardian = $request->confirm_existing_guardian;
 
         // Find the child
         $child = Hijo::findOrFail($childId);
@@ -687,6 +688,12 @@ class InscripcionController extends Controller
             return back()->withErrors([
                 'selected_child_id' => 'El niño seleccionado no está inscrito en este subgrupo.'
             ]);
+        }
+
+        // If just confirming existing guardian, no changes needed
+        if ($confirmExistingGuardian && $child->user_id !== 1) {
+            return redirect()->route('inscripcion.subgrupo.form', [$paquete->id, $grupo->id, $subgrupo->id])
+                ->with('success', 'Apoderado confirmado exitosamente.');
         }
 
         try {
