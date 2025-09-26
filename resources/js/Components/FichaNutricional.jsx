@@ -103,16 +103,16 @@ export default function FichaNutricional({ nutricionFicha, hijo, onSubmitSuccess
         // Definir estilos basados en la prioridad sin usar círculos
         const priorityStyles = {
             alta: {
-                container: 'border-l-4 border-green-500 bg-green-50 shadow-sm',
-                header: 'bg-green-100 text-green-800',
-                icon: <InfoIcon className="w-4 h-4 text-green-600" />,
-                label: 'Información importante'
+                container: 'border-l-4 border-amber-600 bg-amber-100 shadow-sm',
+                header: 'bg-amber-200 text-amber-900',
+                icon: <InfoIcon className="w-4 h-4 text-amber-700" />,
+                label: ''
             },
             critica: {
-                container: 'border-l-4 border-red-500 bg-red-50 shadow-sm',
-                header: 'bg-red-100 text-red-800',
-                icon: <AlertTriangleIcon className="w-4 h-4 text-red-600" />,
-                label: 'Información crítica'
+                container: 'border-l-4 border-amber-600 bg-amber-100 shadow-sm',
+                header: 'bg-amber-200 text-amber-900',
+                icon: <InfoIcon className="w-4 h-4 text-amber-700" />,
+                label: ''
             },
             normal: {
                 container: 'border-l-4 border-blue-500 bg-blue-50 shadow-sm',
@@ -126,10 +126,6 @@ export default function FichaNutricional({ nutricionFicha, hijo, onSubmitSuccess
 
         return (
             <div className={`ml-6 mt-4 p-4 rounded-lg transition-all duration-300 ease-in-out ${style.container}`}>
-                <div className={`flex items-center gap-2 px-3 py-2 rounded-md mb-3 ${style.header}`}>
-                    {style.icon}
-                    <span className="text-sm font-medium">{style.label}</span>
-                </div>
                 <div className="pl-2">
                     {children}
                 </div>
@@ -253,7 +249,7 @@ export default function FichaNutricional({ nutricionFicha, hijo, onSubmitSuccess
                             <InputLabel htmlFor="detalle_preferencia_alimentaria" value="Especificar detalle" className="text-gray-700 font-semibold" />
                             <textarea
                                 id="detalle_preferencia_alimentaria"
-                                className="mt-2 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-red-500 focus:border-red-500"
+                                className="mt-2 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-orange-500 focus:border-orange-500"
                                 rows="4"
                                 value={data.detalle_preferencia_alimentaria}
                                 onChange={(e) => setData('detalle_preferencia_alimentaria', e.target.value)}
@@ -261,7 +257,7 @@ export default function FichaNutricional({ nutricionFicha, hijo, onSubmitSuccess
                                 required={tienePreferenciaAlimentaria === 'Sí'}
                             />
                             <InputError message={errors.detalle_preferencia_alimentaria} className="mt-2" />
-                            <p className="text-xs text-gray-500 mt-2">🔒 Esta información es solo para uso interno del personal</p>
+                           
                         </div>
                     </ConditionalField>
                 </div>
