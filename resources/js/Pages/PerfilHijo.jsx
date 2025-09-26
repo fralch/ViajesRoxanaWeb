@@ -479,66 +479,7 @@ export default function PerfilHijo({ hijo, saludFicha, nutricionFicha }) {
                                 </button>
                             </div>
 
-                            {/* Tabs Navigation */}
-                            <div role="tablist" aria-label="Secciones del perfil" className="flex space-x-2 md:space-x-1 overflow-x-auto pb-2 -mb-2">
-                                <button
-                                    role="tab"
-                                    aria-selected={activeTab === 'perfil'}
-                                    title="Perfil Personal"
-                                    onClick={() => setActiveTab('perfil')}
-                                    className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all duration-200 border ${
-                                        activeTab === 'perfil'
-                                            ? 'bg-red-600 text-white shadow-lg border-red-600'
-                                            : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
-                                    }`}
-                                >
-                                    <div className="flex items-center gap-2">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                        </svg>
-                                        <span>Perfil</span>
-                                        <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full ${sectionCompletion.perfil===100 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>{sectionCompletion.perfil}%</span>
-                                    </div>
-                                </button>
-                                <button
-                                    role="tab"
-                                    aria-selected={activeTab === 'salud'}
-                                    title="Ficha de Salud"
-                                    onClick={() => setActiveTab('salud')}
-                                    className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all duration-200 border ${
-                                        activeTab === 'salud'
-                                            ? 'bg-red-600 text-white shadow-lg border-red-600'
-                                            : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
-                                    }`}
-                                >
-                                    <div className="flex items-center gap-2">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                        </svg>
-                                        <span>Salud</span>
-                                        <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full ${sectionCompletion.salud===100 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>{sectionCompletion.salud}%</span>
-                                    </div>
-                                </button>
-                                <button
-                                    role="tab"
-                                    aria-selected={activeTab === 'nutricion'}
-                                    title="Ficha Nutricional"
-                                    onClick={() => setActiveTab('nutricion')}
-                                    className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all duration-200 border ${
-                                        activeTab === 'nutricion'
-                                            ? 'bg-red-600 text-white shadow-lg border-red-600'
-                                            : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
-                                    }`}
-                                >
-                                    <div className="flex items-center gap-2">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
-                                        </svg>
-                                        <span>Nutrición</span>
-                                        <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full ${sectionCompletion.nutricion===100 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>{sectionCompletion.nutricion}%</span>
-                                    </div>
-                                </button>
-                            </div>
+                          
                         </div>
                         
                         {/* Tab Content */}
