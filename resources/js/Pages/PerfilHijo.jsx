@@ -439,7 +439,7 @@ export default function PerfilHijo({ hijo, saludFicha, nutricionFicha }) {
                                 </div>
                             </div>
 
-                            {/* Accesos rápidos */}
+                            {/* Accesos rápidos - Desktop */}
                             <div className="hidden md:grid grid-cols-3 gap-3 mb-4">
                                 <button onClick={() => setActiveTab('perfil')} className={`group rounded-2xl p-4 text-left border transition-all ${activeTab==='perfil' ? 'border-gray-200 bg-red-500 shadow text-white' : 'border-gray-200 bg-white hover:shadow-sm'}`}>
                                     <div className="flex items-center justify-between">
@@ -477,6 +477,120 @@ export default function PerfilHijo({ hijo, saludFicha, nutricionFicha }) {
                                     </div>
                                     <p className={`text-xs mt-2 ${activeTab==='nutricion' ? 'text-yellow-100' : 'text-gray-500'}`}>Preferencias, intolerancias y alergias.</p>
                                 </button>
+                            </div>
+
+                            {/* Accesos rápidos - Mobile */}
+                            <div className="md:hidden mb-4">
+                                {/* Mobile Tab Navigation */}
+                                <div className="flex overflow-x-auto scrollbar-hide gap-2 px-1 pb-2">
+                                    <button 
+                                        onClick={() => setActiveTab('perfil')} 
+                                        className={`flex-shrink-0 min-w-[280px] rounded-2xl p-4 text-left border transition-all touch-manipulation ${
+                                            activeTab==='perfil' 
+                                                ? 'border-red-300 bg-red-500 shadow-lg text-white' 
+                                                : 'border-gray-200 bg-white hover:shadow-md active:scale-95'
+                                        }`}
+                                    >
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                                                    activeTab==='perfil' ? 'bg-red-600 text-white' : 'bg-red-100 text-red-600'
+                                                }`}>
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                                    </svg>
+                                                </div>
+                                                <span className={`font-bold text-base ${activeTab==='perfil' ? 'text-white' : 'text-gray-800'}`}>
+                                                    Perfil Personal
+                                                </span>
+                                            </div>
+                                            <span className={`px-3 py-1.5 rounded-full text-sm font-bold ${
+                                                sectionCompletion.perfil===100 
+                                                    ? 'bg-green-100 text-green-700' 
+                                                    : activeTab==='perfil' 
+                                                        ? 'bg-red-600 text-white' 
+                                                        : 'bg-gray-100 text-gray-700'
+                                            }`}>
+                                                {sectionCompletion.perfil}%
+                                            </span>
+                                        </div>
+                                        <p className={`text-sm ${activeTab==='perfil' ? 'text-red-100' : 'text-gray-500'}`}>
+                                            Datos básicos y contactos de emergencia
+                                        </p>
+                                    </button>
+
+                                    <button 
+                                        onClick={() => setActiveTab('salud')} 
+                                        className={`flex-shrink-0 min-w-[280px] rounded-2xl p-4 text-left border transition-all touch-manipulation ${
+                                            activeTab==='salud' 
+                                                ? 'border-green-300 bg-green-500 shadow-lg text-white' 
+                                                : 'border-gray-200 bg-white hover:shadow-md active:scale-95'
+                                        }`}
+                                    >
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                                                    activeTab==='salud' ? 'bg-green-600 text-white' : 'bg-emerald-100 text-emerald-600'
+                                                }`}>
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                                                    </svg>
+                                                </div>
+                                                <span className={`font-bold text-base ${activeTab==='salud' ? 'text-white' : 'text-gray-800'}`}>
+                                                    Ficha de Salud
+                                                </span>
+                                            </div>
+                                            <span className={`px-3 py-1.5 rounded-full text-sm font-bold ${
+                                                sectionCompletion.salud===100 
+                                                    ? 'bg-green-100 text-green-700' 
+                                                    : activeTab==='salud' 
+                                                        ? 'bg-green-600 text-white' 
+                                                        : 'bg-gray-100 text-gray-700'
+                                            }`}>
+                                                {sectionCompletion.salud}%
+                                            </span>
+                                        </div>
+                                        <p className={`text-sm ${activeTab==='salud' ? 'text-green-100' : 'text-gray-500'}`}>
+                                            Alergias, medicamentos y observaciones
+                                        </p>
+                                    </button>
+
+                                    <button 
+                                        onClick={() => setActiveTab('nutricion')} 
+                                        className={`flex-shrink-0 min-w-[280px] rounded-2xl p-4 text-left border transition-all touch-manipulation ${
+                                            activeTab==='nutricion' 
+                                                ? 'border-yellow-300 bg-yellow-500 shadow-lg text-white' 
+                                                : 'border-gray-200 bg-white hover:shadow-md active:scale-95'
+                                        }`}
+                                    >
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                                                    activeTab==='nutricion' ? 'bg-yellow-600 text-white' : 'bg-amber-100 text-amber-600'
+                                                }`}>
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"/>
+                                                    </svg>
+                                                </div>
+                                                <span className={`font-bold text-base ${activeTab==='nutricion' ? 'text-white' : 'text-gray-800'}`}>
+                                                    Ficha Nutricional
+                                                </span>
+                                            </div>
+                                            <span className={`px-3 py-1.5 rounded-full text-sm font-bold ${
+                                                sectionCompletion.nutricion===100 
+                                                    ? 'bg-green-100 text-green-700' 
+                                                    : activeTab==='nutricion' 
+                                                        ? 'bg-yellow-600 text-white' 
+                                                        : 'bg-gray-100 text-gray-700'
+                                            }`}>
+                                                {sectionCompletion.nutricion}%
+                                            </span>
+                                        </div>
+                                        <p className={`text-sm ${activeTab==='nutricion' ? 'text-yellow-100' : 'text-gray-500'}`}>
+                                            Preferencias, intolerancias y alergias
+                                        </p>
+                                    </button>
+                                </div>
                             </div>
 
                           
