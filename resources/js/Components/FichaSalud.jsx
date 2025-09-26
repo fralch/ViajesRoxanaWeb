@@ -1,4 +1,4 @@
- import { useForm } from '@inertiajs/react';
+import { useForm } from '@inertiajs/react';
  import { useState } from 'react';
  import { HeartIcon, CheckIcon, DropletIcon, PillIcon, HospitalIcon, AlertTriangleIcon, SyringeIcon, ShieldIcon, ClipboardIcon } from 'lucide-react';
  import InputError from '@/Components/InputError';
@@ -145,7 +145,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                                 : 'border-gray-200 bg-white hover:bg-gray-50'
                         }`}
                     >
-                        <div className="text-lg mb-1">{section.icon}</div>
+                        <div className="flex justify-center items-center text-lg mb-1">{section.icon}</div>
                         <div className="text-xs font-medium text-gray-700 leading-tight">{section.title}</div>
                     </button>
                 ))}
