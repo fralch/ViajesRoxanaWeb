@@ -12,8 +12,7 @@ export default function SubgrupoManager({ subgrupos = [], onChange, errors = {} 
     { value: 'padre', label: 'Padre' },
     { value: 'madre', label: 'Madre' },
     { value: 'tutor_legal', label: 'Tutor Legal' },
-    { value: 'viajes_roxana', label: 'Viajes Roxana' },
-    { value: 'otro', label: 'Otro' }
+    { value: 'otro',  label: 'Guía Turística' }
   ];
 
   const addSubgrupo = () => {

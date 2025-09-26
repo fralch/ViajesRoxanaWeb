@@ -104,14 +104,7 @@ export default function Show({ grupo, inscripciones, filters, auth }) {
               <h2 className="text-xl sm:text-2xl font-bold text-red-600">{grupo.nombre}</h2>
               <p className="text-sm text-gray-600">Inscripciones del grupo</p>
             </div>
-            <Link href={route('inscripciones.create')} className="w-full sm:w-auto">
-              <PrimaryButton size="lg" className="w-full sm:w-auto gap-2 bg-red-600 hover:bg-red-700 focus:ring-red-500">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Agregar Inscripción
-              </PrimaryButton>
-            </Link>
+           
           </div>
 
           {/* Información del Grupo */}

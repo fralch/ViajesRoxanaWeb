@@ -30,8 +30,7 @@ export default function Create({ grupos }) {
     { value: 'madre', label: 'Madre' },
     { value: 'tutor_legal', label: 'Tutor Legal' },
     { value: 'familiar', label: 'Familiar' },
-    { value: 'viajes_roxana', label: 'Viajes Roxana' },
-    { value: 'otro', label: 'Otro' }
+    { value: 'otro', label: 'Guía Turística' }
   ];
 
   const handleSubmit = (e) => {
