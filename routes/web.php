@@ -45,6 +45,7 @@ Route::get('/', function () {
 });
 
 // Rutas públicas para formulario de inscripción
+Route::get('/paquete/{paquete}/grupo/{grupo}/subgrupos', [InscripcionController::class, 'showSubgrupoSelection'])->name('inscripcion.subgrupos');
 Route::get('/paquete/{paquete}/grupo/{grupo}/form', [InscripcionController::class, 'showForm'])->name('inscripcion.form');
 Route::post('/paquete/{paquete}/grupo/{grupo}/form', [InscripcionController::class, 'storeForm'])->name('inscripcion.store');
 Route::get('/paquete/{paquete}/grupo/{grupo}/subgrupo/{subgrupo}/form', [InscripcionController::class, 'showFormSubgrupo'])->name('inscripcion.subgrupo.form');

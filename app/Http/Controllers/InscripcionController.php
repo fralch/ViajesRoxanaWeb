@@ -285,12 +285,96 @@ class InscripcionController extends Controller
                 'grupo' => null,
                 'subgrupo' => null,
                 'capacidadDisponible' => 0,
+                'hijosInscritos' => [],
                 'error' => 'Este paquete o grupo no está disponible para inscripciones.'
             ]);
         }
 
-        // Obtener subgrupos activos del grupo con conteos
-        $subgrupos = $grupo->subgrupos()->activos()->withCount('inscripciones')->get();
+        // Obtener subgrupos activos del grupo
+        $subgrupos = $grupo->subgrupos()->activos()->get();
+
+        // Si no hay subgrupos, mostrar error
+        if ($subgrupos->isEmpty()) {
+            return Inertia::render('Inscripciones/form', [
+                'paquete' => $paquete,
+                'grupo' => $grupo,
+                'subgrupo' => null,
+                'capacidadDisponible' => 0,
+                'hijosInscritos' => [],
+                'error' => 'Este grupo no tiene subgrupos activos disponibles para inscripciones.'
+            ]);
+        }
+
+        // Calcular capacidad total disponible del grupo (suma de todos los subgrupos)
+        $capacidadTotal = $subgrupos->sum('capacidad_maxima');
+        $inscritosCount = Inscripcion::whereIn('subgrupo_id', $subgrupos->pluck('id'))->count();
+        $capacidadDisponible = $capacidadTotal - $inscritosCount;
+
+        // Obtener hijos inscritos en TODOS los subgrupos de este grupo con información completa
+        $hijosInscritos = Hijo::select('id', 'nombres', 'doc_tipo', 'doc_numero', 'user_id', 'fecha_nacimiento')
+            ->whereHas('inscripciones', function($query) use ($subgrupos) {
+                $query->whereIn('subgrupo_id', $subgrupos->pluck('id'));
+            })
+            ->with(['user:id,name,email,phone', 'inscripciones' => function($query) use ($subgrupos) {
+                $query->whereIn('subgrupo_id', $subgrupos->pluck('id'))->with('subgrupo:id,nombre');
+            }])
+            ->get()
+            ->map(function($hijo) use ($subgrupos) {
+                // Obtener el subgrupo específico donde está inscrito
+                $inscripcion = $hijo->inscripciones->first();
+                return [
+                    'id' => $hijo->id,
+                    'nombres' => $hijo->nombres,
+                    'doc_tipo' => $hijo->doc_tipo,
+                    'doc_numero' => $hijo->doc_numero,
+                    'fecha_nacimiento' => $hijo->fecha_nacimiento,
+                    'user_id' => $hijo->user_id,
+                    'subgrupo_nombre' => $inscripcion ? $inscripcion->subgrupo->nombre : 'Sin subgrupo',
+                    'user' => $hijo->user ? [
+                        'id' => $hijo->user->id,
+                        'name' => $hijo->user->name,
+                        'email' => $hijo->user->email,
+                        'phone' => $hijo->user->phone
+                    ] : null
+                ];
+            });
+
+        return Inertia::render('Inscripciones/form', [
+            'paquete' => $paquete,
+            'grupo' => $grupo,
+            'subgrupo' => null, // No hay subgrupo específico
+            'capacidadDisponible' => $capacidadDisponible,
+            'hijosInscritos' => $hijosInscritos,
+            'error' => $capacidadDisponible <= 0 ? 'Este grupo ya no tiene cupos disponibles.' : null
+        ]);
+    }
+
+    /**
+     * Mostrar página de selección de subgrupos
+     */
+    public function showSubgrupoSelection(Paquete $paquete, Grupo $grupo)
+    {
+        // Verificar que el grupo pertenece al paquete
+        if ($grupo->paquete_id !== $paquete->id) {
+            abort(404, 'El grupo no pertenece a este paquete');
+        }
+
+        // Verificar que el paquete y grupo estén activos
+        if (!$paquete->activo || !$grupo->activo) {
+            return Inertia::render('Inscripciones/SubgrupoSelection', [
+                'paquete' => $paquete,
+                'grupo' => $grupo,
+                'subgrupos' => [],
+                'error' => 'Este paquete o grupo no está disponible para inscripciones.'
+            ]);
+        }
+
+        // Obtener subgrupos activos del grupo con conteos de inscripciones
+        $subgrupos = $grupo->subgrupos()
+            ->activos()
+            ->withCount('inscripciones')
+            ->orderBy('nombre')
+            ->get();
 
         // Si no hay subgrupos, mostrar error
         if ($subgrupos->isEmpty()) {
@@ -302,7 +386,6 @@ class InscripcionController extends Controller
             ]);
         }
 
-        // Mostrar página de selección de subgrupos
         return Inertia::render('Inscripciones/SubgrupoSelection', [
             'paquete' => $paquete,
             'grupo' => $grupo,
@@ -389,8 +472,14 @@ class InscripcionController extends Controller
     /**
      * Procesar inscripción desde formulario público
      */
-    public function storeForm(StoreInscripcionFormRequest $request, Paquete $paquete, Grupo $grupo)
+    public function storeForm(Request $request, Paquete $paquete, Grupo $grupo)
     {
+        \Log::info('=== STORE FORM GRUPO START ===');
+        \Log::info('Request data received:', $request->all());
+        \Log::info('Request method:', ['method' => $request->method()]);
+        \Log::info('Has assign_guardian?', ['has_assign_guardian' => $request->has('assign_guardian')]);
+        \Log::info('assign_guardian value:', ['assign_guardian' => $request->assign_guardian]);
+
         // Verificar que el grupo pertenece al paquete
         if ($grupo->paquete_id !== $paquete->id) {
             abort(404, 'El grupo no pertenece a este paquete');
@@ -403,123 +492,15 @@ class InscripcionController extends Controller
             ]);
         }
 
-        // Validar datos (ya validados por el FormRequest)
-        $validated = $request->validated();
+        // Check if this is a guardian assignment request
+        if ($request->has('assign_guardian') && $request->assign_guardian) {
+            \Log::info('Redirecting to handleGuardianAssignmentGroup method');
+            return $this->handleGuardianAssignmentGroup($request, $paquete, $grupo);
+        }
 
-        // Este método ya no debe procesar inscripciones directas
-        // Redirigir a la página de selección de subgrupos
         return back()->withErrors([
-            'capacity' => 'Debe seleccionar un subgrupo específico para completar la inscripción.'
+            'capacity' => 'Esta funcionalidad se ha actualizado para confirmación de inscripciones por grupo.'
         ]);
-
-        // Nota: Solo verificamos por DNI del padre. Los hijos pueden tener documentos duplicados entre diferentes padres.
-
-        try {
-            DB::transaction(function () use ($validated, $paquete, $grupo) {
-            // Buscar usuario existente por DNI
-            $user = User::where('dni', $validated['parent_dni'])->first();
-            
-            if (!$user) {
-                // Verificar si ya existe un usuario con el mismo email o teléfono
-                $existingUserByEmail = User::where('email', $validated['parent_email'])->first();
-                $existingUserByPhone = User::where('phone', $validated['parent_phone'])->first();
-                
-                if ($existingUserByEmail) {
-                    throw new \Exception('email_exists');
-                }
-                
-                if ($existingUserByPhone) {
-                    throw new \Exception('phone_exists');
-                }
-                
-                // Crear contraseña con DNI
-                $password = $validated['parent_dni'];
-                
-                $user = User::create([
-                    'name' => $validated['parent_name'],
-                    'email' => $validated['parent_email'],
-                    'phone' => $validated['parent_phone'],
-                    'dni' => $validated['parent_dni'],
-                    'password' => Hash::make($password),
-                    'email_verified_at' => now(),
-                    'is_admin' => false,
-                ]);
-                $usuarioCreado = true; // Marcar que se creó un nuevo usuario
-            
-                // Enviar WhatsApp si el usuario fue creado exitosamente
-                if ($user) {
-                    WhatsAppService::enviarWhatsApp($validated['parent_phone'], $validated['parent_email'], $password);
-                }
-            } else {
-                // Si el usuario ya existe, actualizar datos si es necesario
-                $user->update([
-                    'name' => $validated['parent_name'],
-                    'email' => $validated['parent_email'],
-                    'phone' => $validated['parent_phone'],
-                    'dni' => $validated['parent_dni'],
-                ]);
-            }
-
-            // Crear hijos e inscripciones
-            foreach ($validated['children'] as $childData) {
-                // Verificar si ya existe un hijo con el mismo documento para este usuario
-                $hijoExistente = Hijo::where('user_id', $user->id)
-                                    ->where('doc_tipo', $childData['docType'])
-                                    ->where('doc_numero', $childData['docNumber'])
-                                    ->first();
-
-                if ($hijoExistente) {
-                    $hijo = $hijoExistente;
-                    // Actualizar datos del hijo si es necesario
-                    $hijo->update([
-                        'nombres' => $childData['name'],
-                        'nums_emergencia' => [$validated['parent_phone']], // Actualizar contacto de emergencia
-                    ]);
-                } else {
-                    $hijo = Hijo::create([
-                        'nombres' => $childData['name'],
-                        'doc_tipo' => $childData['docType'],
-                        'doc_numero' => $childData['docNumber'],
-                        'user_id' => $user->id,
-                        'nums_emergencia' => [$validated['parent_phone']], // Teléfono del padre como contacto de emergencia
-                    ]);
-                }
-
-                // Verificar que no exista inscripción duplicada
-                $existeInscripcion = Inscripcion::where('hijo_id', $hijo->id)
-                                              ->where('grupo_id', $grupo->id)
-                                              ->exists();
-                
-                if (!$existeInscripcion) {
-                    Inscripcion::create([
-                        'hijo_id' => $hijo->id,
-                        'paquete_id' => $paquete->id,
-                        'grupo_id' => $grupo->id,
-                        'subgrupo_id' => $subgrupo->id,
-                        'usuario_id' => $user->id,
-                    ]);
-                }
-            }
-            });
-
-            return redirect()->route('inscripcion.form', [$paquete->id, $grupo->id])
-                ->with('success', 'Inscripción realizada exitosamente. Recibirás un correo con los detalles.');
-    } catch (\Exception $e) {
-        if ($e->getMessage() === 'email_exists') {
-            return back()->withErrors([
-                'parent_email' => 'Ya existe un usuario registrado con este correo electrónico.'
-            ]);
-        }
-        
-        if ($e->getMessage() === 'phone_exists') {
-            return back()->withErrors([
-                'parent_phone' => 'Ya existe un usuario registrado con este número de teléfono.'
-            ]);
-        }
-        
-        // Re-lanzar la excepción si no es una de las que manejamos
-        throw $e;
-    }
     }
 
     /**
@@ -911,6 +892,254 @@ class InscripcionController extends Controller
 
         } catch (\Exception $e) {
             \Log::error('=== GUARDIAN ASSIGNMENT ERROR ===');
+            \Log::error('Exception message: ' . $e->getMessage());
+            \Log::error('Exception trace: ' . $e->getTraceAsString());
+
+            if ($e->getMessage() === 'missing_required_fields') {
+                return back()->withErrors([
+                    'parent_name' => 'Todos los campos del apoderado son obligatorios.'
+                ]);
+            }
+            if ($e->getMessage() === 'email_exists') {
+                return back()->withErrors([
+                    'parent_email' => 'Ya existe un usuario registrado con este correo electrónico.'
+                ]);
+            }
+            if ($e->getMessage() === 'phone_exists') {
+                return back()->withErrors([
+                    'parent_phone' => 'Ya existe un usuario registrado con este número de teléfono.'
+                ]);
+            }
+            if ($e->getMessage() === 'dni_exists') {
+                return back()->withErrors([
+                    'parent_dni' => 'Ya existe un usuario registrado con este DNI.'
+                ]);
+            }
+            if ($e->getMessage() === 'user_not_found') {
+                return back()->withErrors([
+                    'parent_email' => 'No se pudo encontrar el usuario existente.'
+                ]);
+            }
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Handle guardian assignment to an existing child at group level
+     */
+    private function handleGuardianAssignmentGroup(Request $request, Paquete $paquete, Grupo $grupo)
+    {
+        \Log::info('=== GUARDIAN ASSIGNMENT GROUP DEBUG START ===');
+        \Log::info('Full request data:', $request->all());
+        \Log::info('Request method:', ['method' => $request->method()]);
+
+        $childId = $request->selected_child_id;
+        $userCreationMode = $request->user_creation_mode;
+        $confirmExistingGuardian = $request->confirm_existing_guardian;
+
+        // Find the child
+        $child = Hijo::findOrFail($childId);
+        \Log::info('Child found:', ['id' => $child->id, 'nombres' => $child->nombres, 'user_id' => $child->user_id]);
+
+        // Get all active subgroups for this group
+        $subgrupos = $grupo->subgrupos()->activos()->get();
+
+        // Verify the child is enrolled in this group (any of its subgroups)
+        $inscription = Inscripcion::where('hijo_id', $childId)
+            ->whereIn('subgrupo_id', $subgrupos->pluck('id'))
+            ->first();
+
+        if (!$inscription) {
+            \Log::error('Child not enrolled in group:', ['child_id' => $childId, 'grupo_id' => $grupo->id]);
+            return back()->withErrors([
+                'selected_child_id' => 'El niño seleccionado no está inscrito en este grupo.'
+            ]);
+        }
+
+        \Log::info('Inscription found:', ['id' => $inscription->id, 'subgrupo_id' => $inscription->subgrupo_id, 'confirmado' => $inscription->confirmado ?? 'null']);
+
+        // If just confirming existing guardian, confirm inscription and send WhatsApp message
+        if ($confirmExistingGuardian && $child->user_id !== 1) {
+            \Log::info('Confirming existing guardian for child');
+            $existingUser = User::find($child->user_id);
+
+            if ($existingUser) {
+                \Log::info('Existing guardian found:', ['id' => $existingUser->id, 'name' => $existingUser->name]);
+
+                // Get the subgroup for the inscription
+                $subgrupo = Subgrupo::find($inscription->subgrupo_id);
+
+                // Confirm the inscription
+                $inscription->update(['confirmado' => true]);
+                \Log::info('Inscription confirmed');
+
+                // Send WhatsApp confirmation message
+                WhatsAppService::enviarConfirmacionInscripcion(
+                    $existingUser->phone,
+                    $child->nombres,
+                    $subgrupo->nombre,
+                    $paquete->nombre,
+                    $existingUser->email,
+                    $existingUser->dni  // Password is DNI
+                );
+                \Log::info('WhatsApp confirmation sent');
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Inscripción confirmada exitosamente. Se ha enviado un mensaje de confirmación por WhatsApp.'
+                ]);
+            }
+
+            \Log::error('Existing guardian not found for user_id:', $child->user_id);
+            return response()->json([
+                'success' => false,
+                'message' => 'No se pudo encontrar el apoderado del niño.'
+            ], 400);
+        }
+
+        \Log::info('Child needs new guardian assignment');
+
+        try {
+            DB::transaction(function () use ($request, $child, $inscription, $userCreationMode, $paquete, $grupo) {
+                \Log::info('Starting DB transaction for guardian assignment');
+
+                // Get the subgroup for the inscription
+                $subgrupo = Subgrupo::find($inscription->subgrupo_id);
+
+                if ($userCreationMode) {
+                    \Log::info('Creating new user for guardian assignment');
+
+                    // Validate required fields for new user creation
+                    if (!$request->parent_name || !$request->parent_email || !$request->parent_phone || !$request->parent_dni) {
+                        throw new \Exception('missing_required_fields');
+                    }
+
+                    // Create new user
+                    $existingUserByEmail = User::where('email', $request->parent_email)->first();
+                    $existingUserByPhone = User::where('phone', $request->parent_phone)->first();
+                    $existingUserByDni = User::where('dni', $request->parent_dni)->first();
+
+                    if ($existingUserByEmail) {
+                        \Log::error('Email already exists:', $request->parent_email);
+                        throw new \Exception('email_exists');
+                    }
+                    if ($existingUserByPhone) {
+                        \Log::error('Phone already exists:', $request->parent_phone);
+                        throw new \Exception('phone_exists');
+                    }
+                    if ($existingUserByDni) {
+                        \Log::error('DNI already exists:', $request->parent_dni);
+                        throw new \Exception('dni_exists');
+                    }
+
+                    $password = $request->parent_dni;
+
+                    $newUser = User::create([
+                        'name' => $request->parent_name,
+                        'email' => $request->parent_email,
+                        'phone' => $request->parent_phone,
+                        'dni' => $request->parent_dni,
+                        'password' => Hash::make($password),
+                        'email_verified_at' => now(),
+                        'is_admin' => false,
+                    ]);
+
+                    \Log::info('New user created:', ['id' => $newUser->id, 'name' => $newUser->name]);
+
+                    // Update child's user_id to new guardian
+                    $child->update([
+                        'user_id' => $newUser->id,
+                        'nums_emergencia' => [$request->parent_phone]
+                    ]);
+                    \Log::info('Child updated with new guardian ID');
+
+                    // Update inscription's usuario_id and confirm it
+                    $inscription->update([
+                        'usuario_id' => $newUser->id,
+                        'confirmado' => true
+                    ]);
+                    \Log::info('Inscription updated and confirmed');
+
+                    // Send WhatsApp notifications
+                    if ($newUser) {
+                        WhatsAppService::enviarWhatsApp($request->parent_phone, $request->parent_email, $password);
+                        \Log::info('Welcome WhatsApp sent');
+
+                        // Also send confirmation message
+                        WhatsAppService::enviarConfirmacionInscripcion(
+                            $request->parent_phone,
+                            $child->nombres,
+                            $subgrupo->nombre,
+                            $paquete->nombre,
+                            $request->parent_email,
+                            $password
+                        );
+                        \Log::info('Confirmation WhatsApp sent');
+                    }
+                } else {
+                    \Log::info('Using existing user for guardian assignment');
+
+                    // Find existing user by DNI first, then by email
+                    $existingUser = User::where('dni', $request->parent_dni)->first();
+                    if (!$existingUser) {
+                        $existingUser = User::where('email', $request->parent_email)->first();
+                    }
+
+                    if ($existingUser) {
+                        \Log::info('Existing user found:', ['id' => $existingUser->id, 'name' => $existingUser->name]);
+
+                        // Update existing user data if provided
+                        $existingUser->update([
+                            'name' => $request->parent_name ?: $existingUser->name,
+                            'email' => $request->parent_email ?: $existingUser->email,
+                            'phone' => $request->parent_phone ?: $existingUser->phone,
+                            'dni' => $request->parent_dni ?: $existingUser->dni,
+                        ]);
+
+                        // Update child's user_id to existing guardian
+                        $child->update([
+                            'user_id' => $existingUser->id,
+                            'nums_emergencia' => [$existingUser->phone]
+                        ]);
+                        \Log::info('Child updated with existing guardian ID');
+
+                        // Update inscription's usuario_id and confirm it
+                        $inscription->update([
+                            'usuario_id' => $existingUser->id,
+                            'confirmado' => true
+                        ]);
+                        \Log::info('Inscription updated and confirmed with existing user');
+
+                        // Send WhatsApp with existing user credentials
+                        $password = $existingUser->dni;
+                        WhatsAppService::enviarWhatsApp($existingUser->phone, $existingUser->email, $password);
+                        \Log::info('Welcome WhatsApp sent to existing user');
+
+                        // Also send confirmation message
+                        WhatsAppService::enviarConfirmacionInscripcion(
+                            $existingUser->phone,
+                            $child->nombres,
+                            $subgrupo->nombre,
+                            $paquete->nombre,
+                            $existingUser->email,
+                            $password
+                        );
+                        \Log::info('Confirmation WhatsApp sent to existing user');
+                    } else {
+                        \Log::error('Existing user not found by DNI or email:', $request->parent_dni, $request->parent_email);
+                        throw new \Exception('user_not_found');
+                    }
+                }
+            });
+
+            \Log::info('=== GUARDIAN ASSIGNMENT GROUP DEBUG END - SUCCESS ===');
+
+            return redirect()->route('inscripcion.form', [$paquete->id, $grupo->id])
+                ->with('success', 'Apoderado asignado exitosamente. El niño ahora tiene un apoderado responsable y se han enviado las credenciales por WhatsApp.');
+
+        } catch (\Exception $e) {
+            \Log::error('=== GUARDIAN ASSIGNMENT GROUP ERROR ===');
             \Log::error('Exception message: ' . $e->getMessage());
             \Log::error('Exception trace: ' . $e->getTraceAsString());
 

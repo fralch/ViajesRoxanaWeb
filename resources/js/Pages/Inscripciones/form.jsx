@@ -213,6 +213,11 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
   const [showUserCreationForm, setShowUserCreationForm] = useState(false);
   const [userCreationMode, setUserCreationMode] = useState(false);
 
+  // States for child search functionality
+  const [childSearchQuery, setChildSearchQuery] = useState('');
+  const [filteredChildren, setFilteredChildren] = useState(hijosInscritos || []);
+  const [showChildDropdown, setShowChildDropdown] = useState(false);
+
   // New user creation form data
   const [newUserData, setNewUserData] = useState({
     name: '',
@@ -269,6 +274,8 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
     const child = hijosInscritos.find(h => h.id === parseInt(childId));
     setSelectedChildId(childId);
     setSelectedChild(child);
+    setChildSearchQuery(''); // Limpiar búsqueda al seleccionar
+    setShowChildDropdown(false); // Cerrar dropdown
 
     if (child) {
       // Verificar si el user relacionado es admin (user_id === 1)
@@ -277,7 +284,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
         setUserCreationMode(true);
         setShowUserCreationForm(true);
         setIsExistingGuardian(false);
-        showToast('Este niño necesita un apoderado responsable', 'info');
+        showToast('Este hijo necesita un apoderado responsable', 'info');
       } else if (child.user) {
         // Usuario existe y no es admin, cargar sus datos y marcar como existing
         setUserCreationMode(false);
@@ -294,6 +301,18 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
         showToast('Datos del apoderado cargados. Solo confirma la inscripción.', 'success');
       }
     }
+  };
+
+  // Función para manejar cambios en el input de búsqueda
+  const handleChildSearchChange = (e) => {
+    const value = e.target.value;
+    setChildSearchQuery(value);
+    setShowChildDropdown(true); // Mostrar dropdown al escribir
+  };
+
+  // Función para seleccionar un hijo del dropdown
+  const selectChildFromDropdown = (child) => {
+    handleChildSelection(child.id.toString());
   };
 
   // Función para usar los datos del usuario existente
@@ -348,6 +367,40 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
 
     return () => clearTimeout(timer);
   }, [data.parent_dni]);
+
+  // Efecto para filtrar hijos cuando cambia la búsqueda
+  useEffect(() => {
+    console.log('=== HIJOS INSCRITOS DEBUG ===');
+    console.log('hijosInscritos:', hijosInscritos);
+    console.log('childSearchQuery:', childSearchQuery);
+
+    if (!hijosInscritos) {
+      setFilteredChildren([]);
+      console.log('filteredChildren: [] (no hijosInscritos)');
+      return;
+    }
+
+    if (!childSearchQuery.trim()) {
+      setFilteredChildren(hijosInscritos);
+      console.log('filteredChildren: (todos los hijos)', hijosInscritos);
+    } else {
+      const query = childSearchQuery.toLowerCase().trim();
+      const filtered = hijosInscritos.filter(hijo =>
+        hijo.nombres.toLowerCase().includes(query) ||
+        hijo.doc_numero.toLowerCase().includes(query) ||
+        hijo.doc_tipo.toLowerCase().includes(query) ||
+        hijo.subgrupo_nombre.toLowerCase().includes(query)
+      );
+      setFilteredChildren(filtered);
+      console.log('filteredChildren: (filtrados)', filtered);
+      console.log('query usado:', query);
+    }
+  }, [childSearchQuery, hijosInscritos]);
+
+  // Efecto para inicializar filteredChildren cuando cambian hijosInscritos
+  useEffect(() => {
+    setFilteredChildren(hijosInscritos || []);
+  }, [hijosInscritos]);
 
   const addChild = () => {
     setData("children", [
@@ -503,19 +556,17 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
     clearErrors();
 
      if (!selectedChildId) {
-       showWarning('Niño no seleccionado', 'Selecciona un niño del listado para continuar.');
+       showWarning('hijo no seleccionado', 'Selecciona un hijo del listado para continuar.');
        return;
      }
 
     if (!selectedChild) {
-      showWarning('Error', 'Error al obtener los datos del niño seleccionado.');
+      showWarning('Error', 'Error al obtener los datos del hijo seleccionado.');
       return;
     }
 
     // Determinar la URL según si es inscripción específica o formulario general
-    const submitUrl = paquete && grupo && subgrupo
-      ? `/paquete/${paquete.id}/grupo/${grupo.id}/subgrupo/${subgrupo.id}/form`
-      : paquete && grupo
+    const submitUrl = paquete && grupo
       ? `/paquete/${paquete.id}/grupo/${grupo.id}/form`
       : "/inscripciones";
 
@@ -578,7 +629,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
     }
 
     if (selectedChild.user_id === 1 && !userCreationMode) {
-      showWarning('Apoderado requerido', 'Este niño necesita que completes los datos del apoderado.');
+      showWarning('Apoderado requerido', 'Este hijo necesita que completes los datos del apoderado.');
       return;
     }
 
@@ -607,7 +658,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
         // Mostrar alerta de éxito
         showSuccess(
           '¡Apoderado asignado exitosamente!',
-          'El niño ahora tiene un apoderado responsable y se han enviado las credenciales por WhatsApp.'
+          'El hijo ahora tiene un apoderado responsable y se han enviado las credenciales por WhatsApp.'
         );
 
         // Resetear formulario y estados
@@ -659,7 +710,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
         } else if (errors.parent_dni) {
           showError('DNI duplicado', errors.parent_dni);
         } else if (errors.selected_child_id) {
-          showError('Error con el niño seleccionado', errors.selected_child_id);
+          showError('Error con el hijo seleccionado', errors.selected_child_id);
         } else if (Object.keys(errors).length > 0) {
           showError('Error en el formulario', 'Por favor revisa los datos ingresados.');
         } else {
@@ -704,17 +755,15 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                       {paquete.nombre}
                     </h3>
                     <div className="space-y-1">
-                      <p className="text-sm text-blue-600 font-medium">
-                        Grupo: {grupo.nombre}
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex h-2 w-2 rounded-full bg-blue-500"></span>
+                        <p className="text-sm text-blue-600 font-medium">
+                          Grupo: {grupo.nombre}
+                        </p>
+                      </div>
+                      <p className="text-xs text-blue-500 mt-1">
+                        Confirmación de inscripciones a nivel de grupo
                       </p>
-                      {subgrupo && (
-                        <div className="flex items-center gap-2">
-                          <span className="inline-flex h-2 w-2 rounded-full bg-green-500"></span>
-                          <p className="text-sm text-green-700 font-semibold">
-                            Subgrupo: {subgrupo.nombre}
-                          </p>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -799,43 +848,103 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                     </div>
                     <div className="flex-1">
                       <h3 className="text-xl font-bold text-green-900 mb-1">
-                        Niños Inscritos en este Subgrupo
+                        Hijos Inscritos en este Grupo
                       </h3>
                       <p className="text-sm text-green-700 mb-4">
-                        Selecciona el niño para asignarle un apoderado responsable
+                        Selecciona el hijo para asignarle un apoderado responsable.
                       </p>
                     </div>
                   </div>
 
-                   <div className="space-y-4">
-                     <div>
-                       <label htmlFor="child_select" className="block text-sm font-medium text-gray-700 mb-2">
-                         Seleccionar niño
-                       </label>
-                       <select
-                         id="child_select"
-                         value={selectedChildId || ""}
-                         onChange={(e) => handleChildSelection(e.target.value)}
-                         className={classNames(
-                           inputBase,
-                           "bg-white/80 backdrop-blur border-gray-300 focus:ring-green-500 focus:border-green-500"
-                         )}
-                       >
-                         <option value="">-- Seleccionar un niño --</option>
-                         {hijosInscritos.map((hijo) => (
-                           <option key={hijo.id} value={hijo.id.toString()}>
-                             {hijo.nombres} - {hijo.doc_tipo}: {hijo.doc_numero}
-                             {hijo.user_id === 1 ? " (Sin apoderado)" : " (✓ Con apoderado)"}
-                           </option>
-                         ))}
-                       </select>
-                     </div>
-                  </div>
+                    <div className="space-y-4">
+                      <div className="relative">
+                        <label htmlFor="child_search" className="block text-sm font-medium text-gray-700 mb-2">
+                          Buscar y seleccionar hijo
+                        </label>
+                        <div className="relative">
+                          <input
+                            id="child_search"
+                            type="text"
+                            value={childSearchQuery}
+                            onChange={handleChildSearchChange}
+                            onFocus={() => setShowChildDropdown(true)}
+                            onBlur={() => setTimeout(() => setShowChildDropdown(false), 200)}
+                            placeholder="Buscar por nombre, documento o subgrupo..."
+                            className={classNames(
+                              inputBase,
+                              "bg-white/80 backdrop-blur border-gray-300 focus:ring-green-500 focus:border-green-500 pr-10"
+                            )}
+                          />
+                          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                          </div>
+                        </div>
+
+                        {/* Dropdown con resultados filtrados */}
+                        {showChildDropdown && filteredChildren.length > 0 && (
+                          <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                            {filteredChildren.map((hijo) => (
+                              <div
+                                key={hijo.id}
+                                onClick={() => selectChildFromDropdown(hijo)}
+                                className="px-4 py-3 hover:bg-green-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1">
+                                    <div className="font-medium text-gray-900">{hijo.nombres}</div>
+                                    <div className="text-sm text-gray-600">
+                                      {hijo.doc_tipo}: {hijo.doc_numero} - {hijo.subgrupo_nombre}
+                                    </div>
+                                  </div>
+                                  <div className="ml-2">
+                                    {hijo.user_id === 1 ? (
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                                        Sin apoderado
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        ✓ Con apoderado
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Mensaje cuando no hay resultados */}
+                        {showChildDropdown && childSearchQuery.trim() && filteredChildren.length === 0 && (
+                          <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-xl shadow-lg p-4 text-center text-gray-500">
+                            No se encontraron hijos con ese nombre o documento.
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Mostrar hijo seleccionado */}
+                      {selectedChild && (
+                        <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <div>
+                              <p className="text-sm font-medium text-green-800">Hijo seleccionado:</p>
+                              <p className="text-sm text-green-700">
+                                {selectedChild.nombres} - {selectedChild.doc_tipo}: {selectedChild.doc_numero}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                   </div>
 
                    {!selectedChildId && (
                      <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                        <p className="text-sm text-yellow-800">
-                         ⚠️ Selecciona un niño del listado para continuar con la asignación de apoderado
+                         ⚠️ Selecciona un hijo del listado para continuar con la asignación de apoderado
                        </p>
                      </div>
                    )}
@@ -889,7 +998,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                       <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      Este niño ya está correctamente asignado a un apoderado responsable.
+                      Este hijo ya está correctamente asignado a un apoderado responsable.
                     </p>
                   </div>
                 </div>
@@ -1179,7 +1288,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                     Enviando…
                   </>
                  ) : !selectedChildId ? (
-                   <>Selecciona un niño</>
+                   <>Selecciona un hijo</>
                  ) : !consentChecked ? (
                   <>Acepte los términos para continuar</>
                 ) : selectedChild && selectedChild.user_id === 1 && !userCreationMode ? (
