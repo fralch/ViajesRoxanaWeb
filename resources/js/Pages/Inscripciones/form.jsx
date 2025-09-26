@@ -259,11 +259,26 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
         showToast('DNI disponible para registro', 'success');
       }
     } catch (error) {
-      console.log('Error verificando DNI:', error);
+      console.error('Error verificando DNI:', error);
       setShowUserExistsWarning(false);
       setExistingUserData(null);
       setDniValidated(false);
-      showError('Error de verificación', 'No se pudo verificar el DNI. Intenta nuevamente.');
+
+      // Mejorar el manejo de errores de verificación
+      if (error.response) {
+        const status = error.response.status;
+        const errorMessage = error.response.data?.message || 'Error desconocido';
+
+        if (status === 422) {
+          showError('Error de validación', 'El DNI debe tener exactamente 8 dígitos.');
+        } else if (status >= 500) {
+          showError('Error del servidor', 'Problema temporal del servidor. Intenta nuevamente.');
+        } else {
+          showError('Error de verificación', errorMessage);
+        }
+      } else {
+        showError('Error de conexión', 'No se pudo conectar con el servidor. Verifica tu conexión.');
+      }
     } finally {
       setDniLoading(false);
     }
@@ -349,9 +364,25 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
       showSuccess('¡Éxito!', flash.success);
     }
     if (error) {
-      showError('Error', error);
+      showError('Error del sistema', error);
     }
-  }, [flash, error]);
+
+    // Mostrar errores específicos si existen
+    if (errors && Object.keys(errors).length > 0) {
+      const errorMessages = [];
+
+      if (errors.parent_name) errorMessages.push(`Nombre: ${errors.parent_name}`);
+      if (errors.parent_email) errorMessages.push(`Email: ${errors.parent_email}`);
+      if (errors.parent_phone) errorMessages.push(`Teléfono: ${errors.parent_phone}`);
+      if (errors.parent_dni) errorMessages.push(`DNI: ${errors.parent_dni}`);
+      if (errors.general) errorMessages.push(errors.general);
+      if (errors.capacity) errorMessages.push(errors.capacity);
+
+      if (errorMessages.length > 0) {
+        showError('Errores encontrados', errorMessages.join('\n'));
+      }
+    }
+  }, [flash, error, errors]);
 
   // Efecto para validar DNI cuando cambia - ÚNICA verificación
   useEffect(() => {
@@ -594,36 +625,54 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
       return;
     }
 
-    // Validación para creación de nuevo usuario
+    // Validación mejorada para creación de nuevo usuario
     if (userCreationMode) {
       // Validar que todos los campos requeridos estén completos
-      if (!data.parent_name || !data.parent_dni || !data.parent_phone || !data.parent_email) {
+      if (!data.parent_name?.trim() || !data.parent_dni?.trim() || !data.parent_phone?.trim() || !data.parent_email?.trim()) {
         showWarning('Campos incompletos', 'Complete todos los datos del apoderado para continuar.');
         return;
       }
 
+      // Validar formato del nombre
+      if (data.parent_name.trim().length < 3) {
+        showWarning('Nombre inválido', 'El nombre debe tener al menos 3 caracteres.');
+        return;
+      }
+      if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(data.parent_name.trim())) {
+        showWarning('Nombre inválido', 'El nombre solo puede contener letras y espacios.');
+        return;
+      }
+
       // Validar formato del DNI
-      if (data.parent_dni.length !== 8) {
+      const cleanDni = data.parent_dni.replace(/\D/g, "");
+      if (cleanDni.length !== 8) {
         showWarning('DNI inválido', 'El DNI debe tener exactamente 8 dígitos.');
+        return;
+      }
+      if (!/^\d{8}$/.test(cleanDni)) {
+        showWarning('DNI inválido', 'El DNI solo puede contener números.');
         return;
       }
 
       // Validar formato del teléfono
       const cleanPhone = data.parent_phone.replace(/\D/g, "");
+      if (cleanPhone.length !== 9) {
+        showWarning('Teléfono inválido', 'El teléfono debe tener exactamente 9 dígitos.');
+        return;
+      }
       if (!/^9\d{8}$/.test(cleanPhone)) {
         showWarning('Teléfono inválido', 'El teléfono debe ser un número peruano válido (9 dígitos empezando en 9).');
         return;
       }
 
       // Validar formato del email
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.parent_email.trim())) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(data.parent_email.trim())) {
         showWarning('Email inválido', 'Ingrese un correo electrónico válido.');
         return;
       }
-
-      // Validar formato del nombre
-      if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(data.parent_name.trim())) {
-        showWarning('Nombre inválido', 'El nombre solo puede contener letras y espacios.');
+      if (data.parent_email.trim().length > 255) {
+        showWarning('Email muy largo', 'El correo electrónico es demasiado largo.');
         return;
       }
     }
@@ -701,20 +750,31 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
       onError: (errors) => {
         console.error('Assignment errors:', errors);
 
+        // Limpiar errores anteriores
+        clearErrors();
+
+        // Manejar errores específicos con mejores mensajes
         if (errors.parent_name) {
-          showError('Error en datos del apoderado', errors.parent_name);
+          showError('Error en nombre del apoderado', errors.parent_name);
         } else if (errors.parent_email) {
-          showError('Correo electrónico duplicado', errors.parent_email);
+          showError('Error en correo electrónico', errors.parent_email);
         } else if (errors.parent_phone) {
-          showError('Teléfono duplicado', errors.parent_phone);
+          showError('Error en teléfono', errors.parent_phone);
         } else if (errors.parent_dni) {
-          showError('DNI duplicado', errors.parent_dni);
+          showError('Error en DNI', errors.parent_dni);
         } else if (errors.selected_child_id) {
           showError('Error con el hijo seleccionado', errors.selected_child_id);
+        } else if (errors.general) {
+          showError('Error general', errors.general);
+        } else if (errors.capacity) {
+          showError('Error de capacidad', errors.capacity);
         } else if (Object.keys(errors).length > 0) {
-          showError('Error en el formulario', 'Por favor revisa los datos ingresados.');
+          // Mostrar el primer error disponible
+          const firstErrorKey = Object.keys(errors)[0];
+          const firstErrorMessage = errors[firstErrorKey];
+          showError('Error en el formulario', `${firstErrorKey}: ${firstErrorMessage}`);
         } else {
-          showError('Error inesperado', 'No se pudo procesar la asignación. Intenta nuevamente.');
+          showError('Error inesperado', 'No se pudo procesar la asignación. Por favor, revisa los datos e inténtalo nuevamente.');
         }
 
         setAssignmentProcessing(false);
@@ -1115,8 +1175,14 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                       label="Nombre completo del apoderado"
                       value={newUserData.name}
                       onChange={(e) => {
-                        setNewUserData({...newUserData, name: e.target.value});
-                        setData('parent_name', e.target.value);
+                        const value = e.target.value;
+                        setNewUserData({...newUserData, name: value});
+                        setData('parent_name', value);
+
+                        // Limpiar errores previos de nombre
+                        if (errors.parent_name) {
+                          clearErrors('parent_name');
+                        }
                       }}
                       placeholder="Nombre y apellidos del apoderado responsable"
                       required
@@ -1131,6 +1197,12 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                         if (value.length <= 8) {
                           setNewUserData({...newUserData, dni: value});
                           setData('parent_dni', value);
+
+                          // Limpiar errores previos de DNI
+                          if (errors.parent_dni) {
+                            clearErrors('parent_dni');
+                          }
+
                           if (value.length === 8) {
                             setDniValidated(true);
                           } else {
@@ -1151,8 +1223,15 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                         value={newUserData.phone}
                         onChange={(e) => {
                           const value = e.target.value.replace(/[^0-9]/g, "");
-                          setNewUserData({...newUserData, phone: value});
-                          setData('parent_phone', value);
+                          if (value.length <= 9) {
+                            setNewUserData({...newUserData, phone: value});
+                            setData('parent_phone', value);
+
+                            // Limpiar errores previos de teléfono
+                            if (errors.parent_phone) {
+                              clearErrors('parent_phone');
+                            }
+                          }
                         }}
                         placeholder="987654321"
                         required
@@ -1166,8 +1245,14 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                         type="email"
                         value={newUserData.email}
                         onChange={(e) => {
-                          setNewUserData({...newUserData, email: e.target.value});
-                          setData('parent_email', e.target.value);
+                          const value = e.target.value;
+                          setNewUserData({...newUserData, email: value});
+                          setData('parent_email', value);
+
+                          // Limpiar errores previos de email
+                          if (errors.parent_email) {
+                            clearErrors('parent_email');
+                          }
                         }}
                         placeholder="correo@ejemplo.com"
                         required
@@ -1176,50 +1261,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                     </div>
                   </div>
 
-                  <div className="mt-6 flex gap-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (newUserData.name && newUserData.dni && newUserData.phone && newUserData.email) {
-                          if (newUserData.dni.length === 8) {
-                            setDniValidated(true);
-                            showToast('Datos del apoderado completados correctamente', 'success');
-                          } else {
-                            showError('DNI incompleto', 'El DNI debe tener 8 dígitos');
-                          }
-                        } else {
-                          showError('Campos incompletos', 'Complete todos los datos del apoderado');
-                        }
-                      }}
-                      className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      Confirmar Datos del Apoderado
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setUserCreationMode(false);
-                        setShowUserCreationForm(false);
-                        setSelectedChildId(null);
-                        setSelectedChild(null);
-                        setNewUserData({name: '', email: '', phone: '', dni: ''});
-                        setData({
-                          ...data,
-                          parent_name: '',
-                          parent_email: '',
-                          parent_phone: '',
-                          parent_dni: ''
-                        });
-                        setDniValidated(false);
-                      }}
-                      className="px-4 py-3 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 focus:ring-4 focus:ring-gray-300 transition"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
+                 
                 </div>
               </section>
             )}

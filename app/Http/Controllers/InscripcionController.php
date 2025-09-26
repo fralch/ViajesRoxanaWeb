@@ -643,20 +643,35 @@ class InscripcionController extends Controller
             return redirect()->route('inscripcion.subgrupo.form', [$paquete->id, $grupo->id, $subgrupo->id])
                 ->with('success', 'Inscripción realizada exitosamente. Recibirás un correo con los detalles.');
         } catch (\Exception $e) {
+            \Log::error('Error en storeFormSubgrupo', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             if ($e->getMessage() === 'email_exists') {
                 return back()->withErrors([
                     'parent_email' => 'Ya existe un usuario registrado con este correo electrónico.'
-                ]);
+                ])->withInput();
             }
 
             if ($e->getMessage() === 'phone_exists') {
                 return back()->withErrors([
                     'parent_phone' => 'Ya existe un usuario registrado con este número de teléfono.'
-                ]);
+                ])->withInput();
             }
 
-            // Re-lanzar la excepción si no es una de las que manejamos
-            throw $e;
+            if ($e->getMessage() === 'dni_exists') {
+                return back()->withErrors([
+                    'parent_dni' => 'Ya existe un usuario registrado con este DNI.'
+                ])->withInput();
+            }
+
+            // Error genérico para cualquier otra excepción
+            return back()->withErrors([
+                'general' => 'Ha ocurrido un error inesperado. Por favor, inténtelo nuevamente.'
+            ])->withInput();
         }
     }
 
@@ -766,15 +781,15 @@ class InscripcionController extends Controller
                     $existingUserByDni = User::where('dni', $request->parent_dni)->first();
 
                     if ($existingUserByEmail) {
-                        \Log::error('Email already exists:', $request->parent_email);
+                        \Log::error('Email already exists', ['email' => $request->parent_email]);
                         throw new \Exception('email_exists');
                     }
                     if ($existingUserByPhone) {
-                        \Log::error('Phone already exists:', $request->parent_phone);
+                        \Log::error('Phone already exists', ['phone' => $request->parent_phone]);
                         throw new \Exception('phone_exists');
                     }
                     if ($existingUserByDni) {
-                        \Log::error('DNI already exists:', $request->parent_dni);
+                        \Log::error('DNI already exists', ['dni' => $request->parent_dni]);
                         throw new \Exception('dni_exists');
                     }
 
@@ -891,35 +906,43 @@ class InscripcionController extends Controller
                 ->with('success', 'Apoderado asignado exitosamente. El niño ahora tiene un apoderado responsable y se han enviado las credenciales por WhatsApp.');
 
         } catch (\Exception $e) {
-            \Log::error('=== GUARDIAN ASSIGNMENT ERROR ===');
-            \Log::error('Exception message: ' . $e->getMessage());
-            \Log::error('Exception trace: ' . $e->getTraceAsString());
+            \Log::error('Guardian assignment error', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
 
             if ($e->getMessage() === 'missing_required_fields') {
                 return back()->withErrors([
                     'parent_name' => 'Todos los campos del apoderado son obligatorios.'
-                ]);
+                ])->withInput();
             }
             if ($e->getMessage() === 'email_exists') {
                 return back()->withErrors([
                     'parent_email' => 'Ya existe un usuario registrado con este correo electrónico.'
-                ]);
+                ])->withInput();
             }
             if ($e->getMessage() === 'phone_exists') {
                 return back()->withErrors([
                     'parent_phone' => 'Ya existe un usuario registrado con este número de teléfono.'
-                ]);
+                ])->withInput();
             }
             if ($e->getMessage() === 'dni_exists') {
                 return back()->withErrors([
                     'parent_dni' => 'Ya existe un usuario registrado con este DNI.'
-                ]);
+                ])->withInput();
             }
             if ($e->getMessage() === 'user_not_found') {
                 return back()->withErrors([
                     'parent_email' => 'No se pudo encontrar el usuario existente.'
-                ]);
+                ])->withInput();
             }
+
+            // Error genérico para cualquier otra excepción
+            return back()->withErrors([
+                'general' => 'Ha ocurrido un error inesperado durante la asignación del apoderado. Por favor, inténtelo nuevamente.'
+            ])->withInput();
 
             throw $e;
         }
@@ -1021,15 +1044,15 @@ class InscripcionController extends Controller
                     $existingUserByDni = User::where('dni', $request->parent_dni)->first();
 
                     if ($existingUserByEmail) {
-                        \Log::error('Email already exists:', $request->parent_email);
+                        \Log::error('Email already exists', ['email' => $request->parent_email]);
                         throw new \Exception('email_exists');
                     }
                     if ($existingUserByPhone) {
-                        \Log::error('Phone already exists:', $request->parent_phone);
+                        \Log::error('Phone already exists', ['phone' => $request->parent_phone]);
                         throw new \Exception('phone_exists');
                     }
                     if ($existingUserByDni) {
-                        \Log::error('DNI already exists:', $request->parent_dni);
+                        \Log::error('DNI already exists', ['dni' => $request->parent_dni]);
                         throw new \Exception('dni_exists');
                     }
 
@@ -1139,35 +1162,43 @@ class InscripcionController extends Controller
                 ->with('success', 'Apoderado asignado exitosamente. El niño ahora tiene un apoderado responsable y se han enviado las credenciales por WhatsApp.');
 
         } catch (\Exception $e) {
-            \Log::error('=== GUARDIAN ASSIGNMENT GROUP ERROR ===');
-            \Log::error('Exception message: ' . $e->getMessage());
-            \Log::error('Exception trace: ' . $e->getTraceAsString());
+            \Log::error('Guardian assignment group error', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
 
             if ($e->getMessage() === 'missing_required_fields') {
                 return back()->withErrors([
                     'parent_name' => 'Todos los campos del apoderado son obligatorios.'
-                ]);
+                ])->withInput();
             }
             if ($e->getMessage() === 'email_exists') {
                 return back()->withErrors([
                     'parent_email' => 'Ya existe un usuario registrado con este correo electrónico.'
-                ]);
+                ])->withInput();
             }
             if ($e->getMessage() === 'phone_exists') {
                 return back()->withErrors([
                     'parent_phone' => 'Ya existe un usuario registrado con este número de teléfono.'
-                ]);
+                ])->withInput();
             }
             if ($e->getMessage() === 'dni_exists') {
                 return back()->withErrors([
                     'parent_dni' => 'Ya existe un usuario registrado con este DNI.'
-                ]);
+                ])->withInput();
             }
             if ($e->getMessage() === 'user_not_found') {
                 return back()->withErrors([
                     'parent_email' => 'No se pudo encontrar el usuario existente.'
-                ]);
+                ])->withInput();
             }
+
+            // Error genérico para cualquier otra excepción
+            return back()->withErrors([
+                'general' => 'Ha ocurrido un error inesperado durante la asignación del apoderado. Por favor, inténtelo nuevamente.'
+            ])->withInput();
 
             throw $e;
         }
