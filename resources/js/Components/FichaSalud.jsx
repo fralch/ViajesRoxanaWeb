@@ -65,26 +65,26 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
         {
             title: "Datos básicos de salud",
             icon: <DropletIcon className="w-5 h-5" />,
-            bgColor: "bg-red-50",
-            borderColor: "border-red-200"
+            bgColor: "bg-green-50",
+            borderColor: "border-green-200"
         },
         {
             title: "Tratamientos actuales",
             icon: <PillIcon className="w-5 h-5" />,
-            bgColor: "bg-blue-50",
-            borderColor: "border-blue-200"
+            bgColor: "bg-green-50",
+            borderColor: "border-green-200"
         },
         {
             title: "Enfermedades preexistentes",
             icon: <HospitalIcon className="w-5 h-5" />,
-            bgColor: "bg-purple-50",
-            borderColor: "border-purple-200"
+            bgColor: "bg-green-50",
+            borderColor: "border-green-200"
         },
         {
             title: "Alergias",
             icon: <AlertTriangleIcon className="w-5 h-5" />,
-            bgColor: "bg-orange-50",
-            borderColor: "border-orange-200"
+            bgColor: "bg-green-50",
+            borderColor: "border-green-200"
         },
         {
             title: "Vacunas recibidas",
@@ -95,14 +95,14 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
         {
             title: "Seguro médico",
             icon: <ShieldIcon className="w-5 h-5" />,
-            bgColor: "bg-indigo-50",
-            borderColor: "border-indigo-200"
+            bgColor: "bg-green-50",
+            borderColor: "border-green-200"
         },
         {
             title: "Información adicional",
             icon: <ClipboardIcon className="w-5 h-5" />,
-            bgColor: "bg-gray-50",
-            borderColor: "border-gray-200"
+            bgColor: "bg-green-50",
+            borderColor: "border-green-200"
         }
     ];
 
@@ -163,7 +163,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                         <div className="grid gap-6 md:grid-cols-2">
                             <div>
                                 <InputLabel htmlFor="grupo_sanguineo" value="Grupo sanguíneo" className="text-gray-700 font-semibold flex items-center gap-1">
-                                    Grupo sanguíneo <span className="text-red-500">*</span>
+                                    Grupo sanguíneo <span className="text-green-500">*</span>
                                     <span className="text-green-600 text-xs">🟢</span>
                                 </InputLabel>
                                 <select
@@ -171,7 +171,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                                     className="mt-2 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-emerald-500 focus:border-emerald-500"
                                     value={data.grupo_sanguineo}
                                     onChange={(e) => setData('grupo_sanguineo', e.target.value)}
-                                    required
+                                    requigreen
                                 >
                                     <option value="">Ej. O, A, B, AB</option>
                                     <option value="O">O</option>
@@ -184,7 +184,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
 
                             <div>
                                 <InputLabel htmlFor="factor_rh" value="Factor Rh" className="text-gray-700 font-semibold flex items-center gap-1">
-                                    Factor Rh <span className="text-red-500">*</span>
+                                    Factor Rh <span className="text-green-500">*</span>
                                     <span className="text-green-600 text-xs">🟢</span>
                                 </InputLabel>
                                 <select
@@ -192,7 +192,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                                     className="mt-2 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-emerald-500 focus:border-emerald-500"
                                     value={data.factor_rh}
                                     onChange={(e) => setData('factor_rh', e.target.value)}
-                                    required
+                                    requigreen
                                 >
                                     <option value="">Ej. + / -</option>
                                     <option value="+">Positivo (+)</option>
@@ -215,7 +215,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                         <div className="space-y-4">
                             <div>
                                 <InputLabel value="¿Recibe tratamientos de salud actualmente?" className="text-gray-700 font-semibold flex items-center gap-1">
-                                    ¿Recibe tratamientos de salud actualmente? <span className="text-red-500">*</span>
+                                    ¿Recibe tratamientos de salud actualmente? <span className="text-green-500">*</span>
                                 </InputLabel>
                                 <div className="mt-3 space-y-2">
                                     <label className="flex items-center">
@@ -249,7 +249,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                                 <div className="bg-white p-4 rounded-xl border border-blue-200 space-y-4 animate-fadeIn">
                                     <div>
                                         <InputLabel htmlFor="condicion_medica" value="Condición médica" className="text-gray-700 font-semibold flex items-center gap-1">
-                                            Condición médica <span className="text-red-500">*</span>
+                                            Condición médica <span className="text-green-500">*</span>
                                             <span className="text-green-600 text-xs">🟢</span>
                                         </InputLabel>
                                         <TextInput
@@ -259,7 +259,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                                             value={data.condicion_medica}
                                             onChange={(e) => setData('condicion_medica', e.target.value)}
                                             placeholder="Ej. Asma, diabetes"
-                                            required={data.recibe_tratamientos === 'Sí'}
+                                            requigreen={data.recibe_tratamientos === 'Sí'}
                                         />
                                         <InputError message={errors.condicion_medica} className="mt-2" />
                                     </div>
@@ -267,7 +267,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                                     <div className="grid gap-4 md:grid-cols-2">
                                         <div>
                                             <InputLabel htmlFor="nombre_medicamento" value="Nombre del medicamento" className="text-gray-700 font-semibold flex items-center gap-1">
-                                                Nombre del medicamento <span className="text-red-500">*</span>
+                                                Nombre del medicamento <span className="text-green-500">*</span>
                                                 <span className="text-green-600 text-xs">🟢</span>
                                             </InputLabel>
                                             <TextInput
@@ -277,14 +277,14 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                                                 value={data.nombre_medicamento}
                                                 onChange={(e) => setData('nombre_medicamento', e.target.value)}
                                                 placeholder="Ej. Salbutamol"
-                                                required={data.recibe_tratamientos === 'Sí'}
+                                                requigreen={data.recibe_tratamientos === 'Sí'}
                                             />
                                             <InputError message={errors.nombre_medicamento} className="mt-2" />
                                         </div>
 
                                         <div>
                                             <InputLabel htmlFor="frecuencia" value="Frecuencia" className="text-gray-700 font-semibold flex items-center gap-1">
-                                                Frecuencia <span className="text-red-500">*</span>
+                                                Frecuencia <span className="text-green-500">*</span>
                                                 <span className="text-green-600 text-xs">🟢</span>
                                             </InputLabel>
                                             <TextInput
@@ -294,7 +294,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                                                 value={data.frecuencia}
                                                 onChange={(e) => setData('frecuencia', e.target.value)}
                                                 placeholder="Ej. Cada 8 horas"
-                                                required={data.recibe_tratamientos === 'Sí'}
+                                                requigreen={data.recibe_tratamientos === 'Sí'}
                                             />
                                             <InputError message={errors.frecuencia} className="mt-2" />
                                         </div>
@@ -302,8 +302,8 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
 
                                     <div>
                                         <InputLabel htmlFor="quien_administra" value="¿Quién lo administra?" className="text-gray-700 font-semibold flex items-center gap-1">
-                                            ¿Quién lo administra? <span className="text-red-500">*</span>
-                                            <span className="text-red-600 text-xs">🔴</span>
+                                            ¿Quién lo administra? <span className="text-green-500">*</span>
+                                            <span className="text-green-600 text-xs">🔴</span>
                                         </InputLabel>
                                         <TextInput
                                             id="quien_administra"
@@ -312,7 +312,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                                             value={data.quien_administra}
                                             onChange={(e) => setData('quien_administra', e.target.value)}
                                             placeholder="Ej. Enfermera, padre"
-                                            required={data.recibe_tratamientos === 'Sí'}
+                                            requigreen={data.recibe_tratamientos === 'Sí'}
                                         />
                                         <InputError message={errors.quien_administra} className="mt-2" />
                                     </div>
@@ -320,7 +320,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                                     <div>
                                         <InputLabel htmlFor="observaciones" value="Observaciones" className="text-gray-700 font-semibold flex items-center gap-1">
                                             Observaciones
-                                            <span className="text-red-600 text-xs">🔴</span>
+                                            <span className="text-green-600 text-xs">🔴</span>
                                             <span className="text-xs text-gray-500">(Este campo solo lo verá la agencia para apoyar mejor al alumno)</span>
                                         </InputLabel>
                                         <textarea
@@ -350,7 +350,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                         <div className="space-y-4">
                             <div>
                                 <InputLabel htmlFor="detalle_enfermedad" value="Detalle de la enfermedad" className="text-gray-700 font-semibold flex items-center gap-1">
-                                    Detalle de la enfermedad <span className="text-red-500">*</span>
+                                    Detalle de la enfermedad <span className="text-green-500">*</span>
                                     <span className="text-green-600 text-xs">🟢</span>
                                 </InputLabel>
                                 <TextInput
@@ -367,7 +367,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                             <div className="grid gap-4 md:grid-cols-2">
                                 <div>
                                     <InputLabel htmlFor="medicamento_enfermedad" value="Medicamento" className="text-gray-700 font-semibold flex items-center gap-1">
-                                        Medicamento <span className="text-red-500">*</span>
+                                        Medicamento <span className="text-green-500">*</span>
                                         <span className="text-green-600 text-xs">🟢</span>
                                     </InputLabel>
                                     <TextInput
@@ -383,7 +383,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
 
                                 <div>
                                     <InputLabel htmlFor="frecuencia_enfermedad" value="Frecuencia" className="text-gray-700 font-semibold flex items-center gap-1">
-                                        Frecuencia <span className="text-red-500">*</span>
+                                        Frecuencia <span className="text-green-500">*</span>
                                         <span className="text-green-600 text-xs">🟢</span>
                                     </InputLabel>
                                     <TextInput
@@ -400,8 +400,8 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
 
                             <div>
                                 <InputLabel htmlFor="quien_administra_enfermedad" value="¿Quién lo administra?" className="text-gray-700 font-semibold flex items-center gap-1">
-                                    ¿Quién lo administra? <span className="text-red-500">*</span>
-                                    <span className="text-red-600 text-xs">🔴</span>
+                                    ¿Quién lo administra? <span className="text-green-500">*</span>
+                                    <span className="text-green-600 text-xs">🔴</span>
                                 </InputLabel>
                                 <TextInput
                                     id="quien_administra_enfermedad"
@@ -417,7 +417,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                             <div>
                                 <InputLabel htmlFor="observaciones_enfermedad" value="Observaciones" className="text-gray-700 font-semibold flex items-center gap-1">
                                     Observaciones
-                                    <span className="text-red-600 text-xs">🔴</span>
+                                    <span className="text-green-600 text-xs">🔴</span>
                                 </InputLabel>
                                 <textarea
                                     id="observaciones_enfermedad"
@@ -444,7 +444,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                         <div className="space-y-4">
                             <div>
                                 <InputLabel htmlFor="detalle_alergia" value="Detalle de la alergia" className="text-gray-700 font-semibold flex items-center gap-1">
-                                    Detalle de la alergia <span className="text-red-500">*</span>
+                                    Detalle de la alergia <span className="text-green-500">*</span>
                                     <span className="text-green-600 text-xs">🟢</span>
                                 </InputLabel>
                                 <TextInput
@@ -461,7 +461,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                             <div className="grid gap-4 md:grid-cols-2">
                                 <div>
                                     <InputLabel htmlFor="medicamento_control" value="Medicamento de control" className="text-gray-700 font-semibold flex items-center gap-1">
-                                        Medicamento de control <span className="text-red-500">*</span>
+                                        Medicamento de control <span className="text-green-500">*</span>
                                         <span className="text-green-600 text-xs">🟢</span>
                                     </InputLabel>
                                     <TextInput
@@ -477,7 +477,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
 
                                 <div>
                                     <InputLabel htmlFor="frecuencia_alergia" value="Frecuencia" className="text-gray-700 font-semibold flex items-center gap-1">
-                                        Frecuencia <span className="text-red-500">*</span>
+                                        Frecuencia <span className="text-green-500">*</span>
                                         <span className="text-green-600 text-xs">🟢</span>
                                     </InputLabel>
                                     <TextInput
@@ -494,8 +494,8 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
 
                             <div>
                                 <InputLabel htmlFor="quien_administra_alergia" value="¿Quién lo administra?" className="text-gray-700 font-semibold flex items-center gap-1">
-                                    ¿Quién lo administra? <span className="text-red-500">*</span>
-                                    <span className="text-red-600 text-xs">🔴</span>
+                                    ¿Quién lo administra? <span className="text-green-500">*</span>
+                                    <span className="text-green-600 text-xs">🔴</span>
                                 </InputLabel>
                                 <TextInput
                                     id="quien_administra_alergia"
@@ -511,7 +511,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                             <div>
                                 <InputLabel htmlFor="observaciones_alergia" value="Observaciones" className="text-gray-700 font-semibold flex items-center gap-1">
                                     Observaciones
-                                    <span className="text-red-600 text-xs">🔴</span>
+                                    <span className="text-green-600 text-xs">🔴</span>
                                     <span className="text-xs text-gray-500">(Solo visible en el portal para padres y agencia)</span>
                                 </InputLabel>
                                 <textarea
@@ -539,7 +539,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                         <div className="space-y-4">
                             <div>
                                 <InputLabel value="Vacunas recibidas" className="text-gray-700 font-semibold flex items-center gap-1">
-                                    Vacunas recibidas <span className="text-red-500">*</span>
+                                    Vacunas recibidas <span className="text-green-500">*</span>
                                 </InputLabel>
                                 <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">
                                     {['Tétano', 'Rubeola', 'Hepatitis B', 'Fiebre amarilla', 'Gripe', 'Tuberculosis', 'Sarampión', 'COVID-19'].map((vacuna) => (
@@ -563,7 +563,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                                     <div className="grid gap-4 md:grid-cols-2">
                                         <div>
                                             <InputLabel htmlFor="dosis_covid" value="Dosis recibidas" className="text-gray-700 font-semibold flex items-center gap-1">
-                                                Dosis recibidas <span className="text-red-500">*</span>
+                                                Dosis recibidas <span className="text-green-500">*</span>
                                                 <span className="text-green-600 text-xs">🟢</span>
                                             </InputLabel>
                                             <TextInput
@@ -573,7 +573,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                                                 value={data.dosis_covid}
                                                 onChange={(e) => setData('dosis_covid', e.target.value)}
                                                 placeholder="Ej. 2 dosis"
-                                                required={data.vacunas_checklist.includes('COVID-19')}
+                                                requigreen={data.vacunas_checklist.includes('COVID-19')}
                                             />
                                             <InputError message={errors.dosis_covid} className="mt-2" />
                                         </div>
@@ -581,7 +581,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                                         <div>
                                             <InputLabel htmlFor="efectos_covid" value="Efectos secundarios" className="text-gray-700 font-semibold flex items-center gap-1">
                                                 Efectos secundarios
-                                                <span className="text-red-600 text-xs">🔴</span>
+                                                <span className="text-green-600 text-xs">🔴</span>
                                             </InputLabel>
                                             <TextInput
                                                 id="efectos_covid"
@@ -624,7 +624,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
 
                             <div>
                                 <InputLabel value="¿Tiene seguro particular?" className="text-gray-700 font-semibold flex items-center gap-1">
-                                    ¿Tiene seguro particular? <span className="text-red-500">*</span>
+                                    ¿Tiene seguro particular? <span className="text-green-500">*</span>
                                 </InputLabel>
                                 <div className="mt-3 space-y-2">
                                     <label className="flex items-center">
@@ -659,8 +659,8 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                                     <div className="grid gap-4 md:grid-cols-2">
                                         <div>
                                             <InputLabel htmlFor="nombre_seguro" value="Nombre del seguro" className="text-gray-700 font-semibold flex items-center gap-1">
-                                                Nombre del seguro <span className="text-red-500">*</span>
-                                                <span className="text-red-600 text-xs">🔴</span>
+                                                Nombre del seguro <span className="text-green-500">*</span>
+                                                <span className="text-green-600 text-xs">🔴</span>
                                             </InputLabel>
                                             <TextInput
                                                 id="nombre_seguro"
@@ -669,15 +669,15 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                                                 value={data.nombre_seguro}
                                                 onChange={(e) => setData('nombre_seguro', e.target.value)}
                                                 placeholder="Ej. Rimac Plan Familiar"
-                                                required={data.tiene_seguro_particular === 'Sí'}
+                                                requigreen={data.tiene_seguro_particular === 'Sí'}
                                             />
                                             <InputError message={errors.nombre_seguro} className="mt-2" />
                                         </div>
 
                                         <div>
                                             <InputLabel htmlFor="administradora" value="Administradora" className="text-gray-700 font-semibold flex items-center gap-1">
-                                                Administradora <span className="text-red-500">*</span>
-                                                <span className="text-red-600 text-xs">🔴</span>
+                                                Administradora <span className="text-green-500">*</span>
+                                                <span className="text-green-600 text-xs">🔴</span>
                                             </InputLabel>
                                             <TextInput
                                                 id="administradora"
@@ -686,7 +686,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                                                 value={data.administradora}
                                                 onChange={(e) => setData('administradora', e.target.value)}
                                                 placeholder="Ej. Rimac, Pacífico"
-                                                required={data.tiene_seguro_particular === 'Sí'}
+                                                requigreen={data.tiene_seguro_particular === 'Sí'}
                                             />
                                             <InputError message={errors.administradora} className="mt-2" />
                                         </div>
@@ -695,8 +695,8 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                                     <div className="grid gap-4 md:grid-cols-2">
                                         <div>
                                             <InputLabel htmlFor="numero_poliza" value="Nº de póliza" className="text-gray-700 font-semibold flex items-center gap-1">
-                                                Nº de póliza <span className="text-red-500">*</span>
-                                                <span className="text-red-600 text-xs">🔴</span>
+                                                Nº de póliza <span className="text-green-500">*</span>
+                                                <span className="text-green-600 text-xs">🔴</span>
                                             </InputLabel>
                                             <TextInput
                                                 id="numero_poliza"
@@ -705,15 +705,15 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                                                 value={data.numero_poliza}
                                                 onChange={(e) => setData('numero_poliza', e.target.value)}
                                                 placeholder="Ej. 123456789"
-                                                required={data.tiene_seguro_particular === 'Sí'}
+                                                requigreen={data.tiene_seguro_particular === 'Sí'}
                                             />
                                             <InputError message={errors.numero_poliza} className="mt-2" />
                                         </div>
 
                                         <div>
                                             <InputLabel htmlFor="telefono_contacto" value="Teléfono de contacto" className="text-gray-700 font-semibold flex items-center gap-1">
-                                                Teléfono de contacto <span className="text-red-500">*</span>
-                                                <span className="text-red-600 text-xs">🔴</span>
+                                                Teléfono de contacto <span className="text-green-500">*</span>
+                                                <span className="text-green-600 text-xs">🔴</span>
                                             </InputLabel>
                                             <TextInput
                                                 id="telefono_contacto"
@@ -722,7 +722,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                                                 value={data.telefono_contacto}
                                                 onChange={(e) => setData('telefono_contacto', e.target.value)}
                                                 placeholder="Ej. 01 411 1111"
-                                                required={data.tiene_seguro_particular === 'Sí'}
+                                                requigreen={data.tiene_seguro_particular === 'Sí'}
                                             />
                                             <InputError message={errors.telefono_contacto} className="mt-2" />
                                         </div>
@@ -746,7 +746,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                             <div>
                                 <InputLabel htmlFor="informacion_adicional" value="Campo libre" className="text-gray-700 font-semibold flex items-center gap-1">
                                     Campo libre
-                                    <span className="text-red-600 text-xs">🔴</span>
+                                    <span className="text-green-600 text-xs">🔴</span>
                                 </InputLabel>
                                 <textarea
                                     id="informacion_adicional"
@@ -762,7 +762,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                             <div>
                                 <InputLabel htmlFor="archivo_adjunto" value="Subir archivo" className="text-gray-700 font-semibold flex items-center gap-1">
                                     Subir archivo
-                                    <span className="text-red-600 text-xs">🔴</span>
+                                    <span className="text-green-600 text-xs">🔴</span>
                                     <span className="text-xs text-gray-500">(Puedes adjuntar historial médico o receta en PDF, JPG o PNG)</span>
                                 </InputLabel>
                                 <input
