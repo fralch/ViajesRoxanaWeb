@@ -39,7 +39,7 @@ return new class extends Migration
             
             // 🩸 DATOS BÁSICOS DE SALUD (visibles en pulsera 🟢)
                 // Grupo sanguíneo del alumno para emergencias médicas
-                $table->enum('grupo_sanguineo', ['O', 'A', 'B', 'AB'])->nullable()->after('foto_alumno');
+                $table->enum('grupo_sanguineo', ['O', 'A', 'B', 'AB'])->nullable();
                 // Factor RH para completar la información sanguínea
                 $table->enum('factor_rh', ['+', '-'])->nullable()->after('grupo_sanguineo');
             
