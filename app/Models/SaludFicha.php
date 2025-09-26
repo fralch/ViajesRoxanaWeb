@@ -12,12 +12,24 @@ class SaludFicha extends Model
     protected $fillable = [
         'hijo_id',
         'package_id',
-        'alergias',
-        'medicamentos',
-        'seguros',
-        'emergencia_contacto',
-        'emergencia_telefono',
-        'observaciones'
+        'grupo_sanguineo',
+        'factor_rh',
+        'tratamientos_actuales',
+        'enfermedades_preexistentes',
+        'alergias_medicas',
+        'vacunas_recibidas',
+        'seguros_medicos',
+        'informacion_adicional',
+        'archivos_adjuntos'
+    ];
+
+    protected $casts = [
+        'tratamientos_actuales' => 'array',
+        'enfermedades_preexistentes' => 'array',
+        'alergias_medicas' => 'array',
+        'vacunas_recibidas' => 'array',
+        'seguros_medicos' => 'array',
+        'archivos_adjuntos' => 'array'
     ];
 
     public function hijo()

@@ -64,19 +64,20 @@ export default function PerfilHijo({ hijo, saludFicha, nutricionFicha }) {
             });
         }
 
-        // Campos de salud (solo los que realmente existen en el formulario)
+        // Campos de salud (nuevos campos según la migración)
         const saludFieldsData = saludFicha ? {
-            'Alergias Médicas': saludFicha.alergias,
-            'Medicamentos': saludFicha.medicamentos,
-            'Observaciones Médicas': saludFicha.observaciones,
+            'Grupo Sanguíneo': saludFicha.grupo_sanguineo,
+            'Factor RH': saludFicha.factor_rh,
+            'Información Médica Adicional': saludFicha.informacion_adicional,
         } : {};
 
-        // Campos nutricionales (corregidos según el formulario actual)
+        // Campos nutricionales (nuevos campos según la migración)
         const nutricionFieldsData = nutricionFicha ? {
-            'Intolerancias Alimentarias': nutricionFicha.intolerancias,
-            'Preferencias Alimentarias': nutricionFicha.preferencias,
-            'Alergias Alimentarias': nutricionFicha.alergias_alimentarias,
-            'Otras Notas Nutricionales': nutricionFicha.otras_notas,
+            'Alimentos que causan alergia': nutricionFicha.alimento_alergia,
+            'Reacciones alérgicas': nutricionFicha.reaccion_alergia,
+            'Alimentos que debe evitar': nutricionFicha.alimento_evitar,
+            'Tipo de dieta especial': nutricionFicha.especificar_dieta,
+            'Preferencias alimentarias detalladas': nutricionFicha.detalle_preferencia_alimentaria,
         } : {};
 
         // Combinar todos los campos
@@ -115,19 +116,20 @@ export default function PerfilHijo({ hijo, saludFicha, nutricionFicha }) {
             Array.isArray(perfilData?.nums_emergencia) ? (perfilData.nums_emergencia[1] ?? '') : ''
         ]);
 
-        // Salud: alergias, medicamentos, observaciones (los campos usados actualmente)
+        // Salud: grupo_sanguineo, factor_rh, informacion_adicional (nuevos campos)
         const saludPct = getPct([
-            saludFicha?.alergias ?? '',
-            saludFicha?.medicamentos ?? '',
-            saludFicha?.observaciones ?? ''
+            saludFicha?.grupo_sanguineo ?? '',
+            saludFicha?.factor_rh ?? '',
+            saludFicha?.informacion_adicional ?? ''
         ]);
 
-        // Nutrición: intolerancias, preferencias, alergias_alimentarias, otras_notas
+        // Nutrición: nuevos campos según la migración
         const nutricionPct = getPct([
-            nutricionFicha?.intolerancias ?? '',
-            nutricionFicha?.preferencias ?? '',
-            nutricionFicha?.alergias_alimentarias ?? '',
-            nutricionFicha?.otras_notas ?? ''
+            nutricionFicha?.alimento_alergia ?? '',
+            nutricionFicha?.reaccion_alergia ?? '',
+            nutricionFicha?.alimento_evitar ?? '',
+            nutricionFicha?.especificar_dieta ?? '',
+            nutricionFicha?.detalle_preferencia_alimentaria ?? ''
         ]);
 
         return { perfil: perfilPct, salud: saludPct, nutricion: nutricionPct };

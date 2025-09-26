@@ -114,12 +114,38 @@ class PerfilHijoController extends Controller
         }
 
         $validated = $request->validate([
-            'alergias' => 'nullable|string',
-            'medicamentos' => 'nullable|string',
-            'seguros' => 'nullable|string|max:255',
-            'emergencia_contacto' => 'nullable|string|max:255',
-            'emergencia_telefono' => 'nullable|string|max:20',
-            'observaciones' => 'nullable|string'
+            'grupo_sanguineo' => 'nullable|in:O,A,B,AB',
+            'factor_rh' => 'nullable|in:+,-',
+            'tratamientos_actuales' => 'nullable|array',
+            'tratamientos_actuales.*.condicion_medica' => 'nullable|string|max:255',
+            'tratamientos_actuales.*.medicamento' => 'nullable|string|max:255',
+            'tratamientos_actuales.*.frecuencia' => 'nullable|string|max:255',
+            'tratamientos_actuales.*.administrador' => 'nullable|string|max:255',
+            'tratamientos_actuales.*.observaciones' => 'nullable|string|max:500',
+            'enfermedades_preexistentes' => 'nullable|array',
+            'enfermedades_preexistentes.*.enfermedad' => 'nullable|string|max:255',
+            'enfermedades_preexistentes.*.medicamento' => 'nullable|string|max:255',
+            'enfermedades_preexistentes.*.frecuencia' => 'nullable|string|max:255',
+            'enfermedades_preexistentes.*.administrador' => 'nullable|string|max:255',
+            'enfermedades_preexistentes.*.observaciones' => 'nullable|string|max:500',
+            'alergias_medicas' => 'nullable|array',
+            'alergias_medicas.*.alergia' => 'nullable|string|max:255',
+            'alergias_medicas.*.medicamento_control' => 'nullable|string|max:255',
+            'alergias_medicas.*.frecuencia' => 'nullable|string|max:255',
+            'alergias_medicas.*.administrador' => 'nullable|string|max:255',
+            'alergias_medicas.*.observaciones' => 'nullable|string|max:500',
+            'vacunas_recibidas' => 'nullable|array',
+            'seguros_medicos' => 'nullable|array',
+            'seguros_medicos.*.tipo' => 'nullable|string|max:255',
+            'seguros_medicos.*.nombre' => 'nullable|string|max:255',
+            'seguros_medicos.*.administradora' => 'nullable|string|max:255',
+            'seguros_medicos.*.numero_poliza' => 'nullable|string|max:255',
+            'seguros_medicos.*.telefono_contacto' => 'nullable|string|max:20',
+            'seguros_medicos.*.editable' => 'nullable|boolean',
+            'seguros_medicos.*.tooltip' => 'nullable|string|max:500',
+            'informacion_adicional' => 'nullable|string|max:2000',
+            'archivos_adjuntos' => 'nullable|array',
+            'archivos_adjuntos.*' => 'nullable|string|max:500'
         ]);
 
         $validated['hijo_id'] = $hijo->id;
@@ -146,12 +172,38 @@ class PerfilHijoController extends Controller
         $saludFicha = SaludFicha::where('hijo_id', $hijo->id)->firstOrFail();
 
         $validated = $request->validate([
-            'alergias' => 'nullable|string',
-            'medicamentos' => 'nullable|string',
-            'seguros' => 'nullable|string|max:255',
-            'emergencia_contacto' => 'nullable|string|max:255',
-            'emergencia_telefono' => 'nullable|string|max:20',
-            'observaciones' => 'nullable|string'
+            'grupo_sanguineo' => 'nullable|in:O,A,B,AB',
+            'factor_rh' => 'nullable|in:+,-',
+            'tratamientos_actuales' => 'nullable|array',
+            'tratamientos_actuales.*.condicion_medica' => 'nullable|string|max:255',
+            'tratamientos_actuales.*.medicamento' => 'nullable|string|max:255',
+            'tratamientos_actuales.*.frecuencia' => 'nullable|string|max:255',
+            'tratamientos_actuales.*.administrador' => 'nullable|string|max:255',
+            'tratamientos_actuales.*.observaciones' => 'nullable|string|max:500',
+            'enfermedades_preexistentes' => 'nullable|array',
+            'enfermedades_preexistentes.*.enfermedad' => 'nullable|string|max:255',
+            'enfermedades_preexistentes.*.medicamento' => 'nullable|string|max:255',
+            'enfermedades_preexistentes.*.frecuencia' => 'nullable|string|max:255',
+            'enfermedades_preexistentes.*.administrador' => 'nullable|string|max:255',
+            'enfermedades_preexistentes.*.observaciones' => 'nullable|string|max:500',
+            'alergias_medicas' => 'nullable|array',
+            'alergias_medicas.*.alergia' => 'nullable|string|max:255',
+            'alergias_medicas.*.medicamento_control' => 'nullable|string|max:255',
+            'alergias_medicas.*.frecuencia' => 'nullable|string|max:255',
+            'alergias_medicas.*.administrador' => 'nullable|string|max:255',
+            'alergias_medicas.*.observaciones' => 'nullable|string|max:500',
+            'vacunas_recibidas' => 'nullable|array',
+            'seguros_medicos' => 'nullable|array',
+            'seguros_medicos.*.tipo' => 'nullable|string|max:255',
+            'seguros_medicos.*.nombre' => 'nullable|string|max:255',
+            'seguros_medicos.*.administradora' => 'nullable|string|max:255',
+            'seguros_medicos.*.numero_poliza' => 'nullable|string|max:255',
+            'seguros_medicos.*.telefono_contacto' => 'nullable|string|max:20',
+            'seguros_medicos.*.editable' => 'nullable|boolean',
+            'seguros_medicos.*.tooltip' => 'nullable|string|max:500',
+            'informacion_adicional' => 'nullable|string|max:2000',
+            'archivos_adjuntos' => 'nullable|array',
+            'archivos_adjuntos.*' => 'nullable|string|max:500'
         ]);
 
         $saludFicha->update($validated);
@@ -194,11 +246,11 @@ class PerfilHijoController extends Controller
         }
 
         $validated = $request->validate([
-            'restricciones' => 'nullable|string',
-            'preferencias' => 'nullable|string',
-            'alergias_alimentarias' => 'nullable|string',
-            'intolerancias' => 'nullable|string',
-            'otras_notas' => 'nullable|string'
+            'alimento_alergia' => 'nullable|string|max:500',
+            'reaccion_alergia' => 'nullable|string|max:500',
+            'alimento_evitar' => 'nullable|string|max:500',
+            'especificar_dieta' => 'nullable|string|max:500',
+            'detalle_preferencia_alimentaria' => 'nullable|string|max:1000'
         ]);
 
         $validated['hijo_id'] = $hijo->id;
@@ -225,11 +277,11 @@ class PerfilHijoController extends Controller
         $nutricionFicha = NutricionFicha::where('hijo_id', $hijo->id)->firstOrFail();
 
         $validated = $request->validate([
-            'restricciones' => 'nullable|string',
-            'preferencias' => 'nullable|string',
-            'alergias_alimentarias' => 'nullable|string',
-            'intolerancias' => 'nullable|string',
-            'otras_notas' => 'nullable|string'
+            'alimento_alergia' => 'nullable|string|max:500',
+            'reaccion_alergia' => 'nullable|string|max:500',
+            'alimento_evitar' => 'nullable|string|max:500',
+            'especificar_dieta' => 'nullable|string|max:500',
+            'detalle_preferencia_alimentaria' => 'nullable|string|max:1000'
         ]);
 
         $nutricionFicha->update($validated);

@@ -6,12 +6,15 @@ import PrimaryButton from '@/Components/PrimaryButton';
 
 export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
     const { data, setData, post, processing, errors } = useForm({
-        alergias: saludFicha?.alergias || '',
-        medicamentos: saludFicha?.medicamentos || '',
-        seguros: saludFicha?.seguros || '',
-        emergencia_contacto: saludFicha?.emergencia_contacto || '',
-        emergencia_telefono: saludFicha?.emergencia_telefono || '',
-        observaciones: saludFicha?.observaciones || ''
+        grupo_sanguineo: saludFicha?.grupo_sanguineo || '',
+        factor_rh: saludFicha?.factor_rh || '',
+        tratamientos_actuales: saludFicha?.tratamientos_actuales || [],
+        enfermedades_preexistentes: saludFicha?.enfermedades_preexistentes || [],
+        alergias_medicas: saludFicha?.alergias_medicas || [],
+        vacunas_recibidas: saludFicha?.vacunas_recibidas || {},
+        seguros_medicos: saludFicha?.seguros_medicos || [],
+        informacion_adicional: saludFicha?.informacion_adicional || '',
+        archivos_adjuntos: saludFicha?.archivos_adjuntos || []
     });
 
     const handleSubmit = (e) => {
@@ -43,48 +46,54 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid gap-6 md:grid-cols-2 bg-green-50 p-6 rounded-2xl mb-6">
+                {/* Grupo Sanguíneo y Factor RH */}
+                <div className="grid gap-6 md:grid-cols-2 bg-red-50 p-6 rounded-2xl">
                     <div>
-                        <InputLabel htmlFor="alergias" value="Alergias" className="text-gray-700 font-semibold" />
-                        <textarea
-                            id="alergias"
+                        <InputLabel htmlFor="grupo_sanguineo" value="Grupo Sanguíneo" className="text-gray-700 font-semibold" />
+                        <select
+                            id="grupo_sanguineo"
                             className="mt-2 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-red-500 focus:border-red-500"
-                            rows="3"
-                            value={data.alergias}
-                            onChange={(e) => setData('alergias', e.target.value)}
-                            placeholder="Describe cualquier alergia a medicamentos conocida..."
-                        />
-                        <InputError message={errors.alergias} className="mt-2" />
+                            value={data.grupo_sanguineo}
+                            onChange={(e) => setData('grupo_sanguineo', e.target.value)}
+                        >
+                            <option value="">Seleccionar grupo sanguíneo</option>
+                            <option value="O">O</option>
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="AB">AB</option>
+                        </select>
+                        <InputError message={errors.grupo_sanguineo} className="mt-2" />
                     </div>
 
                     <div>
-                        <InputLabel htmlFor="medicamentos" value="Medicamentos" className="text-gray-700 font-semibold" />
-                        <textarea
-                            id="medicamentos"
+                        <InputLabel htmlFor="factor_rh" value="Factor RH" className="text-gray-700 font-semibold" />
+                        <select
+                            id="factor_rh"
                             className="mt-2 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-red-500 focus:border-red-500"
-                            rows="3"
-                            value={data.medicamentos}
-                            onChange={(e) => setData('medicamentos', e.target.value)}
-                            placeholder="Medicamentos que toma regularmente..."
-                        />
-                        <InputError message={errors.medicamentos} className="mt-2" />
+                            value={data.factor_rh}
+                            onChange={(e) => setData('factor_rh', e.target.value)}
+                        >
+                            <option value="">Seleccionar factor RH</option>
+                            <option value="+">Positivo (+)</option>
+                            <option value="-">Negativo (-)</option>
+                        </select>
+                        <InputError message={errors.factor_rh} className="mt-2" />
                     </div>
+                </div>
 
-
-                    
-                    
-
-                    <div className="md:col-span-2">
-                        <InputLabel htmlFor="observaciones" value="Observaciones Médicas" className="text-gray-700 font-semibold" />
+                {/* Información Adicional */}
+                <div className="bg-green-50 p-6 rounded-2xl">
+                    <div>
+                        <InputLabel htmlFor="informacion_adicional" value="Información Médica Adicional" className="text-gray-700 font-semibold" />
                         <textarea
-                            id="observaciones"
+                            id="informacion_adicional"
                             className="mt-2 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-red-500 focus:border-red-500"
-                            rows="3"
-                            value={data.observaciones}
-                            onChange={(e) => setData('observaciones', e.target.value)}
-                            placeholder="Cualquier observación médica importante..."
+                            rows="4"
+                            value={data.informacion_adicional}
+                            onChange={(e) => setData('informacion_adicional', e.target.value)}
+                            placeholder="Información médica adicional, alergias a medicamentos, tratamientos actuales, enfermedades preexistentes, seguros médicos, etc..."
                         />
-                        <InputError message={errors.observaciones} className="mt-2" />
+                        <InputError message={errors.informacion_adicional} className="mt-2" />
                     </div>
                 </div>
 

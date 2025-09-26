@@ -93,7 +93,6 @@ return new class extends Migration
             // REVERTIR: ELIMINAR NUEVOS CAMPOS AGREGADOS
             // =============================================
             $table->dropColumn([
-                'foto_alumno',              // Eliminar campo de foto
                 'grupo_sanguineo',          // Eliminar grupo sanguíneo
                 'factor_rh',                // Eliminar factor RH
                 'tratamientos_actuales',    // Eliminar tratamientos en JSON

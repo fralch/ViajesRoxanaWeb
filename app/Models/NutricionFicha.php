@@ -12,11 +12,11 @@ class NutricionFicha extends Model
     protected $fillable = [
         'hijo_id',
         'package_id',
-        'restricciones',
-        'preferencias',
-        'alergias_alimentarias',
-        'intolerancias',
-        'otras_notas'
+        'alimento_alergia',
+        'reaccion_alergia',
+        'alimento_evitar',
+        'especificar_dieta',
+        'detalle_preferencia_alimentaria'
     ];
 
     public function hijo()
