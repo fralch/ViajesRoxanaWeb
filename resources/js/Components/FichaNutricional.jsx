@@ -95,29 +95,55 @@ export default function FichaNutricional({ nutricionFicha, hijo, onSubmitSuccess
         </div>
     );
 
-    // Componente para campos condicionales con animación
+    // Componente para campos condicionales con mejor diseño
     const ConditionalField = ({ show, children, priority = 'alta' }) => {
-        const priorityColors = {
-            alta: 'border-l-orange-500 bg-orange-50',
-            critica: 'border-l-red-500 bg-red-50'
-        };
-
-        const priorityIcons = {
-            alta: '🟢',
-            critica: '🔴'
-        };
-
         if (!show) return null;
+        
+        // Definir estilos basados en la prioridad sin usar círculos
+        const priorityStyles = {
+            alta: {
+                container: 'border-l-4 border-green-500 bg-green-50 shadow-sm',
+                header: 'bg-green-100 text-green-800',
+                icon: (
+                    <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                ),
+                label: 'Información importante'
+            },
+            critica: {
+                container: 'border-l-4 border-red-500 bg-red-50 shadow-sm',
+                header: 'bg-red-100 text-red-800',
+                icon: (
+                    <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                ),
+                label: 'Información crítica'
+            },
+            normal: {
+                container: 'border-l-4 border-blue-500 bg-blue-50 shadow-sm',
+                header: 'bg-blue-100 text-blue-800',
+                icon: (
+                    <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                ),
+                label: 'Información adicional'
+            }
+        };
+
+        const style = priorityStyles[priority] || priorityStyles.normal;
 
         return (
-            <div className={`ml-6 mt-4 p-4 border-l-4 rounded-r-lg transition-all duration-300 ease-in-out ${priorityColors[priority]}`}>
-                <div className="flex items-center gap-2 mb-2">
-                    <span>{priorityIcons[priority]}</span>
-                    <span className="text-xs font-medium text-gray-600">
-                        {priority === 'alta' ? 'Información importante' : 'Información crítica'}
-                    </span>
+            <div className={`ml-6 mt-4 p-4 rounded-lg transition-all duration-300 ease-in-out ${style.container}`}>
+                <div className={`flex items-center gap-2 px-3 py-2 rounded-md mb-3 ${style.header}`}>
+                    {style.icon}
+                    <span className="text-sm font-medium">{style.label}</span>
                 </div>
-                {children}
+                <div className="pl-2">
+                    {children}
+                </div>
             </div>
         );
     };
