@@ -1,9 +1,10 @@
-import { useForm } from '@inertiajs/react';
-import { useState } from 'react';
-import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import TextInput from '@/Components/TextInput';
-import PrimaryButton from '@/Components/PrimaryButton';
+ import { useForm } from '@inertiajs/react';
+ import { useState } from 'react';
+ import { HeartIcon, CheckIcon, DropletIcon, PillIcon, HospitalIcon, AlertTriangleIcon, SyringeIcon, ShieldIcon, ClipboardIcon } from 'lucide-react';
+ import InputError from '@/Components/InputError';
+ import InputLabel from '@/Components/InputLabel';
+ import TextInput from '@/Components/TextInput';
+ import PrimaryButton from '@/Components/PrimaryButton';
 
 export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
     const { data, setData, post, processing, errors } = useForm({
@@ -63,43 +64,43 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
     const sections = [
         {
             title: "Datos básicos de salud",
-            icon: "🩸",
+            icon: <DropletIcon className="w-5 h-5" />,
             bgColor: "bg-red-50",
             borderColor: "border-red-200"
         },
         {
             title: "Tratamientos actuales",
-            icon: "💊",
+            icon: <PillIcon className="w-5 h-5" />,
             bgColor: "bg-blue-50",
             borderColor: "border-blue-200"
         },
         {
             title: "Enfermedades preexistentes",
-            icon: "🏥",
+            icon: <HospitalIcon className="w-5 h-5" />,
             bgColor: "bg-purple-50",
             borderColor: "border-purple-200"
         },
         {
             title: "Alergias",
-            icon: "⚠️",
+            icon: <AlertTriangleIcon className="w-5 h-5" />,
             bgColor: "bg-orange-50",
             borderColor: "border-orange-200"
         },
         {
             title: "Vacunas recibidas",
-            icon: "💉",
+            icon: <SyringeIcon className="w-5 h-5" />,
             bgColor: "bg-green-50",
             borderColor: "border-green-200"
         },
         {
             title: "Seguro médico",
-            icon: "🛡️",
+            icon: <ShieldIcon className="w-5 h-5" />,
             bgColor: "bg-indigo-50",
             borderColor: "border-indigo-200"
         },
         {
             title: "Información adicional",
-            icon: "📋",
+            icon: <ClipboardIcon className="w-5 h-5" />,
             bgColor: "bg-gray-50",
             borderColor: "border-gray-200"
         }
@@ -109,9 +110,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
         <div className="space-y-6">
             <div className="flex items-center gap-3 mb-6">
                 <div className="w-8 h-8 bg-emerald-100 rounded-xl flex items-center justify-center">
-                    <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
+                    <HeartIcon className="w-4 h-4 text-emerald-600" />
                 </div>
                 <div>
                     <h3 className="text-xl font-bold text-gray-900">Información de Salud</h3>
@@ -819,14 +818,12 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                         Guardando...
                                     </div>
-                                ) : (
-                                    <div className="flex items-center gap-2">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                        </svg>
-                                        Guardar Ficha de Salud
-                                    </div>
-                                )}
+                                 ) : (
+                                     <div className="flex items-center gap-2">
+                                         <CheckIcon className="w-4 h-4" />
+                                         Guardar Ficha de Salud
+                                     </div>
+                                 )}
                             </PrimaryButton>
                         )}
                     </div>

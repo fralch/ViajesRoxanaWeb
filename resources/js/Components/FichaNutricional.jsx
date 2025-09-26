@@ -1,8 +1,9 @@
-import { useForm } from '@inertiajs/react';
-import { useState, useEffect } from 'react';
-import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
+ import { useForm } from '@inertiajs/react';
+ import { useState, useEffect } from 'react';
+ import { AppleIcon, CheckIcon, InfoIcon, AlertTriangleIcon } from 'lucide-react';
+ import InputError from '@/Components/InputError';
+ import InputLabel from '@/Components/InputLabel';
+ import PrimaryButton from '@/Components/PrimaryButton';
 
 export default function FichaNutricional({ nutricionFicha, hijo, onSubmitSuccess }) {
     // Estado para las preguntas principales (radio buttons)
@@ -104,31 +105,19 @@ export default function FichaNutricional({ nutricionFicha, hijo, onSubmitSuccess
             alta: {
                 container: 'border-l-4 border-green-500 bg-green-50 shadow-sm',
                 header: 'bg-green-100 text-green-800',
-                icon: (
-                    <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                ),
+                icon: <InfoIcon className="w-4 h-4 text-green-600" />,
                 label: 'Información importante'
             },
             critica: {
                 container: 'border-l-4 border-red-500 bg-red-50 shadow-sm',
                 header: 'bg-red-100 text-red-800',
-                icon: (
-                    <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z" />
-                    </svg>
-                ),
+                icon: <AlertTriangleIcon className="w-4 h-4 text-red-600" />,
                 label: 'Información crítica'
             },
             normal: {
                 container: 'border-l-4 border-blue-500 bg-blue-50 shadow-sm',
                 header: 'bg-blue-100 text-blue-800',
-                icon: (
-                    <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                ),
+                icon: <InfoIcon className="w-4 h-4 text-blue-600" />,
                 label: 'Información adicional'
             }
         };
@@ -152,9 +141,7 @@ export default function FichaNutricional({ nutricionFicha, hijo, onSubmitSuccess
         <div className="space-y-6">
             <div className="flex items-center gap-3 mb-6">
                 <div className="w-8 h-8 bg-orange-100 rounded-xl flex items-center justify-center">
-                    <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
-                    </svg>
+                    <AppleIcon className="w-4 h-4 text-orange-600" />
                 </div>
                 <div>
                     <h3 className="text-xl font-bold text-gray-900">Información Alimentaria</h3>
@@ -290,14 +277,12 @@ export default function FichaNutricional({ nutricionFicha, hijo, onSubmitSuccess
                                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                 Guardando...
                             </div>
-                        ) : (
-                            <div className="flex items-center gap-2">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
-                                Guardar Información Alimentaria
-                            </div>
-                        )}
+                         ) : (
+                             <div className="flex items-center gap-2">
+                                 <CheckIcon className="w-4 h-4" />
+                                 Guardar Información Alimentaria
+                             </div>
+                         )}
                     </PrimaryButton>
                 </div>
             </form>
