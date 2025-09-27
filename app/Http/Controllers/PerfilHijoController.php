@@ -114,46 +114,138 @@ class PerfilHijoController extends Controller
         }
 
         $validated = $request->validate([
-            'grupo_sanguineo' => 'nullable|in:O,A,B,AB',
-            'factor_rh' => 'nullable|in:+,-',
-            'tratamientos_actuales' => 'nullable|array',
-            'tratamientos_actuales.*.condicion_medica' => 'nullable|string|max:255',
-            'tratamientos_actuales.*.medicamento' => 'nullable|string|max:255',
-            'tratamientos_actuales.*.frecuencia' => 'nullable|string|max:255',
-            'tratamientos_actuales.*.administrador' => 'nullable|string|max:255',
-            'tratamientos_actuales.*.observaciones' => 'nullable|string|max:500',
-            'enfermedades_preexistentes' => 'nullable|array',
-            'enfermedades_preexistentes.*.enfermedad' => 'nullable|string|max:255',
-            'enfermedades_preexistentes.*.medicamento' => 'nullable|string|max:255',
-            'enfermedades_preexistentes.*.frecuencia' => 'nullable|string|max:255',
-            'enfermedades_preexistentes.*.administrador' => 'nullable|string|max:255',
-            'enfermedades_preexistentes.*.observaciones' => 'nullable|string|max:500',
-            'alergias_medicas' => 'nullable|array',
-            'alergias_medicas.*.alergia' => 'nullable|string|max:255',
-            'alergias_medicas.*.medicamento_control' => 'nullable|string|max:255',
-            'alergias_medicas.*.frecuencia' => 'nullable|string|max:255',
-            'alergias_medicas.*.administrador' => 'nullable|string|max:255',
-            'alergias_medicas.*.observaciones' => 'nullable|string|max:500',
-            'vacunas_recibidas' => 'nullable|array',
-            'seguros_medicos' => 'nullable|array',
-            'seguros_medicos.*.tipo' => 'nullable|string|max:255',
-            'seguros_medicos.*.nombre' => 'nullable|string|max:255',
-            'seguros_medicos.*.administradora' => 'nullable|string|max:255',
-            'seguros_medicos.*.numero_poliza' => 'nullable|string|max:255',
-            'seguros_medicos.*.telefono_contacto' => 'nullable|string|max:20',
-            'seguros_medicos.*.editable' => 'nullable|boolean',
-            'seguros_medicos.*.tooltip' => 'nullable|string|max:500',
+            'grupo_sanguineo' => 'required|in:O,A,B,AB',
+            'factor_rh' => 'required|in:+,-',
+            'recibe_tratamientos' => 'required|in:Sí,No',
+            'condicion_medica' => 'nullable|string|max:255',
+            'nombre_medicamento' => 'nullable|string|max:255',
+            'frecuencia' => 'nullable|string|max:255',
+            'quien_administra' => 'nullable|string|max:255',
+            'observaciones' => 'nullable|string|max:500',
+            'detalle_enfermedad' => 'nullable|string|max:255',
+            'medicamento_enfermedad' => 'nullable|string|max:255',
+            'frecuencia_enfermedad' => 'nullable|string|max:255',
+            'quien_administra_enfermedad' => 'nullable|string|max:255',
+            'observaciones_enfermedad' => 'nullable|string|max:500',
+            'detalle_alergia' => 'nullable|string|max:255',
+            'medicamento_control' => 'nullable|string|max:255',
+            'frecuencia_alergia' => 'nullable|string|max:255',
+            'quien_administra_alergia' => 'nullable|string|max:255',
+            'observaciones_alergia' => 'nullable|string|max:500',
+            'vacunas_checklist' => 'nullable|array',
+            'vacunas_checklist.*' => 'string',
+            'dosis_covid' => 'nullable|string|max:255',
+            'efectos_covid' => 'nullable|string|max:255',
+            'tiene_seguro_particular' => 'required|in:Sí,No',
+            'nombre_seguro' => 'nullable|string|max:255',
+            'administradora' => 'nullable|string|max:255',
+            'numero_poliza' => 'nullable|string|max:255',
+            'telefono_contacto' => 'nullable|string|max:20',
             'informacion_adicional' => 'nullable|string|max:2000',
-            'archivos_adjuntos' => 'nullable|array',
-            'archivos_adjuntos.*' => 'nullable|string|max:500'
+            'archivo_adjunto' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048'
         ]);
 
-        $validated['hijo_id'] = $hijo->id;
+        // Convertir los datos del frontend a la estructura JSON esperada por la base de datos
+        $dataToSave = [
+            'hijo_id' => $hijo->id,
+            'grupo_sanguineo' => $validated['grupo_sanguineo'],
+            'factor_rh' => $validated['factor_rh'],
+            'informacion_adicional' => $validated['informacion_adicional']
+        ];
+
+        // Procesar tratamientos actuales
+        $tratamientos = [];
+        if ($validated['recibe_tratamientos'] === 'Sí' && !empty($validated['condicion_medica'])) {
+            $tratamientos[] = [
+                'condicion_medica' => $validated['condicion_medica'],
+                'medicamento' => $validated['nombre_medicamento'],
+                'frecuencia' => $validated['frecuencia'],
+                'administrador' => $validated['quien_administra'],
+                'observaciones' => $validated['observaciones']
+            ];
+        }
+        $dataToSave['tratamientos_actuales'] = $tratamientos;
+
+        // Procesar enfermedades preexistentes
+        $enfermedades = [];
+        if (!empty($validated['detalle_enfermedad'])) {
+            $enfermedades[] = [
+                'enfermedad' => $validated['detalle_enfermedad'],
+                'medicamento' => $validated['medicamento_enfermedad'],
+                'frecuencia' => $validated['frecuencia_enfermedad'],
+                'administrador' => $validated['quien_administra_enfermedad'],
+                'observaciones' => $validated['observaciones_enfermedad']
+            ];
+        }
+        $dataToSave['enfermedades_preexistentes'] = $enfermedades;
+
+        // Procesar alergias médicas
+        $alergias = [];
+        if (!empty($validated['detalle_alergia'])) {
+            $alergias[] = [
+                'alergia' => $validated['detalle_alergia'],
+                'medicamento_control' => $validated['medicamento_control'],
+                'frecuencia' => $validated['frecuencia_alergia'],
+                'administrador' => $validated['quien_administra_alergia'],
+                'observaciones' => $validated['observaciones_alergia']
+            ];
+        }
+        $dataToSave['alergias_medicas'] = $alergias;
+
+        // Procesar vacunas recibidas
+        $vacunas = [];
+        if (!empty($validated['vacunas_checklist'])) {
+            foreach ($validated['vacunas_checklist'] as $vacuna) {
+                $vacunas[$vacuna] = true;
+            }
+            // Agregar información específica de COVID si existe
+            if (in_array('COVID-19', $validated['vacunas_checklist'])) {
+                $vacunas['covid_dosis'] = $validated['dosis_covid'] ?? '';
+                $vacunas['covid_efectos'] = $validated['efectos_covid'] ?? '';
+            }
+        }
+        $dataToSave['vacunas_recibidas'] = $vacunas;
+
+        // Procesar seguros médicos
+        $seguros = [];
+        // Seguro de la agencia (siempre presente)
+        $seguros[] = [
+            'tipo' => 'agencia',
+            'nombre' => 'Medix Travel',
+            'administradora' => 'Medix',
+            'numero_poliza' => 'VIAJE-' . date('Y') . '-' . str_pad($hijo->id, 3, '0', STR_PAD_LEFT),
+            'telefono_contacto' => '01 400 0000',
+            'editable' => false,
+            'tooltip' => 'Seguro ya incluido en el viaje, no editable por los padres'
+        ];
+        // Seguro particular si existe
+        if ($validated['tiene_seguro_particular'] === 'Sí' && !empty($validated['nombre_seguro'])) {
+            $seguros[] = [
+                'tipo' => 'particular',
+                'nombre' => $validated['nombre_seguro'],
+                'administradora' => $validated['administradora'],
+                'numero_poliza' => $validated['numero_poliza'],
+                'telefono_contacto' => $validated['telefono_contacto'],
+                'editable' => true,
+                'tooltip' => ''
+            ];
+        }
+        $dataToSave['seguros_medicos'] = $seguros;
+
+        // Procesar archivos adjuntos
+        $archivos = [];
+        if (isset($validated['archivo_adjunto']) && $validated['archivo_adjunto']) {
+            $archivo = $validated['archivo_adjunto'];
+            $nombreArchivo = time() . '_' . $archivo->getClientOriginalName();
+            $rutaArchivo = $archivo->storeAs('health_records', $nombreArchivo, 'public');
+            $archivos[] = $rutaArchivo;
+        }
+        $dataToSave['archivos_adjuntos'] = $archivos;
 
         // Usar updateOrCreate para actualizar si existe o crear si no existe
         SaludFicha::updateOrCreate(
             ['hijo_id' => $hijo->id],
-            $validated
+            $dataToSave
         );
 
         return Redirect::back()->with('message', 'Ficha de salud guardada exitosamente.');
@@ -164,51 +256,8 @@ class PerfilHijoController extends Controller
      */
     public function updateSaludFicha(Request $request, Hijo $hijo)
     {
-        // Verificar que el hijo pertenece al usuario autenticado
-        if ($hijo->user_id !== auth()->id()) {
-            abort(403, 'No tienes permisos para editar esta ficha.');
-        }
-
-        $saludFicha = SaludFicha::where('hijo_id', $hijo->id)->firstOrFail();
-
-        $validated = $request->validate([
-            'grupo_sanguineo' => 'nullable|in:O,A,B,AB',
-            'factor_rh' => 'nullable|in:+,-',
-            'tratamientos_actuales' => 'nullable|array',
-            'tratamientos_actuales.*.condicion_medica' => 'nullable|string|max:255',
-            'tratamientos_actuales.*.medicamento' => 'nullable|string|max:255',
-            'tratamientos_actuales.*.frecuencia' => 'nullable|string|max:255',
-            'tratamientos_actuales.*.administrador' => 'nullable|string|max:255',
-            'tratamientos_actuales.*.observaciones' => 'nullable|string|max:500',
-            'enfermedades_preexistentes' => 'nullable|array',
-            'enfermedades_preexistentes.*.enfermedad' => 'nullable|string|max:255',
-            'enfermedades_preexistentes.*.medicamento' => 'nullable|string|max:255',
-            'enfermedades_preexistentes.*.frecuencia' => 'nullable|string|max:255',
-            'enfermedades_preexistentes.*.administrador' => 'nullable|string|max:255',
-            'enfermedades_preexistentes.*.observaciones' => 'nullable|string|max:500',
-            'alergias_medicas' => 'nullable|array',
-            'alergias_medicas.*.alergia' => 'nullable|string|max:255',
-            'alergias_medicas.*.medicamento_control' => 'nullable|string|max:255',
-            'alergias_medicas.*.frecuencia' => 'nullable|string|max:255',
-            'alergias_medicas.*.administrador' => 'nullable|string|max:255',
-            'alergias_medicas.*.observaciones' => 'nullable|string|max:500',
-            'vacunas_recibidas' => 'nullable|array',
-            'seguros_medicos' => 'nullable|array',
-            'seguros_medicos.*.tipo' => 'nullable|string|max:255',
-            'seguros_medicos.*.nombre' => 'nullable|string|max:255',
-            'seguros_medicos.*.administradora' => 'nullable|string|max:255',
-            'seguros_medicos.*.numero_poliza' => 'nullable|string|max:255',
-            'seguros_medicos.*.telefono_contacto' => 'nullable|string|max:20',
-            'seguros_medicos.*.editable' => 'nullable|boolean',
-            'seguros_medicos.*.tooltip' => 'nullable|string|max:500',
-            'informacion_adicional' => 'nullable|string|max:2000',
-            'archivos_adjuntos' => 'nullable|array',
-            'archivos_adjuntos.*' => 'nullable|string|max:500'
-        ]);
-
-        $saludFicha->update($validated);
-
-        return Redirect::back()->with('message', 'Ficha de salud actualizada exitosamente.');
+        // El método updateSaludFicha ahora redirige al storeSaludFicha que maneja tanto crear como actualizar
+        return $this->storeSaludFicha($request, $hijo);
     }
 
     /**
