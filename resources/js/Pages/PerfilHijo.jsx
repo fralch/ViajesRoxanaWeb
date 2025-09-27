@@ -15,6 +15,28 @@ export default function PerfilHijo({ hijo, saludFicha, nutricionFicha }) {
     const [photoPreview, setPhotoPreview] = useState(null);
     const [activeTab, setActiveTab] = useState('perfil');
 
+    // Persistir y sincronizar pestaña activa con hash y localStorage (deep-linking)
+    useEffect(() => {
+        try {
+            const fromHash = window.location.hash?.replace('#', '');
+            const fromStorage = localStorage.getItem('perfilHijoActiveTab');
+            const allowed = ['perfil', 'salud', 'nutricion'];
+            const initial = allowed.includes(fromHash)
+                ? fromHash
+                : (allowed.includes(fromStorage) ? fromStorage : 'perfil');
+            if (initial !== 'perfil') setActiveTab(initial);
+        } catch {}
+    }, []);
+
+    useEffect(() => {
+        try {
+            if (activeTab) {
+                window.history.replaceState(null, '', `#${activeTab}`);
+                localStorage.setItem('perfilHijoActiveTab', activeTab);
+            }
+        } catch {}
+    }, [activeTab]);
+
     const { data: perfilData, setData: setPerfilData, post: postPerfil, processing: processingPerfil, errors: erroresPerfil } = useForm({
         nombres: hijo?.nombres || '',
         doc_tipo: hijo?.doc_tipo || '',
@@ -42,19 +64,20 @@ export default function PerfilHijo({ hijo, saludFicha, nutricionFicha }) {
             });
         }
 
-        // Campos de salud (solo los que realmente existen en el formulario)
+        // Campos de salud (nuevos campos según la migración)
         const saludFieldsData = saludFicha ? {
-            'Alergias Médicas': saludFicha.alergias,
-            'Medicamentos': saludFicha.medicamentos,
-            'Observaciones Médicas': saludFicha.observaciones,
+            'Grupo Sanguíneo': saludFicha.grupo_sanguineo,
+            'Factor RH': saludFicha.factor_rh,
+            'Información Médica Adicional': saludFicha.informacion_adicional,
         } : {};
 
-        // Campos nutricionales (corregidos según el formulario actual)
+        // Campos nutricionales (nuevos campos según la migración)
         const nutricionFieldsData = nutricionFicha ? {
-            'Intolerancias Alimentarias': nutricionFicha.intolerancias,
-            'Preferencias Alimentarias': nutricionFicha.preferencias,
-            'Alergias Alimentarias': nutricionFicha.alergias_alimentarias,
-            'Otras Notas Nutricionales': nutricionFicha.otras_notas,
+            'Alimentos que causan alergia': nutricionFicha.alimento_alergia,
+            'Reacciones alérgicas': nutricionFicha.reaccion_alergia,
+            'Alimentos que debe evitar': nutricionFicha.alimento_evitar,
+            'Tipo de dieta especial': nutricionFicha.especificar_dieta,
+            'Preferencias alimentarias detalladas': nutricionFicha.detalle_preferencia_alimentaria,
         } : {};
 
         // Combinar todos los campos
@@ -72,6 +95,44 @@ export default function PerfilHijo({ hijo, saludFicha, nutricionFicha }) {
                 .filter(([key, value]) => !value || String(value).trim() === '')
                 .map(([key]) => key)
         };
+    }, [perfilData, saludFicha, nutricionFicha]);
+
+    // NUEVO: Porcentaje de avance por sección (perfil, salud, nutrición)
+    const sectionCompletion = useMemo(() => {
+        const isFilled = (v) => v !== null && v !== undefined && String(v).trim() !== '';
+        const getPct = (fields) => {
+            const total = fields.length;
+            const filled = fields.filter(isFilled).length;
+            return total > 0 ? Math.round((filled / total) * 100) : 0;
+        };
+
+        // Perfil: nombres, doc_numero, fecha_nacimiento, informacion_adicional y hasta 2 contactos
+        const perfilPct = getPct([
+            perfilData?.nombres ?? '',
+            perfilData?.doc_numero ?? '',
+            perfilData?.fecha_nacimiento ?? '',
+            perfilData?.informacion_adicional ?? '',
+            Array.isArray(perfilData?.nums_emergencia) ? (perfilData.nums_emergencia[0] ?? '') : '',
+            Array.isArray(perfilData?.nums_emergencia) ? (perfilData.nums_emergencia[1] ?? '') : ''
+        ]);
+
+        // Salud: grupo_sanguineo, factor_rh, informacion_adicional (nuevos campos)
+        const saludPct = getPct([
+            saludFicha?.grupo_sanguineo ?? '',
+            saludFicha?.factor_rh ?? '',
+            saludFicha?.informacion_adicional ?? ''
+        ]);
+
+        // Nutrición: nuevos campos según la migración
+        const nutricionPct = getPct([
+            nutricionFicha?.alimento_alergia ?? '',
+            nutricionFicha?.reaccion_alergia ?? '',
+            nutricionFicha?.alimento_evitar ?? '',
+            nutricionFicha?.especificar_dieta ?? '',
+            nutricionFicha?.detalle_preferencia_alimentaria ?? ''
+        ]);
+
+        return { perfil: perfilPct, salud: saludPct, nutricion: nutricionPct };
     }, [perfilData, saludFicha, nutricionFicha]);
 
     const [showMissingFields, setShowMissingFields] = useState(false);
@@ -306,58 +367,7 @@ export default function PerfilHijo({ hijo, saludFicha, nutricionFicha }) {
                         </div>
                     </div>
 
-                    {/* Profile Completion Progress */}
-                    <div className="mb-8">
-                        <h3 className="text-lg font-semibold text-gray-800 mb-3">Progreso del Perfil</h3>
-                        <div className="bg-white p-4 rounded-2xl shadow-md">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm font-medium text-gray-600">Perfil Completado</span>
-                                <span className="text-sm font-bold text-red-600">{`${Math.round(profileCompletion.percentage)}%`}</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2.5 mb-3">
-                                <div 
-                                    className="bg-gradient-to-r from-red-500 to-red-600 h-2.5 rounded-full transition-all duration-500"
-                                    style={{ width: `${profileCompletion.percentage}%` }}
-                                ></div>
-                            </div>
-                            
-                            {/* Progress Details */}
-                            <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                                <span>{profileCompletion.filledFields} de {profileCompletion.totalFields} campos completados</span>
-                                {profileCompletion.missingFields.length > 0 && (
-                                    <button
-                                        onClick={() => setShowMissingFields(!showMissingFields)}
-                                        className="flex items-center gap-1 text-red-600 hover:text-red-700 transition-colors"
-                                    >
-                                        <span>Ver campos faltantes</span>
-                                        <svg 
-                                            className={`w-3 h-3 transition-transform ${showMissingFields ? 'rotate-180' : ''}`} 
-                                            fill="none" 
-                                            stroke="currentColor" 
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                    </button>
-                                )}
-                            </div>
-
-                            {/* Missing Fields Collapsible Section */}
-                            {showMissingFields && profileCompletion.missingFields.length > 0 && (
-                                <div className="bg-red-50 border border-red-200 rounded-lg p-3 animate-fadeIn">
-                                    <h4 className="text-sm font-semibold text-red-800 mb-2">Campos por completar:</h4>
-                                    <ul className="space-y-1">
-                                        {profileCompletion.missingFields.map((field, index) => (
-                                            <li key={index} className="flex items-center gap-2 text-xs text-red-700">
-                                                <div className="w-1.5 h-1.5 bg-red-400 rounded-full"></div>
-                                                {field}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                  
 
                     {/* Main Content Card */}
                     <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
@@ -378,73 +388,195 @@ export default function PerfilHijo({ hijo, saludFicha, nutricionFicha }) {
                                 </div>
                             </div>
 
-                            {/* Tabs Navigation */}
-                            <div className="flex space-x-1">
-                                <button
-                                    onClick={() => setActiveTab('perfil')}
-                                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                                        activeTab === 'perfil'
-                                            ? 'bg-red-600 text-white shadow-lg'
-                                            : 'bg-white text-gray-600 hover:bg-gray-50'
-                                    }`}
-                                >
-                                    <div className="flex items-center gap-2">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                        </svg>
-                                        Perfil Personal
+                            {/* Accesos rápidos - Desktop */}
+                            <div className="hidden md:grid grid-cols-3 gap-3 mb-4">
+                                <button onClick={() => setActiveTab('perfil')} className={`group rounded-2xl p-4 text-left border transition-all ${activeTab==='perfil' ? 'border-gray-200 bg-red-500 shadow text-white' : 'border-gray-200 bg-white hover:shadow-sm'}`}>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${activeTab==='perfil' ? 'bg-red-600 text-white' : 'bg-red-100 text-red-600'}`}>
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                            </div>
+                                            <span className={`font-semibold ${activeTab==='perfil' ? 'text-white' : 'text-gray-800'}`}>Perfil Personal</span>
+                                        </div>
+                                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${sectionCompletion.perfil===100 ? 'bg-green-100 text-green-700' : activeTab==='perfil' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700'}`}>{sectionCompletion.perfil}%</span>
                                     </div>
+                                    <p className={`text-xs mt-2 ${activeTab==='perfil' ? 'text-red-100' : 'text-gray-500'}`}>Datos básicos y contactos de emergencia.</p>
                                 </button>
-                                <button
-                                    onClick={() => setActiveTab('salud')}
-                                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                                        activeTab === 'salud'
-                                            ? 'bg-red-600 text-white shadow-lg'
-                                            : 'bg-white text-gray-600 hover:bg-gray-50'
-                                    }`}
-                                >
-                                    <div className="flex items-center gap-2">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                        </svg>
-                                        Ficha de Salud
+                                <button onClick={() => setActiveTab('salud')} className={`group rounded-2xl p-4 text-left border transition-all ${activeTab==='salud' ? 'border-gray-200 bg-green-500 shadow text-white' : 'border-gray-200 bg-white hover:shadow-sm'}`}>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${activeTab==='salud' ? 'bg-green-600 text-white' : 'bg-emerald-100 text-emerald-600'}`}>
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+                                            </div>
+                                            <span className={`font-semibold ${activeTab==='salud' ? 'text-white' : 'text-gray-800'}`}>Ficha de Salud</span>
+                                        </div>
+                                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${sectionCompletion.salud===100 ? 'bg-green-100 text-green-700' : activeTab==='salud' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700'}`}>{sectionCompletion.salud}%</span>
                                     </div>
+                                    <p className={`text-xs mt-2 ${activeTab==='salud' ? 'text-green-100' : 'text-gray-500'}`}>Alergias, medicamentos y observaciones.</p>
                                 </button>
-                                <button
-                                    onClick={() => setActiveTab('nutricion')}
-                                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                                        activeTab === 'nutricion'
-                                            ? 'bg-red-600 text-white shadow-lg'
-                                            : 'bg-white text-gray-600 hover:bg-gray-50'
-                                    }`}
-                                >
-                                    <div className="flex items-center gap-2">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
-                                        </svg>
-                                        Ficha Nutricional
+                                <button onClick={() => setActiveTab('nutricion')} className={`group rounded-2xl p-4 text-left border transition-all ${activeTab==='nutricion' ? 'border-gray-200 bg-yellow-500 shadow text-white' : 'border-gray-200 bg-white hover:shadow-sm'}`}>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${activeTab==='nutricion' ? 'bg-yellow-600 text-white' : 'bg-amber-100 text-amber-600'}`}>
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"/></svg>
+                                            </div>
+                                            <span className={`font-semibold ${activeTab==='nutricion' ? 'text-white' : 'text-gray-800'}`}>Ficha Nutricional</span>
+                                        </div>
+                                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${sectionCompletion.nutricion===100 ? 'bg-green-100 text-green-700' : activeTab==='nutricion' ? 'bg-yellow-600 text-white' : 'bg-gray-100 text-gray-700'}`}>{sectionCompletion.nutricion}%</span>
                                     </div>
+                                    <p className={`text-xs mt-2 ${activeTab==='nutricion' ? 'text-yellow-100' : 'text-gray-500'}`}>Preferencias, intolerancias y alergias.</p>
                                 </button>
                             </div>
+
+                            {/* Accesos rápidos - Mobile */}
+                            <div className="md:hidden mb-4">
+                                {/* Mobile Tab Navigation */}
+                                <div className="flex overflow-x-auto scrollbar-hide gap-2 px-1 pb-2">
+                                    <button 
+                                        onClick={() => setActiveTab('perfil')} 
+                                        className={`flex-shrink-0 min-w-[280px] rounded-2xl p-4 text-left border transition-all touch-manipulation ${
+                                            activeTab==='perfil' 
+                                                ? 'border-red-300 bg-red-500 shadow-lg text-white' 
+                                                : 'border-gray-200 bg-white hover:shadow-md active:scale-95'
+                                        }`}
+                                    >
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                                                    activeTab==='perfil' ? 'bg-red-600 text-white' : 'bg-red-100 text-red-600'
+                                                }`}>
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                                    </svg>
+                                                </div>
+                                                <span className={`font-bold text-base ${activeTab==='perfil' ? 'text-white' : 'text-gray-800'}`}>
+                                                    Perfil Personal
+                                                </span>
+                                            </div>
+                                            <span className={`px-3 py-1.5 rounded-full text-sm font-bold ${
+                                                sectionCompletion.perfil===100 
+                                                    ? 'bg-green-100 text-green-700' 
+                                                    : activeTab==='perfil' 
+                                                        ? 'bg-red-600 text-white' 
+                                                        : 'bg-gray-100 text-gray-700'
+                                            }`}>
+                                                {sectionCompletion.perfil}%
+                                            </span>
+                                        </div>
+                                        <p className={`text-sm ${activeTab==='perfil' ? 'text-red-100' : 'text-gray-500'}`}>
+                                            Datos básicos y contactos de emergencia
+                                        </p>
+                                    </button>
+
+                                    <button 
+                                        onClick={() => setActiveTab('salud')} 
+                                        className={`flex-shrink-0 min-w-[280px] rounded-2xl p-4 text-left border transition-all touch-manipulation ${
+                                            activeTab==='salud' 
+                                                ? 'border-green-300 bg-green-500 shadow-lg text-white' 
+                                                : 'border-gray-200 bg-white hover:shadow-md active:scale-95'
+                                        }`}
+                                    >
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                                                    activeTab==='salud' ? 'bg-green-600 text-white' : 'bg-emerald-100 text-emerald-600'
+                                                }`}>
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                                                    </svg>
+                                                </div>
+                                                <span className={`font-bold text-base ${activeTab==='salud' ? 'text-white' : 'text-gray-800'}`}>
+                                                    Ficha de Salud
+                                                </span>
+                                            </div>
+                                            <span className={`px-3 py-1.5 rounded-full text-sm font-bold ${
+                                                sectionCompletion.salud===100 
+                                                    ? 'bg-green-100 text-green-700' 
+                                                    : activeTab==='salud' 
+                                                        ? 'bg-green-600 text-white' 
+                                                        : 'bg-gray-100 text-gray-700'
+                                            }`}>
+                                                {sectionCompletion.salud}%
+                                            </span>
+                                        </div>
+                                        <p className={`text-sm ${activeTab==='salud' ? 'text-green-100' : 'text-gray-500'}`}>
+                                            Alergias, medicamentos y observaciones
+                                        </p>
+                                    </button>
+
+                                    <button 
+                                        onClick={() => setActiveTab('nutricion')} 
+                                        className={`flex-shrink-0 min-w-[280px] rounded-2xl p-4 text-left border transition-all touch-manipulation ${
+                                            activeTab==='nutricion' 
+                                                ? 'border-yellow-300 bg-yellow-500 shadow-lg text-white' 
+                                                : 'border-gray-200 bg-white hover:shadow-md active:scale-95'
+                                        }`}
+                                    >
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                                                    activeTab==='nutricion' ? 'bg-yellow-600 text-white' : 'bg-amber-100 text-amber-600'
+                                                }`}>
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"/>
+                                                    </svg>
+                                                </div>
+                                                <span className={`font-bold text-base ${activeTab==='nutricion' ? 'text-white' : 'text-gray-800'}`}>
+                                                    Ficha Nutricional
+                                                </span>
+                                            </div>
+                                            <span className={`px-3 py-1.5 rounded-full text-sm font-bold ${
+                                                sectionCompletion.nutricion===100 
+                                                    ? 'bg-green-100 text-green-700' 
+                                                    : activeTab==='nutricion' 
+                                                        ? 'bg-yellow-600 text-white' 
+                                                        : 'bg-gray-100 text-gray-700'
+                                            }`}>
+                                                {sectionCompletion.nutricion}%
+                                            </span>
+                                        </div>
+                                        <p className={`text-sm ${activeTab==='nutricion' ? 'text-yellow-100' : 'text-gray-500'}`}>
+                                            Preferencias, intolerancias y alergias
+                                        </p>
+                                    </button>
+                                </div>
+                            </div>
+
+                          
                         </div>
                         
                         {/* Tab Content */}
                         <div className="p-8">
-                            {activeTab === 'perfil' && (
-                                <form onSubmit={handlePerfilSubmit} className="space-y-8">
-                                
-                                {/* Información Básica */}
+                             {activeTab === 'perfil' && (
+                                 <div className="space-y-6">
+                                     {/* Progress indicator */}
+                                     <div className="mb-8">
+                                         <div className="flex items-center justify-between mb-2">
+                                             <span className="text-sm font-medium text-gray-600">Progreso del perfil personal</span>
+                                             <span className="text-sm font-bold text-red-600">{Math.round(profileCompletion.percentage)}%</span>
+                                         </div>
+                                         <div className="w-full bg-gray-200 rounded-full h-2">
+                                             <div
+                                                 className="bg-gradient-to-r from-red-500 to-red-600 h-2 rounded-full transition-all duration-500"
+                                                 style={{ width: `${profileCompletion.percentage}%` }}
+                                             ></div>
+                                         </div>
+                                     </div>
+
+                                     <form onSubmit={handlePerfilSubmit} className="space-y-8">
+
+                                 {/* Información Básica */}
                                 <div>
                                     <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                                        <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                                            <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center">
+                                            <svg className="w-3 h-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                             </svg>
                                         </div>
                                         Datos Básicos
                                     </h4>
                                     
-                                    <div className="grid gap-6 md:grid-cols-2 bg-gray-50 p-6 rounded-2xl">
+                                    <div className="grid gap-6 md:grid-cols-2 bg-red-50 p-6 rounded-2xl">
                                         <div>
                                             <InputLabel htmlFor="nombres" value="Nombres Completos" className="text-gray-700 font-semibold" />
                                             <TextInput
@@ -566,15 +698,15 @@ export default function PerfilHijo({ hijo, saludFicha, nutricionFicha }) {
                                 {/* Información Adicional */}
                                 <div>
                                     <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                                        <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center">
-                                            <svg className="w-3 h-3 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center">
+                                            <svg className="w-3 h-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                             </svg>
                                         </div>
                                         Información Adicional
                                     </h4>
                                     
-                                    <div className="bg-purple-50 p-6 rounded-2xl">
+                                    <div className="bg-red-50 p-6 rounded-2xl border-gray-200">
                                         <InputLabel htmlFor="informacion_adicional" value="Notas Especiales" className="text-gray-700 font-semibold" />
                                         <textarea
                                             id="informacion_adicional"
@@ -609,9 +741,10 @@ export default function PerfilHijo({ hijo, saludFicha, nutricionFicha }) {
                                                 </div>
                                             )}
                                         </PrimaryButton>
-                                    </div>
-                                </form>
-                            )}
+                                     </div>
+                                     </form>
+                                 </div>
+                             )}
 
                             {activeTab === 'salud' && (
                                 <FichaSalud
@@ -650,6 +783,33 @@ export default function PerfilHijo({ hijo, saludFicha, nutricionFicha }) {
                             )}
                         </div>
                     </div>
+                </div>
+            </div>
+
+            {/* Barra de navegación rápida en móviles */}
+            <div className="md:hidden fixed bottom-4 left-4 right-4 z-30">
+                <div className="bg-white/90 backdrop-blur rounded-2xl shadow-lg border border-gray-200 p-2 flex items-center justify-between">
+                    <button
+                        onClick={() => setActiveTab('perfil')}
+                        className={`flex-1 flex flex-col items-center gap-1 py-1 rounded-xl ${activeTab==='perfil' ? 'text-red-600 bg-red-50' : 'text-gray-700 hover:bg-gray-50'}`}
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                        <span className="text-[11px] font-medium">Perfil</span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('salud')}
+                        className={`flex-1 flex flex-col items-center gap-1 py-1 rounded-xl ${activeTab==='salud' ? 'text-red-600 bg-red-50' : 'text-gray-700 hover:bg-gray-50'}`}
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+                        <span className="text-[11px] font-medium">Salud</span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('nutricion')}
+                        className={`flex-1 flex flex-col items-center gap-1 py-1 rounded-xl ${activeTab==='nutricion' ? 'text-red-600 bg-red-50' : 'text-gray-700 hover:bg-gray-50'}`}
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"/></svg>
+                        <span className="text-[11px] font-medium">Nutrición</span>
+                    </button>
                 </div>
             </div>
         </AuthenticatedLayout>

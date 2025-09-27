@@ -114,20 +114,138 @@ class PerfilHijoController extends Controller
         }
 
         $validated = $request->validate([
-            'alergias' => 'nullable|string',
-            'medicamentos' => 'nullable|string',
-            'seguros' => 'nullable|string|max:255',
-            'emergencia_contacto' => 'nullable|string|max:255',
-            'emergencia_telefono' => 'nullable|string|max:20',
-            'observaciones' => 'nullable|string'
+            'grupo_sanguineo' => 'required|in:O,A,B,AB',
+            'factor_rh' => 'required|in:+,-',
+            'recibe_tratamientos' => 'required|in:Sí,No',
+            'condicion_medica' => 'nullable|string|max:255',
+            'nombre_medicamento' => 'nullable|string|max:255',
+            'frecuencia' => 'nullable|string|max:255',
+            'quien_administra' => 'nullable|string|max:255',
+            'observaciones' => 'nullable|string|max:500',
+            'detalle_enfermedad' => 'nullable|string|max:255',
+            'medicamento_enfermedad' => 'nullable|string|max:255',
+            'frecuencia_enfermedad' => 'nullable|string|max:255',
+            'quien_administra_enfermedad' => 'nullable|string|max:255',
+            'observaciones_enfermedad' => 'nullable|string|max:500',
+            'detalle_alergia' => 'nullable|string|max:255',
+            'medicamento_control' => 'nullable|string|max:255',
+            'frecuencia_alergia' => 'nullable|string|max:255',
+            'quien_administra_alergia' => 'nullable|string|max:255',
+            'observaciones_alergia' => 'nullable|string|max:500',
+            'vacunas_checklist' => 'nullable|array',
+            'vacunas_checklist.*' => 'string',
+            'dosis_covid' => 'nullable|string|max:255',
+            'efectos_covid' => 'nullable|string|max:255',
+            'tiene_seguro_particular' => 'required|in:Sí,No',
+            'nombre_seguro' => 'nullable|string|max:255',
+            'administradora' => 'nullable|string|max:255',
+            'numero_poliza' => 'nullable|string|max:255',
+            'telefono_contacto' => 'nullable|string|max:20',
+            'informacion_adicional' => 'nullable|string|max:2000',
+            'archivo_adjunto' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048'
         ]);
 
-        $validated['hijo_id'] = $hijo->id;
+        // Convertir los datos del frontend a la estructura JSON esperada por la base de datos
+        $dataToSave = [
+            'hijo_id' => $hijo->id,
+            'grupo_sanguineo' => $validated['grupo_sanguineo'],
+            'factor_rh' => $validated['factor_rh'],
+            'informacion_adicional' => $validated['informacion_adicional']
+        ];
+
+        // Procesar tratamientos actuales
+        $tratamientos = [];
+        if ($validated['recibe_tratamientos'] === 'Sí' && !empty($validated['condicion_medica'])) {
+            $tratamientos[] = [
+                'condicion_medica' => $validated['condicion_medica'],
+                'medicamento' => $validated['nombre_medicamento'],
+                'frecuencia' => $validated['frecuencia'],
+                'administrador' => $validated['quien_administra'],
+                'observaciones' => $validated['observaciones']
+            ];
+        }
+        $dataToSave['tratamientos_actuales'] = $tratamientos;
+
+        // Procesar enfermedades preexistentes
+        $enfermedades = [];
+        if (!empty($validated['detalle_enfermedad'])) {
+            $enfermedades[] = [
+                'enfermedad' => $validated['detalle_enfermedad'],
+                'medicamento' => $validated['medicamento_enfermedad'],
+                'frecuencia' => $validated['frecuencia_enfermedad'],
+                'administrador' => $validated['quien_administra_enfermedad'],
+                'observaciones' => $validated['observaciones_enfermedad']
+            ];
+        }
+        $dataToSave['enfermedades_preexistentes'] = $enfermedades;
+
+        // Procesar alergias médicas
+        $alergias = [];
+        if (!empty($validated['detalle_alergia'])) {
+            $alergias[] = [
+                'alergia' => $validated['detalle_alergia'],
+                'medicamento_control' => $validated['medicamento_control'],
+                'frecuencia' => $validated['frecuencia_alergia'],
+                'administrador' => $validated['quien_administra_alergia'],
+                'observaciones' => $validated['observaciones_alergia']
+            ];
+        }
+        $dataToSave['alergias_medicas'] = $alergias;
+
+        // Procesar vacunas recibidas
+        $vacunas = [];
+        if (!empty($validated['vacunas_checklist'])) {
+            foreach ($validated['vacunas_checklist'] as $vacuna) {
+                $vacunas[$vacuna] = true;
+            }
+            // Agregar información específica de COVID si existe
+            if (in_array('COVID-19', $validated['vacunas_checklist'])) {
+                $vacunas['covid_dosis'] = $validated['dosis_covid'] ?? '';
+                $vacunas['covid_efectos'] = $validated['efectos_covid'] ?? '';
+            }
+        }
+        $dataToSave['vacunas_recibidas'] = $vacunas;
+
+        // Procesar seguros médicos
+        $seguros = [];
+        // Seguro de la agencia (siempre presente)
+        $seguros[] = [
+            'tipo' => 'agencia',
+            'nombre' => 'Medix Travel',
+            'administradora' => 'Medix',
+            'numero_poliza' => 'VIAJE-' . date('Y') . '-' . str_pad($hijo->id, 3, '0', STR_PAD_LEFT),
+            'telefono_contacto' => '01 400 0000',
+            'editable' => false,
+            'tooltip' => 'Seguro ya incluido en el viaje, no editable por los padres'
+        ];
+        // Seguro particular si existe
+        if ($validated['tiene_seguro_particular'] === 'Sí' && !empty($validated['nombre_seguro'])) {
+            $seguros[] = [
+                'tipo' => 'particular',
+                'nombre' => $validated['nombre_seguro'],
+                'administradora' => $validated['administradora'],
+                'numero_poliza' => $validated['numero_poliza'],
+                'telefono_contacto' => $validated['telefono_contacto'],
+                'editable' => true,
+                'tooltip' => ''
+            ];
+        }
+        $dataToSave['seguros_medicos'] = $seguros;
+
+        // Procesar archivos adjuntos
+        $archivos = [];
+        if (isset($validated['archivo_adjunto']) && $validated['archivo_adjunto']) {
+            $archivo = $validated['archivo_adjunto'];
+            $nombreArchivo = time() . '_' . $archivo->getClientOriginalName();
+            $rutaArchivo = $archivo->storeAs('health_records', $nombreArchivo, 'public');
+            $archivos[] = $rutaArchivo;
+        }
+        $dataToSave['archivos_adjuntos'] = $archivos;
 
         // Usar updateOrCreate para actualizar si existe o crear si no existe
         SaludFicha::updateOrCreate(
             ['hijo_id' => $hijo->id],
-            $validated
+            $dataToSave
         );
 
         return Redirect::back()->with('message', 'Ficha de salud guardada exitosamente.');
@@ -138,25 +256,8 @@ class PerfilHijoController extends Controller
      */
     public function updateSaludFicha(Request $request, Hijo $hijo)
     {
-        // Verificar que el hijo pertenece al usuario autenticado
-        if ($hijo->user_id !== auth()->id()) {
-            abort(403, 'No tienes permisos para editar esta ficha.');
-        }
-
-        $saludFicha = SaludFicha::where('hijo_id', $hijo->id)->firstOrFail();
-
-        $validated = $request->validate([
-            'alergias' => 'nullable|string',
-            'medicamentos' => 'nullable|string',
-            'seguros' => 'nullable|string|max:255',
-            'emergencia_contacto' => 'nullable|string|max:255',
-            'emergencia_telefono' => 'nullable|string|max:20',
-            'observaciones' => 'nullable|string'
-        ]);
-
-        $saludFicha->update($validated);
-
-        return Redirect::back()->with('message', 'Ficha de salud actualizada exitosamente.');
+        // El método updateSaludFicha ahora redirige al storeSaludFicha que maneja tanto crear como actualizar
+        return $this->storeSaludFicha($request, $hijo);
     }
 
     /**
@@ -194,19 +295,57 @@ class PerfilHijoController extends Controller
         }
 
         $validated = $request->validate([
-            'restricciones' => 'nullable|string',
-            'preferencias' => 'nullable|string',
-            'alergias_alimentarias' => 'nullable|string',
-            'intolerancias' => 'nullable|string',
-            'otras_notas' => 'nullable|string'
+            'tiene_alergia_alimentaria' => 'required|in:Sí,No',
+            'alimento_alergia' => 'nullable|string|max:500',
+            'reaccion_alergia' => 'nullable|string|max:500',
+            'evita_alimentos' => 'required|in:Sí,No',
+            'alimento_evitar' => 'nullable|string|max:500',
+            'tiene_dieta_especial' => 'required|in:Sí,No',
+            'especificar_dieta' => 'nullable|string|max:500',
+            'tiene_preferencia_alimentaria' => 'required|in:Sí,No',
+            'detalle_preferencia_alimentaria' => 'nullable|string|max:1000'
         ]);
 
-        $validated['hijo_id'] = $hijo->id;
+        // Preparar datos para guardar usando convención especial para respuestas "No"
+        $dataToSave = [
+            'hijo_id' => $hijo->id
+        ];
+
+        // Manejar alergia alimentaria
+        if ($validated['tiene_alergia_alimentaria'] === 'Sí') {
+            $dataToSave['alimento_alergia'] = $validated['alimento_alergia'];
+            $dataToSave['reaccion_alergia'] = $validated['reaccion_alergia'];
+        } else {
+            // Usar valor especial para indicar que se respondió "No"
+            $dataToSave['alimento_alergia'] = '__NO_APLICA__';
+            $dataToSave['reaccion_alergia'] = '__NO_APLICA__';
+        }
+
+        // Manejar alimentos que evita
+        if ($validated['evita_alimentos'] === 'Sí') {
+            $dataToSave['alimento_evitar'] = $validated['alimento_evitar'];
+        } else {
+            $dataToSave['alimento_evitar'] = '__NO_APLICA__';
+        }
+
+        // Manejar dieta especial
+        if ($validated['tiene_dieta_especial'] === 'Sí') {
+            $dataToSave['especificar_dieta'] = $validated['especificar_dieta'];
+        } else {
+            $dataToSave['especificar_dieta'] = '__NO_APLICA__';
+        }
+
+        // Manejar preferencia alimentaria
+        if ($validated['tiene_preferencia_alimentaria'] === 'Sí') {
+            $dataToSave['detalle_preferencia_alimentaria'] = $validated['detalle_preferencia_alimentaria'];
+        } else {
+            $dataToSave['detalle_preferencia_alimentaria'] = '__NO_APLICA__';
+        }
 
         // Usar updateOrCreate para actualizar si existe o crear si no existe
         NutricionFicha::updateOrCreate(
             ['hijo_id' => $hijo->id],
-            $validated
+            $dataToSave
         );
 
         return Redirect::back()->with('message', 'Ficha nutricional guardada exitosamente.');
@@ -217,24 +356,8 @@ class PerfilHijoController extends Controller
      */
     public function updateNutricionFicha(Request $request, Hijo $hijo)
     {
-        // Verificar que el hijo pertenece al usuario autenticado
-        if ($hijo->user_id !== auth()->id()) {
-            abort(403, 'No tienes permisos para editar esta ficha.');
-        }
-
-        $nutricionFicha = NutricionFicha::where('hijo_id', $hijo->id)->firstOrFail();
-
-        $validated = $request->validate([
-            'restricciones' => 'nullable|string',
-            'preferencias' => 'nullable|string',
-            'alergias_alimentarias' => 'nullable|string',
-            'intolerancias' => 'nullable|string',
-            'otras_notas' => 'nullable|string'
-        ]);
-
-        $nutricionFicha->update($validated);
-
-        return Redirect::back()->with('message', 'Ficha nutricional actualizada exitosamente.');
+        // El método updateNutricionFicha ahora redirige al storeNutricionFicha que maneja tanto crear como actualizar
+        return $this->storeNutricionFicha($request, $hijo);
     }
 
     /**
