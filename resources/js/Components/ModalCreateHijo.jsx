@@ -148,7 +148,7 @@ export default function ModalCreateHijo({
                                 className="mt-1 block w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-md shadow-sm"
                                 required
                             >
-                                <option value="dni">DNI</option>
+                                <option value="DNI">DNI</option>
                                 <option value="carnet_extranjeria">Carnet de Extranjería</option>
                                 <option value="pasaporte">Pasaporte</option>
                             </select>

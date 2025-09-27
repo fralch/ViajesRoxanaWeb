@@ -98,7 +98,7 @@ class HijoController extends Controller
     {
         $validationRules = [
             'nombres' => 'required|string|max:255',
-            'doc_tipo' => 'required|in:CC,TI,RC,CE',
+            'doc_tipo' => 'required|in:DNI,carnet_extranjeria,pasaporte',
             'doc_numero' => 'required|string|max:20|unique:hijos,doc_numero',
             'nums_emergencia' => 'nullable|array|max:5',
             'nums_emergencia.*' => 'nullable|string|max:20',
