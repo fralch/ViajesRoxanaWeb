@@ -948,8 +948,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                             {filteredChildren.map((hijo) => (
                               <div
                                 key={hijo.id}
-                                onClick={() => selectChildFromDropdown(hijo)}
-                                className="px-4 py-3 hover:bg-green-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                                className="px-4 py-3 hover:bg-green-50 border-b border-gray-100 last:border-b-0"
                               >
                                 <div className="flex items-center justify-between">
                                   <div className="flex-1">
@@ -958,17 +957,15 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                                       {hijo.doc_tipo}: {hijo.doc_numero} - {hijo.subgrupo_nombre}
                                     </div>
                                   </div>
-                                  <div className="ml-2">
-                                    {hijo.user_id === 1 ? (
-                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                                        Sin apoderado
-                                      </span>
-                                    ) : (
-                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                        ✓ Con apoderado
-                                      </span>
-                                    )}
-                                  </div>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      selectChildFromDropdown(hijo);
+                                    }}
+                                    className="ml-3 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 transition-colors"
+                                  >
+                                    Seleccionar
+                                  </button>
                                 </div>
                               </div>
                             ))}
