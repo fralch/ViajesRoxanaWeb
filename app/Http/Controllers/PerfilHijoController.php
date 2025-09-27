@@ -295,19 +295,57 @@ class PerfilHijoController extends Controller
         }
 
         $validated = $request->validate([
+            'tiene_alergia_alimentaria' => 'required|in:Sí,No',
             'alimento_alergia' => 'nullable|string|max:500',
             'reaccion_alergia' => 'nullable|string|max:500',
+            'evita_alimentos' => 'required|in:Sí,No',
             'alimento_evitar' => 'nullable|string|max:500',
+            'tiene_dieta_especial' => 'required|in:Sí,No',
             'especificar_dieta' => 'nullable|string|max:500',
+            'tiene_preferencia_alimentaria' => 'required|in:Sí,No',
             'detalle_preferencia_alimentaria' => 'nullable|string|max:1000'
         ]);
 
-        $validated['hijo_id'] = $hijo->id;
+        // Preparar datos para guardar usando convención especial para respuestas "No"
+        $dataToSave = [
+            'hijo_id' => $hijo->id
+        ];
+
+        // Manejar alergia alimentaria
+        if ($validated['tiene_alergia_alimentaria'] === 'Sí') {
+            $dataToSave['alimento_alergia'] = $validated['alimento_alergia'];
+            $dataToSave['reaccion_alergia'] = $validated['reaccion_alergia'];
+        } else {
+            // Usar valor especial para indicar que se respondió "No"
+            $dataToSave['alimento_alergia'] = '__NO_APLICA__';
+            $dataToSave['reaccion_alergia'] = '__NO_APLICA__';
+        }
+
+        // Manejar alimentos que evita
+        if ($validated['evita_alimentos'] === 'Sí') {
+            $dataToSave['alimento_evitar'] = $validated['alimento_evitar'];
+        } else {
+            $dataToSave['alimento_evitar'] = '__NO_APLICA__';
+        }
+
+        // Manejar dieta especial
+        if ($validated['tiene_dieta_especial'] === 'Sí') {
+            $dataToSave['especificar_dieta'] = $validated['especificar_dieta'];
+        } else {
+            $dataToSave['especificar_dieta'] = '__NO_APLICA__';
+        }
+
+        // Manejar preferencia alimentaria
+        if ($validated['tiene_preferencia_alimentaria'] === 'Sí') {
+            $dataToSave['detalle_preferencia_alimentaria'] = $validated['detalle_preferencia_alimentaria'];
+        } else {
+            $dataToSave['detalle_preferencia_alimentaria'] = '__NO_APLICA__';
+        }
 
         // Usar updateOrCreate para actualizar si existe o crear si no existe
         NutricionFicha::updateOrCreate(
             ['hijo_id' => $hijo->id],
-            $validated
+            $dataToSave
         );
 
         return Redirect::back()->with('message', 'Ficha nutricional guardada exitosamente.');
@@ -318,24 +356,8 @@ class PerfilHijoController extends Controller
      */
     public function updateNutricionFicha(Request $request, Hijo $hijo)
     {
-        // Verificar que el hijo pertenece al usuario autenticado
-        if ($hijo->user_id !== auth()->id()) {
-            abort(403, 'No tienes permisos para editar esta ficha.');
-        }
-
-        $nutricionFicha = NutricionFicha::where('hijo_id', $hijo->id)->firstOrFail();
-
-        $validated = $request->validate([
-            'alimento_alergia' => 'nullable|string|max:500',
-            'reaccion_alergia' => 'nullable|string|max:500',
-            'alimento_evitar' => 'nullable|string|max:500',
-            'especificar_dieta' => 'nullable|string|max:500',
-            'detalle_preferencia_alimentaria' => 'nullable|string|max:1000'
-        ]);
-
-        $nutricionFicha->update($validated);
-
-        return Redirect::back()->with('message', 'Ficha nutricional actualizada exitosamente.');
+        // El método updateNutricionFicha ahora redirige al storeNutricionFicha que maneja tanto crear como actualizar
+        return $this->storeNutricionFicha($request, $hijo);
     }
 
     /**

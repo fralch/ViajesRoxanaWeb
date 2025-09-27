@@ -71,20 +71,24 @@ export default function FichaNutricional({ nutricionFicha, hijo, onSubmitSuccess
     const [tienePreferenciaAlimentaria, setTienePreferenciaAlimentaria] = useState('');
 
     const { data, setData, post, processing, errors } = useForm({
+        tiene_alergia_alimentaria: nutricionFicha?.tiene_alergia_alimentaria || '',
         alimento_alergia: nutricionFicha?.alimento_alergia || '',
         reaccion_alergia: nutricionFicha?.reaccion_alergia || '',
+        evita_alimentos: nutricionFicha?.evita_alimentos || '',
         alimento_evitar: nutricionFicha?.alimento_evitar || '',
+        tiene_dieta_especial: nutricionFicha?.tiene_dieta_especial || '',
         especificar_dieta: nutricionFicha?.especificar_dieta || '',
+        tiene_preferencia_alimentaria: nutricionFicha?.tiene_preferencia_alimentaria || '',
         detalle_preferencia_alimentaria: nutricionFicha?.detalle_preferencia_alimentaria || ''
     });
 
     // Inicializar estados basado en datos existentes
     useEffect(() => {
         if (nutricionFicha) {
-            setTieneAlergiaAlimentaria(nutricionFicha.alimento_alergia ? 'Sí' : '');
-            setEvitaAlimentos(nutricionFicha.alimento_evitar ? 'Sí' : '');
-            setTieneDietaEspecial(nutricionFicha.especificar_dieta ? 'Sí' : '');
-            setTienePreferenciaAlimentaria(nutricionFicha.detalle_preferencia_alimentaria ? 'Sí' : '');
+            setTieneAlergiaAlimentaria(nutricionFicha.tiene_alergia_alimentaria || '');
+            setEvitaAlimentos(nutricionFicha.evita_alimentos || '');
+            setTieneDietaEspecial(nutricionFicha.tiene_dieta_especial || '');
+            setTienePreferenciaAlimentaria(nutricionFicha.tiene_preferencia_alimentaria || '');
         }
     }, [nutricionFicha]);
 
@@ -93,6 +97,7 @@ export default function FichaNutricional({ nutricionFicha, hijo, onSubmitSuccess
         switch (question) {
             case 'alergia':
                 setTieneAlergiaAlimentaria(value);
+                setData('tiene_alergia_alimentaria', value);
                 if (value === 'No') {
                     setData('alimento_alergia', '');
                     setData('reaccion_alergia', '');
@@ -100,18 +105,21 @@ export default function FichaNutricional({ nutricionFicha, hijo, onSubmitSuccess
                 break;
             case 'evita':
                 setEvitaAlimentos(value);
+                setData('evita_alimentos', value);
                 if (value === 'No') {
                     setData('alimento_evitar', '');
                 }
                 break;
             case 'dieta':
                 setTieneDietaEspecial(value);
+                setData('tiene_dieta_especial', value);
                 if (value === 'No') {
                     setData('especificar_dieta', '');
                 }
                 break;
             case 'preferencia':
                 setTienePreferenciaAlimentaria(value);
+                setData('tiene_preferencia_alimentaria', value);
                 if (value === 'No') {
                     setData('detalle_preferencia_alimentaria', '');
                 }
@@ -138,11 +146,11 @@ export default function FichaNutricional({ nutricionFicha, hijo, onSubmitSuccess
         let totalFields = 4; // Las 4 preguntas principales siempre cuentan
         let completedFields = 0;
 
-        // Contar preguntas principales respondidas
-        if (tieneAlergiaAlimentaria) completedFields++;
-        if (evitaAlimentos) completedFields++;
-        if (tieneDietaEspecial) completedFields++;
-        if (tienePreferenciaAlimentaria) completedFields++;
+        // Contar preguntas principales respondidas (tanto "Sí" como "No" cuentan como completado)
+        if (tieneAlergiaAlimentaria && (tieneAlergiaAlimentaria === 'Sí' || tieneAlergiaAlimentaria === 'No')) completedFields++;
+        if (evitaAlimentos && (evitaAlimentos === 'Sí' || evitaAlimentos === 'No')) completedFields++;
+        if (tieneDietaEspecial && (tieneDietaEspecial === 'Sí' || tieneDietaEspecial === 'No')) completedFields++;
+        if (tienePreferenciaAlimentaria && (tienePreferenciaAlimentaria === 'Sí' || tienePreferenciaAlimentaria === 'No')) completedFields++;
 
         // Solo contar campos de detalle si están visibles y son requeridos
         if (tieneAlergiaAlimentaria === 'Sí') {
@@ -166,7 +174,7 @@ export default function FichaNutricional({ nutricionFicha, hijo, onSubmitSuccess
             if (data.detalle_preferencia_alimentaria && data.detalle_preferencia_alimentaria.trim() !== '') completedFields++;
         }
 
-        return Math.round((completedFields / totalFields) * 100);
+        return totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0;
     }, [
         tieneAlergiaAlimentaria,
         evitaAlimentos,
