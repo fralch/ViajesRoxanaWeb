@@ -16,7 +16,7 @@ export default function ModalCreateHijo({
     const [data, setData] = useState({
         user_id: currentUserId || null,
         nombres: '',
-        doc_tipo: 'CC',
+        doc_tipo: 'DNI',
         doc_numero: '',
         nums_emergencia: [''],
         fecha_nacimiento: '',
@@ -91,7 +91,7 @@ export default function ModalCreateHijo({
         setData({
             user_id: currentUserId || null,
             nombres: '',
-            doc_tipo: 'CC',
+            doc_tipo: 'DNI',
             doc_numero: '',
             nums_emergencia: [''],
             fecha_nacimiento: '',
