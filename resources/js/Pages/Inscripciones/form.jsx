@@ -218,6 +218,10 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
   const [filteredChildren, setFilteredChildren] = useState(hijosInscritos || []);
   const [showChildDropdown, setShowChildDropdown] = useState(false);
 
+  // Modal confirmation state
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingChildSelection, setPendingChildSelection] = useState(null);
+
   // New user creation form data
   const [newUserData, setNewUserData] = useState({
     name: '',
@@ -327,7 +331,24 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
 
   // Función para seleccionar un hijo del dropdown
   const selectChildFromDropdown = (child) => {
-    handleChildSelection(child.id.toString());
+    setPendingChildSelection(child);
+    setShowConfirmModal(true);
+    setShowChildDropdown(false);
+  };
+
+  // Función para confirmar la selección del hijo
+  const confirmChildSelection = () => {
+    if (pendingChildSelection) {
+      handleChildSelection(pendingChildSelection.id.toString());
+      setShowConfirmModal(false);
+      setPendingChildSelection(null);
+    }
+  };
+
+  // Función para cancelar la selección del hijo
+  const cancelChildSelection = () => {
+    setShowConfirmModal(false);
+    setPendingChildSelection(null);
   };
 
   // Función para usar los datos del usuario existente
@@ -1392,7 +1413,71 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
             ¿Necesitas ayuda?
           </button>
         </div>
-        
+
+        {/* Modal de confirmación de selección de hijo */}
+        {showConfirmModal && pendingChildSelection && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-auto">
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Confirmar selección de hijo
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      ¿Es este el hijo correcto que deseas seleccionar?
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-xl p-4 mb-6">
+                  <div className="space-y-2">
+                    <div>
+                      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Nombre completo</span>
+                      <p className="text-base font-semibold text-gray-900">{pendingChildSelection.nombres}</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Documento</span>
+                        <p className="text-sm text-gray-700">{pendingChildSelection.doc_tipo}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Número</span>
+                        <p className="text-sm text-gray-700">{pendingChildSelection.doc_numero}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Subgrupo</span>
+                      <p className="text-sm text-gray-700">{pendingChildSelection.subgrupo_nombre}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={cancelChildSelection}
+                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-1 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={confirmChildSelection}
+                    className="flex-1 px-4 py-3 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 transition-colors"
+                  >
+                    Sí, seleccionar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
