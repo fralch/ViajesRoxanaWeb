@@ -1,9 +1,67 @@
- import { useForm } from '@inertiajs/react';
- import { useState, useEffect } from 'react';
- import { AppleIcon, CheckIcon, InfoIcon, AlertTriangleIcon } from 'lucide-react';
- import InputError from '@/Components/InputError';
- import InputLabel from '@/Components/InputLabel';
- import PrimaryButton from '@/Components/PrimaryButton';
+import { useForm } from '@inertiajs/react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { AppleIcon, CheckIcon, InfoIcon, AlertTriangleIcon } from 'lucide-react';
+import InputError from '@/Components/InputError';
+import InputLabel from '@/Components/InputLabel';
+import PrimaryButton from '@/Components/PrimaryButton';
+
+// Componente para preguntas con radio buttons - Movido fuera para evitar re-renders
+const RadioQuestion = ({ question, value, onChange, options = ['Sí', 'No'] }) => (
+    <div className="space-y-3">
+        <p className="text-gray-800 font-semibold">{question}</p>
+        <div className="flex gap-4">
+            {options.map((option) => (
+                <label key={option} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                        type="radio"
+                        value={option}
+                        checked={value === option}
+                        onChange={(e) => onChange(e.target.value)}
+                        className="w-4 h-4 text-orange-600 border-gray-300 focus:ring-orange-500"
+                    />
+                    <span className="text-gray-700">{option}</span>
+                </label>
+            ))}
+        </div>
+    </div>
+);
+
+// Componente para campos condicionales - Movido fuera para evitar re-renders
+const ConditionalField = ({ show, children, priority = 'alta' }) => {
+    if (!show) return null;
+    
+    // Definir estilos basados en la prioridad sin usar círculos
+    const priorityStyles = {
+        alta: {
+            container: 'border-l-4 border-amber-600 bg-amber-100 shadow-sm',
+            header: 'bg-amber-200 text-amber-900',
+            icon: <InfoIcon className="w-4 h-4 text-amber-700" />,
+            label: ''
+        },
+        critica: {
+            container: 'border-l-4 border-amber-600 bg-amber-100 shadow-sm',
+            header: 'bg-amber-200 text-amber-900',
+            icon: <InfoIcon className="w-4 h-4 text-amber-700" />,
+            label: ''
+        },
+        normal: {
+            container: 'border-l-4 border-blue-500 bg-blue-50 shadow-sm',
+            header: 'bg-blue-100 text-blue-800',
+            icon: <InfoIcon className="w-4 h-4 text-blue-600" />,
+            label: 'Información adicional'
+        }
+    };
+
+    const style = priorityStyles[priority] || priorityStyles.normal;
+
+    return (
+        <div className={`ml-6 mt-4 p-4 rounded-lg transition-all duration-300 ease-in-out ${style.container}`}>
+            <div className="pl-2">
+                {children}
+            </div>
+        </div>
+    );
+};
 
 export default function FichaNutricional({ nutricionFicha, hijo, onSubmitSuccess }) {
     // Estado para las preguntas principales (radio buttons)
@@ -30,8 +88,8 @@ export default function FichaNutricional({ nutricionFicha, hijo, onSubmitSuccess
         }
     }, [nutricionFicha]);
 
-    // Limpiar campos cuando se selecciona "No"
-    const handleRadioChange = (question, value) => {
+    // Limpiar campos cuando se selecciona "No" - Memoizado para evitar re-renders
+    const handleRadioChange = useCallback((question, value) => {
         switch (question) {
             case 'alergia':
                 setTieneAlergiaAlimentaria(value);
@@ -59,7 +117,7 @@ export default function FichaNutricional({ nutricionFicha, hijo, onSubmitSuccess
                 }
                 break;
         }
-    };
+    }, [setData]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -75,78 +133,51 @@ export default function FichaNutricional({ nutricionFicha, hijo, onSubmitSuccess
         });
     };
 
-    // Componente para preguntas con radio buttons
-    const RadioQuestion = ({ question, value, onChange, options = ['Sí', 'No'] }) => (
-        <div className="space-y-3">
-            <p className="text-gray-800 font-semibold">{question}</p>
-            <div className="flex gap-4">
-                {options.map((option) => (
-                    <label key={option} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="radio"
-                            value={option}
-                            checked={value === option}
-                            onChange={(e) => onChange(e.target.value)}
-                            className="w-4 h-4 text-orange-600 border-gray-300 focus:ring-orange-500"
-                        />
-                        <span className="text-gray-700">{option}</span>
-                    </label>
-                ))}
-            </div>
-        </div>
-    );
+    // Calculate completion percentage based on visible fields only - Memoizado para evitar re-renders
+    const completionPercentage = useMemo(() => {
+        let totalFields = 4; // Las 4 preguntas principales siempre cuentan
+        let completedFields = 0;
 
-    // Componente para campos condicionales con mejor diseño
-    const ConditionalField = ({ show, children, priority = 'alta' }) => {
-        if (!show) return null;
-        
-        // Definir estilos basados en la prioridad sin usar círculos
-        const priorityStyles = {
-            alta: {
-                container: 'border-l-4 border-amber-600 bg-amber-100 shadow-sm',
-                header: 'bg-amber-200 text-amber-900',
-                icon: <InfoIcon className="w-4 h-4 text-amber-700" />,
-                label: ''
-            },
-            critica: {
-                container: 'border-l-4 border-amber-600 bg-amber-100 shadow-sm',
-                header: 'bg-amber-200 text-amber-900',
-                icon: <InfoIcon className="w-4 h-4 text-amber-700" />,
-                label: ''
-            },
-            normal: {
-                container: 'border-l-4 border-blue-500 bg-blue-50 shadow-sm',
-                header: 'bg-blue-100 text-blue-800',
-                icon: <InfoIcon className="w-4 h-4 text-blue-600" />,
-                label: 'Información adicional'
-            }
-        };
+        // Contar preguntas principales respondidas
+        if (tieneAlergiaAlimentaria) completedFields++;
+        if (evitaAlimentos) completedFields++;
+        if (tieneDietaEspecial) completedFields++;
+        if (tienePreferenciaAlimentaria) completedFields++;
 
-        const style = priorityStyles[priority] || priorityStyles.normal;
+        // Solo contar campos de detalle si están visibles y son requeridos
+        if (tieneAlergiaAlimentaria === 'Sí') {
+            totalFields += 2; // alimento_alergia y reaccion_alergia
+            if (data.alimento_alergia && data.alimento_alergia.trim() !== '') completedFields++;
+            if (data.reaccion_alergia && data.reaccion_alergia.trim() !== '') completedFields++;
+        }
 
-        return (
-            <div className={`ml-6 mt-4 p-4 rounded-lg transition-all duration-300 ease-in-out ${style.container}`}>
-                <div className="pl-2">
-                    {children}
-                </div>
-            </div>
-        );
-    };
+        if (evitaAlimentos === 'Sí') {
+            totalFields += 1; // alimento_evitar
+            if (data.alimento_evitar && data.alimento_evitar.trim() !== '') completedFields++;
+        }
 
-    // Calculate completion percentage
-    const calculateCompletion = () => {
-        const fields = [
-            data.alimento_alergia,
-            data.reaccion_alergia,
-            data.alimento_evitar,
-            data.especificar_dieta,
-            data.detalle_preferencia_alimentaria
-        ];
-        const filledFields = fields.filter(field => field && field.trim() !== '').length;
-        return Math.round((filledFields / fields.length) * 100);
-    };
+        if (tieneDietaEspecial === 'Sí') {
+            totalFields += 1; // especificar_dieta
+            if (data.especificar_dieta && data.especificar_dieta.trim() !== '') completedFields++;
+        }
 
-    const completionPercentage = calculateCompletion();
+        if (tienePreferenciaAlimentaria === 'Sí') {
+            totalFields += 1; // detalle_preferencia_alimentaria
+            if (data.detalle_preferencia_alimentaria && data.detalle_preferencia_alimentaria.trim() !== '') completedFields++;
+        }
+
+        return Math.round((completedFields / totalFields) * 100);
+    }, [
+        tieneAlergiaAlimentaria,
+        evitaAlimentos,
+        tieneDietaEspecial,
+        tienePreferenciaAlimentaria,
+        data.alimento_alergia,
+        data.reaccion_alergia,
+        data.alimento_evitar,
+        data.especificar_dieta,
+        data.detalle_preferencia_alimentaria
+    ]);
 
     return (
         <div className="space-y-6">
