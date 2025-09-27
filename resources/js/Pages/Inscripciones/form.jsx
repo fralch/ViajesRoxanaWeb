@@ -953,11 +953,9 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                       </svg>
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-xl font-bold text-green-900 mb-1">
-                        Alumnos Inscritos en este Grupo
-                      </h3>
+                     
                       <p className="text-sm text-green-700 mb-4">
-                        Selecciona el alumno para asignarle un apoderado responsable.
+                        Selecciona al alumno que deseas registrar escribiendo su nombre o DNI en la barra de búsqueda.
                       </p>
                     </div>
                   </div>
@@ -965,7 +963,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                     <div className="space-y-4">
                       <div className="relative">
                         <label htmlFor="child_search" className="block text-sm font-medium text-gray-700 mb-2">
-                          Buscar y seleccionar alumno
+                          Barrra de búsqueda
                         </label>
                         <div className="relative">
                           <input
@@ -1047,7 +1045,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                    {!selectedChildId && (
                      <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                        <p className="text-sm text-yellow-800">
-                         ⚠️ Selecciona un alumno del listado para continuar con la asignación de apoderado
+                         ⚠️ Debes elegir un alumno del listado para continuar 
                        </p>
                      </div>
                    )}
