@@ -133,6 +133,21 @@ export default function FichaNutricional({ nutricionFicha, hijo, onSubmitSuccess
         );
     };
 
+    // Calculate completion percentage
+    const calculateCompletion = () => {
+        const fields = [
+            data.alimento_alergia,
+            data.reaccion_alergia,
+            data.alimento_evitar,
+            data.especificar_dieta,
+            data.detalle_preferencia_alimentaria
+        ];
+        const filledFields = fields.filter(field => field && field.trim() !== '').length;
+        return Math.round((filledFields / fields.length) * 100);
+    };
+
+    const completionPercentage = calculateCompletion();
+
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-3 mb-6">
@@ -142,6 +157,20 @@ export default function FichaNutricional({ nutricionFicha, hijo, onSubmitSuccess
                 <div>
                     <h3 className="text-xl font-bold text-gray-900">Información Alimentaria</h3>
                     <p className="text-gray-600 text-sm">Responde las preguntas para personalizar la información nutricional</p>
+                </div>
+            </div>
+
+            {/* Progress indicator */}
+            <div className="mb-8">
+                <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-600">Progreso del formulario</span>
+                    <span className="text-sm font-bold text-orange-600">{completionPercentage}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                        className="bg-gradient-to-r from-orange-500 to-orange-600 h-2 rounded-full transition-all duration-500"
+                        style={{ width: `${completionPercentage}%` }}
+                    ></div>
                 </div>
             </div>
 

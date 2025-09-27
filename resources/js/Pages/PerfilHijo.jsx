@@ -547,10 +547,25 @@ export default function PerfilHijo({ hijo, saludFicha, nutricionFicha }) {
                         
                         {/* Tab Content */}
                         <div className="p-8">
-                            {activeTab === 'perfil' && (
-                                <form onSubmit={handlePerfilSubmit} className="space-y-8">
-                                
-                                {/* Información Básica */}
+                             {activeTab === 'perfil' && (
+                                 <div className="space-y-6">
+                                     {/* Progress indicator */}
+                                     <div className="mb-8">
+                                         <div className="flex items-center justify-between mb-2">
+                                             <span className="text-sm font-medium text-gray-600">Progreso del perfil personal</span>
+                                             <span className="text-sm font-bold text-red-600">{Math.round(profileCompletion.percentage)}%</span>
+                                         </div>
+                                         <div className="w-full bg-gray-200 rounded-full h-2">
+                                             <div
+                                                 className="bg-gradient-to-r from-red-500 to-red-600 h-2 rounded-full transition-all duration-500"
+                                                 style={{ width: `${profileCompletion.percentage}%` }}
+                                             ></div>
+                                         </div>
+                                     </div>
+
+                                     <form onSubmit={handlePerfilSubmit} className="space-y-8">
+
+                                 {/* Información Básica */}
                                 <div>
                                     <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                                         <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center">
@@ -726,9 +741,10 @@ export default function PerfilHijo({ hijo, saludFicha, nutricionFicha }) {
                                                 </div>
                                             )}
                                         </PrimaryButton>
-                                    </div>
-                                </form>
-                            )}
+                                     </div>
+                                     </form>
+                                 </div>
+                             )}
 
                             {activeTab === 'salud' && (
                                 <FichaSalud
