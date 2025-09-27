@@ -105,7 +105,7 @@ const ChildCard = ({ index, child, updateChild, removeChild, canRemove, complete
   return (
     <div className="mb-4 p-4 rounded-xl border border-gray-200 bg-gray-50/60">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-800">Hijo(a)</h3>
+        <h3 className="text-sm font-semibold text-gray-800">Alumno(a)</h3>
         <div className="flex items-center gap-2">
           <span
             className={classNames(
@@ -122,7 +122,7 @@ const ChildCard = ({ index, child, updateChild, removeChild, canRemove, complete
               type="button"
               onClick={removeChild}
               className="text-xs font-medium text-red-600 hover:text-red-700 focus:ring-2 focus:ring-red-500 rounded-lg px-2 py-1"
-              aria-label={`Eliminar hijo ${index + 1}`}
+              aria-label={`Eliminar alumno ${index + 1}`} // Eliminar alumno
             >
               Eliminar
             </button>
@@ -303,7 +303,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
         setUserCreationMode(true);
         setShowUserCreationForm(true);
         setIsExistingGuardian(false);
-        showToast('Este hijo necesita un apoderado responsable', 'info');
+        showToast('Este alumno necesita un apoderado responsable', 'info');
       } else if (child.user) {
         // Usuario existe y no es admin, cargar sus datos y marcar como existing
         setUserCreationMode(false);
@@ -373,7 +373,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
       phone: '',
       dni: ''
     });
-    showToast('Búsqueda reiniciada. Puedes seleccionar otro hijo.', 'info');
+    showToast('Búsqueda reiniciada. Puedes seleccionar otro alumno.', 'info');
   };
 
   // Función para usar los datos del usuario existente
@@ -447,7 +447,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
 
   // Efecto para filtrar hijos cuando cambia la búsqueda
   useEffect(() => {
-    console.log('=== HIJOS INSCRITOS DEBUG ===');
+    console.log('=== ALUMNOS INSCRITOS DEBUG ==='); // DEBUG
     console.log('hijosInscritos:', hijosInscritos);
     console.log('childSearchQuery:', childSearchQuery);
 
@@ -551,10 +551,10 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
     const children = data.children.map((c) => ({ ...c, errors: {} }));
     
     if (data.children.length === 0) {
-      localErrors.children = "Debe registrar al menos un hijo.";
+      localErrors.children = "Debe registrar al menos un alumno.";
       ok = false;
     } else if (data.children.length > 5) {
-      localErrors.children = "No puede registrar más de 5 hijos a la vez.";
+      localErrors.children = "No puede registrar más de 5 alumnos a la vez.";
       ok = false;
     }
 
@@ -566,13 +566,13 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
       
       // Validar nombre del hijo
       if (!c.name?.trim()) {
-        e.name = "El nombre del hijo es obligatorio.";
+        e.name = "El nombre del alumno es obligatorio.";
         ok = false;
       } else if (c.name.trim().length < 3) {
-        e.name = "El nombre del hijo debe tener al menos 3 caracteres.";
+        e.name = "El nombre del alumno debe tener al menos 3 caracteres.";
         ok = false;
       } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(c.name.trim())) {
-        e.name = "El nombre del hijo solo puede contener letras y espacios.";
+        e.name = "El nombre del alumno solo puede contener letras y espacios.";
         ok = false;
       }
 
@@ -607,7 +607,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
 
     // Validar que al menos un hijo esté completamente lleno
     if (data.children.length > 0 && !hasCompleteChild) {
-      localErrors.children = "Debe completar al menos los datos básicos de un hijo (nombre y documento).";
+      localErrors.children = "Debe completar al menos los datos básicos de un alumno (nombre y documento).";
       ok = false;
     }
 
@@ -615,7 +615,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
     const documentos = children.map(c => `${c.docType}-${c.docNumber?.trim()}`);
     const documentosUnicos = new Set(documentos);
     if (documentos.length !== documentosUnicos.size) {
-      localErrors.children = "No puede registrar hijos con el mismo tipo y número de documento.";
+      localErrors.children = "No puede registrar alumnos con el mismo tipo y número de documento.";
       ok = false;
     }
 
@@ -633,12 +633,12 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
     clearErrors();
 
      if (!selectedChildId) {
-       showWarning('hijo no seleccionado', 'Selecciona un hijo del listado para continuar.');
+       showWarning('alumno no seleccionado', 'Selecciona un alumno del listado para continuar.');
        return;
      }
 
     if (!selectedChild) {
-      showWarning('Error', 'Error al obtener los datos del hijo seleccionado.');
+      showWarning('Error', 'Error al obtener los datos del alumno seleccionado.');
       return;
     }
 
@@ -724,7 +724,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
     }
 
     if (selectedChild.user_id === 1 && !userCreationMode) {
-      showWarning('Apoderado requerido', 'Este hijo necesita que completes los datos del apoderado.');
+      showWarning('Apoderado requerido', 'Este alumno necesita que completes los datos del apoderado.');
       return;
     }
 
@@ -753,7 +753,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
         // Mostrar alerta de éxito
         showSuccess(
           '¡Apoderado asignado exitosamente!',
-          'El hijo ahora tiene un apoderado responsable y se han enviado las credenciales por WhatsApp.'
+          'El alumno ahora tiene un apoderado responsable y se han enviado las credenciales por WhatsApp.'
         );
 
         // Resetear formulario y estados
@@ -809,7 +809,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
         } else if (errors.parent_dni) {
           showError('Error en DNI', errors.parent_dni);
         } else if (errors.selected_child_id) {
-          showError('Error con el hijo seleccionado', errors.selected_child_id);
+          showError('Error con el alumno seleccionado', errors.selected_child_id);
         } else if (errors.general) {
           showError('Error general', errors.general);
         } else if (errors.capacity) {
@@ -954,10 +954,10 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                     </div>
                     <div className="flex-1">
                       <h3 className="text-xl font-bold text-green-900 mb-1">
-                        Hijos Inscritos en este Grupo
+                        Alumnos Inscritos en este Grupo
                       </h3>
                       <p className="text-sm text-green-700 mb-4">
-                        Selecciona el hijo para asignarle un apoderado responsable.
+                        Selecciona el alumno para asignarle un apoderado responsable.
                       </p>
                     </div>
                   </div>
@@ -965,7 +965,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                     <div className="space-y-4">
                       <div className="relative">
                         <label htmlFor="child_search" className="block text-sm font-medium text-gray-700 mb-2">
-                          Buscar y seleccionar hijo
+                          Buscar y seleccionar alumno
                         </label>
                         <div className="relative">
                           <input
@@ -1021,7 +1021,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                         {/* Mensaje cuando no hay resultados */}
                         {showChildDropdown && childSearchQuery.trim() && filteredChildren.length === 0 && (
                           <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-xl shadow-lg p-4 text-center text-gray-500">
-                            No se encontraron hijos con ese nombre o documento.
+                            No se encontraron alumnos con ese nombre o documento.
                           </div>
                         )}
                       </div>
@@ -1034,7 +1034,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                             <div>
-                              <p className="text-sm font-medium text-green-800">Hijo seleccionado:</p>
+                              <p className="text-sm font-medium text-green-800">Alumno seleccionado:</p>
                               <p className="text-sm text-green-700">
                                 {selectedChild.nombres} - {selectedChild.doc_tipo}: {selectedChild.doc_numero}
                               </p>
@@ -1047,7 +1047,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                    {!selectedChildId && (
                      <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                        <p className="text-sm text-yellow-800">
-                         ⚠️ Selecciona un hijo del listado para continuar con la asignación de apoderado
+                         ⚠️ Selecciona un alumno del listado para continuar con la asignación de apoderado
                        </p>
                      </div>
                    )}
@@ -1101,7 +1101,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                       <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      Este hijo ya está correctamente asignado a un apoderado responsable.
+                      Este alumno ya está correctamente asignado a un apoderado responsable.
                     </p>
                   </div>
                 </div>
@@ -1143,14 +1143,14 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                             <p className="text-gray-800">{existingUserData.user.phone}</p>
                           </div>
                           <div className="sm:col-span-2">
-                            <span className="font-medium text-gray-600">Hijos registrados:</span>
+                            <span className="font-medium text-gray-600">alumno registrados:</span>
                             <p className="text-gray-800">{existingUserData.children.length}</p>
                           </div>
                         </div>
                         
                         {existingUserData.children.length > 0 && (
                           <div className="mt-2 pt-2 border-t border-gray-200">
-                            <span className="font-medium text-gray-600">Hijos:</span>
+                            <span className="font-medium text-gray-600">Alumnos:</span>
                             <ul className="mt-1 space-y-1">
                               {existingUserData.children.map((child, index) => (
                                 <li key={index} className="text-gray-700">
@@ -1373,7 +1373,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                     Enviando…
                   </>
                  ) : !selectedChildId ? (
-                   <>Selecciona un hijo</>
+                   <>Selecciona un alumno</>
                  ) : !consentChecked ? (
                   <>Acepte los términos para continuar</>
                 ) : selectedChild && selectedChild.user_id === 1 && !userCreationMode ? (
