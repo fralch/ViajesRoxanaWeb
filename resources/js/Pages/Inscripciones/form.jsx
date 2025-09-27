@@ -349,6 +349,31 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
   const cancelChildSelection = () => {
     setShowConfirmModal(false);
     setPendingChildSelection(null);
+    // Limpiar datos del hijo seleccionado
+    setSelectedChildId(null);
+    setSelectedChild(null);
+    setUserCreationMode(false);
+    setShowUserCreationForm(false);
+    setIsExistingGuardian(false);
+    // Limpiar datos del formulario
+    setData({
+      ...data,
+      parent_name: "",
+      parent_email: "",
+      parent_phone: "",
+      parent_dni: "",
+    });
+    setDniValidated(false);
+    setExistingUserData(null);
+    setShowUserExistsWarning(false);
+    // Limpiar datos de nuevo usuario
+    setNewUserData({
+      name: '',
+      email: '',
+      phone: '',
+      dni: ''
+    });
+    showToast('Búsqueda reiniciada. Puedes seleccionar otro hijo.', 'info');
   };
 
   // Función para usar los datos del usuario existente
@@ -1395,7 +1420,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
           <button
             type="button"
             onClick={() => {
-              const phoneNumber = "51987654321"; // Reemplaza con el número de WhatsApp real
+              const phoneNumber = "51988868250"; // Reemplaza con el número de WhatsApp real
               const message = encodeURIComponent("Hola, necesito ayuda con el formulario de inscripción.");
               const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
               window.open(whatsappUrl, '_blank');
@@ -1417,63 +1442,31 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
         {/* Modal de confirmación de selección de hijo */}
         {showConfirmModal && pendingChildSelection && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-auto">
-              <div className="p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      Confirmar selección de hijo
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      ¿Es este el hijo correcto que deseas seleccionar?
-                    </p>
-                  </div>
-                </div>
+            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-auto">
+              <div className="p-8 text-center">
+                <h3 className="text-lg font-medium text-gray-900 mb-6">
+                  ¿Confirmas que eres apoderado de <span className="font-semibold">{pendingChildSelection.nombres}</span> - {pendingChildSelection.doc_numero}- <span className="font-semibold">{pendingChildSelection.subgrupo_nombre}</span>?
+                </h3>
 
-                <div className="bg-gray-50 rounded-xl p-4 mb-6">
-                  <div className="space-y-2">
-                    <div>
-                      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Nombre completo</span>
-                      <p className="text-base font-semibold text-gray-900">{pendingChildSelection.nombres}</p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Documento</span>
-                        <p className="text-sm text-gray-700">{pendingChildSelection.doc_tipo}</p>
-                      </div>
-                      <div>
-                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Número</span>
-                        <p className="text-sm text-gray-700">{pendingChildSelection.doc_numero}</p>
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Subgrupo</span>
-                      <p className="text-sm text-gray-700">{pendingChildSelection.subgrupo_nombre}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={cancelChildSelection}
-                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-1 transition-colors"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={confirmChildSelection}
-                    className="flex-1 px-4 py-3 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 transition-colors"
-                  >
-                    Sí, seleccionar
-                  </button>
-                </div>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                   <button
+                     type="button"
+                     onClick={confirmChildSelection}
+                     className="px-8 py-3 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1 transition-colors flex items-center justify-center gap-2"
+                   >
+                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                     </svg>
+                     Sí, es mi hijo
+                   </button>
+                   <button
+                     type="button"
+                     onClick={cancelChildSelection}
+                     className="px-8 py-3 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 transition-colors"
+                   >
+                     Volver a buscar
+                   </button>
+                 </div>
               </div>
             </div>
           </div>
