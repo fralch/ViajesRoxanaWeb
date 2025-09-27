@@ -867,9 +867,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                           Grupo: {grupo.nombre}
                         </p>
                       </div>
-                      <p className="text-xs text-blue-500 mt-1">
-                        Confirmación de inscripciones a nivel de grupo
-                      </p>
+                     
                     </div>
                   </div>
                 </div>
@@ -955,7 +953,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                     <div className="flex-1">
                      
                       <p className="text-sm text-green-700 mb-4">
-                        Selecciona al alumno que deseas registrar escribiendo su nombre o DNI en la barra de búsqueda.
+                        Selecciona el alumnno que deseas registrar
                       </p>
                     </div>
                   </div>
@@ -973,7 +971,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                             onChange={handleChildSearchChange}
                             onFocus={() => setShowChildDropdown(true)}
                             onBlur={() => setTimeout(() => setShowChildDropdown(false), 200)}
-                            placeholder="Buscar por nombre, documento o subgrupo..."
+                            placeholder="Ej. Pedro Pascal Suarez o DNI 71541225"
                             className={classNames(
                               inputBase,
                               "bg-white/80 backdrop-blur border-gray-300 focus:ring-green-500 focus:border-green-500 pr-10"

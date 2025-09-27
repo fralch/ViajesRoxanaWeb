@@ -540,8 +540,8 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                                     </h1>
                                     
                                     <p className="text-xl lg:text-2xl text-gray-700 leading-relaxed max-w-2xl">
-                                        Bienvenido a tu <span className="font-semibold text-red-600">portal de apoderado</span>. <br />
-                                        Aquí accedes a la información y al viaje de tu hijo(a).
+                                        Bienvenido al espacio familiar de <span className="font-semibold text-red-600">Viajes Roxana</span>. <br />
+                                      
                                     </p>
 
                                    
@@ -595,30 +595,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                                         </div>
                                         
                                     </div>
-                                     {/* Información detallada del grupo para múltiples grupos */}
-                                    {selectedChild && selectedChild.inscripciones && selectedChild.inscripciones.length > 1 && selectedGroup && (
-                                        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 shadow-lg border border-blue-200">
-                                            <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-                                                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 7a3 3 0 11-6 0 3 3 0 016 0zM6 7a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                                </svg>
-                                                Información del Grupo Seleccionado
-                                            </h3>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-semibold text-gray-700">Paquete:</span>
-                                                    <span className="text-gray-600">{selectedGroup.paquete?.nombre}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-semibold text-gray-700">Fechas:</span>
-                                                    <span className="text-gray-600">
-                                                        {formatDateSafe(selectedGroup.fecha_inicio)} - {formatDateSafe(selectedGroup.fecha_fin)}
-                                                    </span>
-                                                </div>
-                                              
-                                            </div>
-                                        </div>
-                                    )}
+                                   
                                 </div>
                             </div>
                             
@@ -666,9 +643,9 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                 {/* Services Grid mejorada */}
                 <section className="mx-auto max-w-7xl px-6 pb-20">
                     <div className="text-center mb-16">
-                        <h2 className="text-4xl font-bold text-gray-900 mb-4">Servicios de <span className="text-red-600">{selectedChild?.nombres || "hijo"}</span></h2>
+                        <h2 className="text-4xl font-bold text-gray-900 mb-4">Viaje de <span className="text-red-600">{selectedChild?.nombres || "hijo"}</span></h2>
                         <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                            Accede rápidamente a todas las funciones disponibles para hacer tu experiencia más cómoda
+                            Aquí encontrarás toda la información para acompañar su viaje.
                         </p>
                     </div>
 
