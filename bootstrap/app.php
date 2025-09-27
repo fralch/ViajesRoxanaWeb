@@ -23,9 +23,9 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Session\Middleware\StartSession::class,
         ]);
         
-        // Exclude API routes from CSRF verification
+        // Disable CSRF verification for all routes
         $middleware->validateCsrfTokens(except: [
-            'api/*',
+            '*',
         ]);
 
         //
