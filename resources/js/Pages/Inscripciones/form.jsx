@@ -659,9 +659,9 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
       axios.post(submitUrl, submitData)
         .then(() => {
           showSuccess('¡Inscripción confirmada!', 'La inscripción se ha confirmado y se ha enviado un mensaje al apoderado.');
-          // Reload the page to update the child list
+          // Redirect to login page after successful confirmation
           setTimeout(() => {
-            window.location.reload();
+            window.location.href = 'https://grupoviajesroxana.com/login';
           }, 2000);
         })
         .catch((error) => {
@@ -788,7 +788,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
 
         // Reload the page to update the child list
         setTimeout(() => {
-          window.location.reload();
+          window.location.href = 'https://grupoviajesroxana.com/login';
         }, 2000);
 
         setAssignmentProcessing(false);
