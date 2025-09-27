@@ -759,7 +759,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                                 <InputError message={errors.informacion_adicional} className="mt-2" />
                             </div>
 
-                            <div>
+                            {/* <div>
                                 <InputLabel htmlFor="archivo_adjunto" value="Subir archivo" className="text-gray-700 font-semibold flex items-center gap-1">
                                     Subir archivo
                                     <span className="text-green-600 text-xs">🔴</span>
@@ -779,7 +779,7 @@ export default function FichaSalud({ saludFicha, hijo, onSubmitSuccess }) {
                                 />
                                 <p className="mt-1 text-xs text-gray-500">Tipos de archivo permitidos: PDF, JPG, PNG</p>
                                 <InputError message={errors.archivo_adjunto} className="mt-2" />
-                            </div>
+                            </div> */}
                         </div>
                     </div>
                 )}
