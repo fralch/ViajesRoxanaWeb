@@ -367,58 +367,7 @@ export default function PerfilHijo({ hijo, saludFicha, nutricionFicha }) {
                         </div>
                     </div>
 
-                    {/* Profile Completion Progress */}
-                    <div className="mb-8">
-                        <h3 className="text-lg font-semibold text-gray-800 mb-3">Progreso del Perfil</h3>
-                        <div className="bg-white p-4 rounded-2xl shadow-md">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm font-medium text-gray-600">Perfil Completado</span>
-                                <span className="text-sm font-bold text-red-600">{`${Math.round(profileCompletion.percentage)}%`}</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2.5 mb-3">
-                                <div 
-                                    className="bg-gradient-to-r from-red-500 to-red-600 h-2.5 rounded-full transition-all duration-500"
-                                    style={{ width: `${profileCompletion.percentage}%` }}
-                                ></div>
-                            </div>
-                            
-                            {/* Progress Details */}
-                            <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                                <span>{profileCompletion.filledFields} de {profileCompletion.totalFields} campos completados</span>
-                                {profileCompletion.missingFields.length > 0 && (
-                                    <button
-                                        onClick={() => setShowMissingFields(!showMissingFields)}
-                                        className="flex items-center gap-1 text-red-600 hover:text-red-700 transition-colors"
-                                    >
-                                        <span>Ver campos faltantes</span>
-                                        <svg 
-                                            className={`w-3 h-3 transition-transform ${showMissingFields ? 'rotate-180' : ''}`} 
-                                            fill="none" 
-                                            stroke="currentColor" 
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                    </button>
-                                )}
-                            </div>
-
-                            {/* Missing Fields Collapsible Section */}
-                            {showMissingFields && profileCompletion.missingFields.length > 0 && (
-                                <div className="bg-red-50 border border-red-200 rounded-lg p-3 animate-fadeIn">
-                                    <h4 className="text-sm font-semibold text-red-800 mb-2">Campos por completar:</h4>
-                                    <ul className="space-y-1">
-                                        {profileCompletion.missingFields.map((field, index) => (
-                                            <li key={index} className="flex items-center gap-2 text-xs text-red-700">
-                                                <div className="w-1.5 h-1.5 bg-red-400 rounded-full"></div>
-                                                {field}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                  
 
                     {/* Main Content Card */}
                     <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
