@@ -91,8 +91,26 @@ export default function MisViajes({ auth, viajes = [] }) {
     const [filtroActivo, setFiltroActivo] = useState('todos');
 
     const filtrarViajes = (viajes, filtro) => {
-        if (filtro === 'todos') return viajes;
-        return viajes.filter(viaje => viaje.status === filtro);
+        let viajesFiltrados;
+        if (filtro === 'todos') {
+            viajesFiltrados = viajes;
+        } else {
+            viajesFiltrados = viajes.filter(viaje => viaje.status === filtro);
+        }
+        
+        // Ordenar por prioridad de estado: en_curso primero, luego proximo, finalmente finalizado
+        return viajesFiltrados.sort((a, b) => {
+            const statusPriority = {
+                'en_curso': 1,
+                'proximo': 2,
+                'finalizado': 3
+            };
+            
+            const priorityA = statusPriority[a.status] || 4;
+            const priorityB = statusPriority[b.status] || 4;
+            
+            return priorityA - priorityB;
+        });
     };
 
     const viajesFiltrados = filtrarViajes(viajes, filtroActivo);
