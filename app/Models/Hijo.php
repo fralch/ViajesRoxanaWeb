@@ -65,6 +65,16 @@ class Hijo extends Model
         return $this->hasMany(Equipaje::class);
     }
 
+    public function geolocalizaciones()
+    {
+        return $this->hasMany(Geolocalizacion::class);
+    }
+
+    public function trazabilidades()
+    {
+        return $this->hasMany(Trazabilidad::class);
+    }
+
     protected static function booted()
     {
         static::deleting(function ($hijo) {
@@ -72,6 +82,8 @@ class Hijo extends Model
             $hijo->saludFichas()->delete();
             $hijo->nutricionFichas()->delete();
             $hijo->equipajes()->delete();
+            $hijo->geolocalizaciones()->delete();
+            $hijo->trazabilidades()->delete();
         });
     }
 
