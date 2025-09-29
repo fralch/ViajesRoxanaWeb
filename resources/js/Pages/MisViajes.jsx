@@ -265,21 +265,12 @@ const TripCard = ({ trip, onOpenModal }) => {
                 <div className="flex space-x-2">
                     <button 
                         onClick={() => onOpenModal(trip)}
-                        className={`flex-1 py-2.5 px-4 rounded-lg transition-all duration-200 text-sm font-medium ${
-                            trip.status === 'en_curso' 
-                                ? 'bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 cursor-pointer shadow-md hover:shadow-lg transform hover:scale-105' 
-                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        }`}
-                        disabled={trip.status !== 'en_curso'}
+                        className="flex-1 py-2.5 px-4 rounded-lg transition-all duration-200 text-sm font-medium bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 cursor-pointer shadow-md hover:shadow-lg transform hover:scale-105"
                     >
-                        {trip.status === 'en_curso' ? (
-                            <span className="flex items-center justify-center space-x-2">
-                                <DocumentIcon className="w-4 h-4" />
-                                <span>Descargar Documentos</span>
-                            </span>
-                        ) : (
-                            'Documentos no disponibles'
-                        )}
+                        <span className="flex items-center justify-center space-x-2">
+                            <DocumentIcon className="w-4 h-4" />
+                            <span>Ver Documentos</span>
+                        </span>
                     </button>
                 </div>
             </div>
