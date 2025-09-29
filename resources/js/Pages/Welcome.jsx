@@ -679,7 +679,9 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                             title="Mis Viajes"
                             description="Consulta itinerarios, horarios, destinos y toda la información de tus viajes."
                             color="blue"
-                            status="disabled"
+                            status="enabled"
+                            link="/mis-viajes"
+                            badge="Nuevo"
                         />
 
                         <ServiceCard

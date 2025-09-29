@@ -16,6 +16,7 @@ use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\PerfilHijoController;
 use App\Http\Controllers\SendMessageController;
 use App\Http\Controllers\EquipajeController;
+use App\Http\Controllers\MisViajesController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
@@ -127,6 +128,11 @@ Route::middleware('auth')->group(function () {
     // Ruta específica para equipaje por hijo
     Route::get('/equipaje/hijo/{hijo}', [EquipajeController::class, 'index'])->name('equipaje.index.hijo');
     Route::post('/equipaje/hijo/{hijo}', [EquipajeController::class, 'store'])->name('equipaje.store.hijo');
+    
+    // Rutas para Mis Viajes
+    Route::get('/mis-viajes', [MisViajesController::class, 'index'])->name('mis-viajes.index');
+    Route::get('/mis-viajes/{grupo}', [MisViajesController::class, 'show'])->name('mis-viajes.show');
+    
     Route::resource('paquetes', PaqueteController::class);
     Route::resource('grupos', GrupoController::class);
     Route::resource('subgrupos', SubgrupoController::class);
