@@ -9,24 +9,24 @@ const DocumentosModal = ({ isOpen, onClose, trip }) => {
 
     const documentos = [
         {
-            titulo: "Indicaciones",
+            titulo: "Equipaje Latam",
             tipo: "PDF",
-            disponible: false
+            url: "https://drive.google.com/file/d/1EKL9hhpe7YXyo1036UzfAQqaTRDD4o9r/view?usp=sharing"
         },
         {
-            titulo: "Reglamento Estudiante",
+            titulo: "Hospitales Cuzco",
             tipo: "PDF",
-            disponible: false
+            url: "https://drive.google.com/file/d/1dv7n-4MDc-fnB6e3rvdj4tzdPMh0TTSu/view?usp=sharing"
         },
         {
-            titulo: "Ropa de Viaje",
+            titulo: "Guia de ropa Cuzco",
             tipo: "PDF",
-            disponible: false
+            url: "https://drive.google.com/file/d/1ak3hG58Ro3Frxxx7-0Mn6L_bENq-8Dss/view?usp=sharing"
         },
         {
             titulo: "Permiso Notarial",
             tipo: "PDF",
-            disponible: false
+            url: ""  // URL vacía - no se mostrará
         }
     ];
 
@@ -34,116 +34,119 @@ const DocumentosModal = ({ isOpen, onClose, trip }) => {
         {
             titulo: "Voucher",
             tipo: "voucher",
-            disponible: false
+            url: ""
         },
         {
             titulo: "Lista de Clínicas Cercanas al Hotel",
             tipo: "clinicas",
-            disponible: false
+            url: ""  // URL vacía - no se mostrará
         }
     ];
 
+    // Filtrar documentos disponibles
+    const documentosDisponibles = documentos.filter(doc => doc.url && doc.url.trim() !== '');
+    const asistenciaMedicaDisponible = asistenciaMedica.filter(item => item.url && item.url.trim() !== '');
+
+    // Función para determinar las clases del grid según la cantidad de elementos
+    const getGridClasses = (count) => {
+        if (count === 1) return "grid grid-cols-1 max-w-sm mx-auto gap-6";
+        if (count === 2) return "grid grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto gap-6";
+        if (count === 3) return "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl mx-auto gap-6";
+        return "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6";
+    };
+
+    // Función para determinar el padding del contenedor según la cantidad de elementos
+    const getContainerPadding = (documentosCount, asistenciaCount) => {
+        const totalItems = documentosCount + asistenciaCount;
+        if (totalItems <= 2) return "py-8 px-6";
+        if (totalItems <= 4) return "py-6 px-6";
+        return "py-6 px-4";
+    };
+
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+            <div className={`bg-white rounded-lg shadow-lg w-full max-w-xs sm:max-w-2xl lg:max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto ${getContainerPadding(documentosDisponibles.length, asistenciaMedicaDisponible.length)}`}>
                 {/* Header del Modal */}
-                <div className="flex justify-between items-center p-6 border-b">
-                    <h2 className="text-2xl font-bold text-gray-900">
+                <div className="flex justify-between items-center pb-4 sm:pb-6 border-b sticky top-0 bg-white z-10">
+                    <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
                         Documentos del Viaje - {trip?.paquete?.nombre}
                     </h2>
                     <button
                         onClick={onClose}
-                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                        className="text-gray-400 hover:text-gray-600 transition-colors p-1"
                     >
-                        <XMarkIcon className="w-6 h-6" />
+                        <XMarkIcon className="w-5 h-5 sm:w-6 sm:h-6" />
                     </button>
                 </div>
 
-                <div className="p-6">
-                    {/* Sección Documentos del viaje */}
-                    <div className="mb-8">
-                        <h3 className="text-xl font-bold text-gray-900 mb-6">Documentos del viaje</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            {documentos.map((doc, index) => (
-                                <div key={index} className="border border-gray-200 rounded-lg p-4 text-center">
-                                    <div className="mb-3">
-                                        <div className="mx-auto w-16 h-20 bg-gray-100 rounded border-2 border-gray-300 flex flex-col items-center justify-center">
-                                            <DocumentIcon className="w-8 h-8 text-red-500 mb-1" />
-                                            <span className="text-xs font-bold text-red-500 bg-red-100 px-2 py-1 rounded">
-                                                {doc.tipo}
-                                            </span>
+                {/* Contenido del Modal */}
+                <div className="space-y-6 sm:space-y-8 pt-4 sm:pt-6">
+                    {/* Documentos del viaje */}
+                    {documentosDisponibles.length > 0 && (
+                        <div>
+                            <h3 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mb-4 sm:mb-6">Documentos del viaje</h3>
+                            <div className={getGridClasses(documentosDisponibles.length)}>
+                                {documentosDisponibles.map((doc, index) => (
+                                    <div key={index} className="border border-gray-200 rounded-lg p-3 sm:p-4 text-center hover:shadow-md transition-all duration-200 hover:border-gray-300">
+                                        <div className="mb-3">
+                                            <div className="mx-auto w-12 h-16 sm:w-16 sm:h-20 bg-gray-100 rounded border-2 border-gray-300 flex flex-col items-center justify-center">
+                                                <DocumentIcon className="w-6 h-6 sm:w-8 sm:h-8 text-red-500 mb-1" />
+                                                <span className="text-xs font-bold text-red-500 bg-red-100 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
+                                                    {doc.tipo}
+                                                </span>
+                                            </div>
                                         </div>
+                                        <h4 className="font-medium text-gray-900 text-xs sm:text-sm mb-3 sm:mb-4 leading-tight px-1">{doc.titulo}</h4>
+                                        <a 
+                                            href={doc.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="w-full py-1.5 sm:py-2 px-2 sm:px-3 text-xs sm:text-sm border border-gray-300 rounded hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 inline-block text-center font-medium"
+                                        >
+                                            Ver
+                                        </a>
                                     </div>
-                                    <h4 className="font-medium text-gray-900 text-sm mb-2">{doc.titulo}</h4>
-                                    <div className="mb-3">
-                                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                                            No Disponible
-                                        </span>
-                                    </div>
-                                    <button 
-                                        className="w-full py-2 px-3 text-sm border border-gray-300 rounded hover:bg-gray-50 transition-colors"
-                                        disabled={!doc.disponible}
-                                    >
-                                        Ver
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Sección Tarjeta de Asistencia Médica */}
-                    <div>
-                        <h3 className="text-xl font-bold text-gray-900 mb-6">Tarjeta de Asistencia Médica del viaje</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Voucher */}
-                            <div className="border border-gray-200 rounded-lg p-4 text-center">
-                                <div className="mb-3">
-                                    <div className="mx-auto w-16 h-20 bg-gray-100 rounded border-2 border-gray-300 flex flex-col items-center justify-center">
-                                        <div className="w-8 h-8 bg-green-100 rounded flex items-center justify-center mb-1">
-                                            <span className="text-green-600 font-bold text-lg">$</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <h4 className="font-medium text-gray-900 text-sm mb-2">Voucher</h4>
-                                <div className="mb-3">
-                                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                                        No Disponible
-                                    </span>
-                                </div>
-                                <button 
-                                    className="w-full py-2 px-3 text-sm border border-gray-300 rounded hover:bg-gray-50 transition-colors"
-                                    disabled={!asistenciaMedica[0].disponible}
-                                >
-                                    Ver
-                                </button>
-                            </div>
-
-                            {/* Lista de Clínicas */}
-                            <div className="border border-gray-200 rounded-lg p-4 text-center">
-                                <div className="mb-3">
-                                    <div className="mx-auto w-16 h-20 bg-gray-100 rounded border-2 border-gray-300 flex flex-col items-center justify-center">
-                                        <div className="w-8 h-8 bg-red-100 rounded flex items-center justify-center mb-1">
-                                            <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V8zm0 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2z" clipRule="evenodd" />
-                                            </svg>
-                                        </div>
-                                    </div>
-                                </div>
-                                <h4 className="font-medium text-gray-900 text-sm mb-2">Lista de Clínicas Cercanas al Hotel</h4>
-                                <div className="mb-3">
-                                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                                        No Disponible
-                                    </span>
-                                </div>
-                                <button 
-                                    className="w-full py-2 px-3 text-sm border border-gray-300 rounded hover:bg-gray-50 transition-colors"
-                                    disabled={!asistenciaMedica[1].disponible}
-                                >
-                                    Ver
-                                </button>
+                                ))}
                             </div>
                         </div>
-                    </div>
+                    )}
+
+                    {/* Tarjeta de Asistencia Médica del viaje */}
+                    {asistenciaMedicaDisponible.length > 0 && (
+                        <div>
+                            <h3 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mb-4 sm:mb-6">Tarjeta de Asistencia Médica del viaje</h3>
+                            <div className={getGridClasses(asistenciaMedicaDisponible.length)}>
+                                {asistenciaMedicaDisponible.map((item, index) => (
+                                    <div key={index} className="border border-gray-200 rounded-lg p-3 sm:p-4 text-center hover:shadow-md transition-all duration-200 hover:border-gray-300">
+                                        <div className="mb-3">
+                                            <div className="mx-auto w-12 h-16 sm:w-16 sm:h-20 bg-gray-100 rounded border-2 border-gray-300 flex flex-col items-center justify-center">
+                                                {item.tipo === 'voucher' ? (
+                                                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-green-100 rounded flex items-center justify-center mb-1">
+                                                        <span className="text-green-600 font-bold text-sm sm:text-lg">$</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-red-100 rounded flex items-center justify-center mb-1">
+                                                        <svg className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V8zm0 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2z" clipRule="evenodd" />
+                                                        </svg>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <h4 className="font-medium text-gray-900 text-xs sm:text-sm mb-3 sm:mb-4 leading-tight px-1">{item.titulo}</h4>
+                                        <a 
+                                            href={item.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="w-full py-1.5 sm:py-2 px-2 sm:px-3 text-xs sm:text-sm border border-gray-300 rounded hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-all duration-200 inline-block text-center font-medium"
+                                        >
+                                            Ver
+                                        </a>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
