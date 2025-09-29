@@ -229,7 +229,7 @@ export default function FichaNutricional({ nutricionFicha, hijo, onSubmitSuccess
                                 <textarea
                                     id="alimento_alergia"
                                     className="mt-2 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-orange-500 focus:border-orange-500"
-                                    rows="3"
+                                    rows="1"
                                     value={data.alimento_alergia}
                                     onChange={(e) => setData('alimento_alergia', e.target.value)}
                                     placeholder="Ej. Maní, leche, mariscos"
@@ -242,7 +242,7 @@ export default function FichaNutricional({ nutricionFicha, hijo, onSubmitSuccess
                                 <textarea
                                     id="reaccion_alergia"
                                     className="mt-2 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-orange-500 focus:border-orange-500"
-                                    rows="3"
+                                    rows="1"
                                     value={data.reaccion_alergia}
                                     onChange={(e) => setData('reaccion_alergia', e.target.value)}
                                     placeholder="Ej. Dificultad respiratoria, sarpullido"
@@ -268,7 +268,7 @@ export default function FichaNutricional({ nutricionFicha, hijo, onSubmitSuccess
                             <textarea
                                 id="alimento_evitar"
                                 className="mt-2 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-orange-500 focus:border-orange-500"
-                                rows="3"
+                                rows="1"
                                 value={data.alimento_evitar}
                                 onChange={(e) => setData('alimento_evitar', e.target.value)}
                                 placeholder="Ej. No come cerdo, evita embutidos"
@@ -293,7 +293,7 @@ export default function FichaNutricional({ nutricionFicha, hijo, onSubmitSuccess
                             <textarea
                                 id="especificar_dieta"
                                 className="mt-2 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-orange-500 focus:border-orange-500"
-                                rows="3"
+                                rows="1"
                                 value={data.especificar_dieta}
                                 onChange={(e) => setData('especificar_dieta', e.target.value)}
                                 placeholder="Ej. Vegetariana, baja en sodio, sin azúcar"
