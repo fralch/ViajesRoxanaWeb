@@ -32,7 +32,12 @@ const TripCard = ({ trip }) => {
 
     return (
         <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
-            <div className="relative h-48 bg-gradient-to-r from-blue-500 to-purple-600">
+            <div className="relative h-48 overflow-hidden">
+                <img 
+                    src="/imgs/viajebaner.jpg"
+                    alt={`Imagen de ${trip.paquete.nombre} - ${trip.paquete.destino}`}
+                    className="w-full h-full object-cover"
+                />
                 <div className="absolute inset-0 bg-black bg-opacity-20"></div>
                 <div className="absolute top-4 right-4">
                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(trip.status)}`}>
@@ -40,8 +45,8 @@ const TripCard = ({ trip }) => {
                     </span>
                 </div>
                 <div className="absolute bottom-4 left-4 text-white">
-                    <h3 className="text-xl font-bold">{trip.paquete.nombre}</h3>
-                    <p className="text-sm opacity-90 flex items-center">
+                    <h3 className="text-xl font-bold drop-shadow-lg">{trip.paquete.nombre}</h3>
+                    <p className="text-sm opacity-90 flex items-center drop-shadow-lg">
                         <MapPinIcon className="w-4 h-4 mr-1" />
                         {trip.paquete.destino}
                     </p>
