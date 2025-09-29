@@ -49,61 +49,70 @@ const DocumentosModal = ({ isOpen, onClose, trip }) => {
 
     // Función para determinar las clases del grid según la cantidad de elementos
     const getGridClasses = (count) => {
-        if (count === 1) return "grid grid-cols-1 max-w-sm mx-auto gap-6";
-        if (count === 2) return "grid grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto gap-6";
-        if (count === 3) return "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl mx-auto gap-6";
-        return "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6";
-    };
-
-    // Función para determinar el padding del contenedor según la cantidad de elementos
-    const getContainerPadding = (documentosCount, asistenciaCount) => {
-        const totalItems = documentosCount + asistenciaCount;
-        if (totalItems <= 2) return "py-8 px-6";
-        if (totalItems <= 4) return "py-6 px-6";
-        return "py-6 px-4";
+        if (count === 1) return "grid grid-cols-1 max-w-sm mx-auto gap-4";
+        if (count === 2) return "grid grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto gap-4";
+        if (count === 3) return "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl mx-auto gap-4";
+        return "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4";
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-            <div className={`bg-white rounded-lg shadow-lg w-full max-w-xs sm:max-w-2xl lg:max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto ${getContainerPadding(documentosDisponibles.length, asistenciaMedicaDisponible.length)}`}>
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-2 sm:p-4 backdrop-blur-sm transition-opacity duration-300">
+            <div 
+                className="bg-white rounded-xl shadow-2xl w-full max-w-xs sm:max-w-2xl lg:max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto transform transition-all duration-300 scale-100"
+                onClick={(e) => e.stopPropagation()}
+            >
                 {/* Header del Modal */}
-                <div className="flex justify-between items-center pb-4 sm:pb-6 border-b sticky top-0 bg-white z-10">
-                    <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
-                        Documentos del Viaje - {trip?.paquete?.nombre}
-                    </h2>
+                <div className="flex justify-between items-center p-4 sm:p-6 border-b border-gray-100 sticky top-0 bg-white z-10">
+                    <div>
+                        <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
+                            Documentos del Viaje
+                        </h2>
+                        <p className="text-sm text-gray-600 mt-1">{trip?.paquete?.nombre}</p>
+                    </div>
                     <button
                         onClick={onClose}
-                        className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+                        className="text-gray-400 hover:text-gray-600 transition-all duration-200 p-2 hover:bg-gray-100 rounded-lg group"
                     >
-                        <XMarkIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                        <XMarkIcon className="w-5 h-5 sm:w-6 sm:h-6 group-hover:scale-110 transition-transform" />
                     </button>
                 </div>
 
                 {/* Contenido del Modal */}
-                <div className="space-y-6 sm:space-y-8 pt-4 sm:pt-6">
+                <div className="p-4 sm:p-6 space-y-8">
                     {/* Documentos del viaje */}
                     {documentosDisponibles.length > 0 && (
-                        <div>
-                            <h3 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mb-4 sm:mb-6">Documentos del viaje</h3>
+                        <div className="space-y-4">
+                            <div className="flex items-center space-x-2">
+                                <div className="w-1 h-6 bg-red-500 rounded-full"></div>
+                                <h3 className="text-lg sm:text-xl font-bold text-gray-900">Documentos del viaje</h3>
+                            </div>
                             <div className={getGridClasses(documentosDisponibles.length)}>
                                 {documentosDisponibles.map((doc, index) => (
-                                    <div key={index} className="border border-gray-200 rounded-lg p-3 sm:p-4 text-center hover:shadow-md transition-all duration-200 hover:border-gray-300">
-                                        <div className="mb-3">
-                                            <div className="mx-auto w-12 h-16 sm:w-16 sm:h-20 bg-gray-100 rounded border-2 border-gray-300 flex flex-col items-center justify-center">
-                                                <DocumentIcon className="w-6 h-6 sm:w-8 sm:h-8 text-red-500 mb-1" />
-                                                <span className="text-xs font-bold text-red-500 bg-red-100 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
+                                    <div 
+                                        key={index} 
+                                        className="group relative bg-white border border-gray-200 rounded-xl p-4 text-center hover:shadow-lg transition-all duration-300 hover:border-red-200 hover:translate-y-[-2px]"
+                                    >
+                                        <div className="mb-3 relative">
+                                            <div className="mx-auto w-14 h-18 sm:w-16 sm:h-20 bg-gradient-to-br from-red-50 to-white rounded-lg border-2 border-red-100 flex flex-col items-center justify-center group-hover:border-red-200 transition-colors duration-300">
+                                                <DocumentIcon className="w-7 h-7 sm:w-8 sm:h-8 text-red-500 mb-2 group-hover:scale-110 transition-transform duration-300" />
+                                                <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-full border border-red-100">
                                                     {doc.tipo}
                                                 </span>
                                             </div>
                                         </div>
-                                        <h4 className="font-medium text-gray-900 text-xs sm:text-sm mb-3 sm:mb-4 leading-tight px-1">{doc.titulo}</h4>
+                                        <h4 className="font-semibold text-gray-900 text-sm mb-4 leading-tight px-2 group-hover:text-gray-700 transition-colors duration-200">
+                                            {doc.titulo}
+                                        </h4>
                                         <a 
                                             href={doc.url}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="w-full py-1.5 sm:py-2 px-2 sm:px-3 text-xs sm:text-sm border border-gray-300 rounded hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 inline-block text-center font-medium"
+                                            className="w-full py-2.5 px-4 text-sm font-medium bg-white text-red-600 border-2 border-red-200 rounded-lg hover:bg-red-50 hover:border-red-300 hover:text-red-700 transition-all duration-200 inline-flex items-center justify-center space-x-2 group/btn"
                                         >
-                                            Ver
+                                            <span>Ver documento</span>
+                                            <svg className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                            </svg>
                                         </a>
                                     </div>
                                 ))}
@@ -113,40 +122,73 @@ const DocumentosModal = ({ isOpen, onClose, trip }) => {
 
                     {/* Tarjeta de Asistencia Médica del viaje */}
                     {asistenciaMedicaDisponible.length > 0 && (
-                        <div>
-                            <h3 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mb-4 sm:mb-6">Tarjeta de Asistencia Médica del viaje</h3>
+                        <div className="space-y-4">
+                            <div className="flex items-center space-x-2">
+                                <div className="w-1 h-6 bg-green-500 rounded-full"></div>
+                                <h3 className="text-lg sm:text-xl font-bold text-gray-900">Asistencia Médica</h3>
+                            </div>
                             <div className={getGridClasses(asistenciaMedicaDisponible.length)}>
                                 {asistenciaMedicaDisponible.map((item, index) => (
-                                    <div key={index} className="border border-gray-200 rounded-lg p-3 sm:p-4 text-center hover:shadow-md transition-all duration-200 hover:border-gray-300">
-                                        <div className="mb-3">
-                                            <div className="mx-auto w-12 h-16 sm:w-16 sm:h-20 bg-gray-100 rounded border-2 border-gray-300 flex flex-col items-center justify-center">
+                                    <div 
+                                        key={index} 
+                                        className="group relative bg-white border border-gray-200 rounded-xl p-4 text-center hover:shadow-lg transition-all duration-300 hover:border-green-200 hover:translate-y-[-2px]"
+                                    >
+                                        <div className="mb-3 relative">
+                                            <div className="mx-auto w-14 h-18 sm:w-16 sm:h-20 bg-gradient-to-br from-green-50 to-white rounded-lg border-2 border-green-100 flex flex-col items-center justify-center group-hover:border-green-200 transition-colors duration-300">
                                                 {item.tipo === 'voucher' ? (
-                                                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-green-100 rounded flex items-center justify-center mb-1">
-                                                        <span className="text-green-600 font-bold text-sm sm:text-lg">$</span>
+                                                    <div className="w-8 h-8 sm:w-9 sm:h-9 bg-green-100 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300">
+                                                        <span className="text-green-600 font-bold text-base">$</span>
                                                     </div>
                                                 ) : (
-                                                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-red-100 rounded flex items-center justify-center mb-1">
-                                                        <svg className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                                    <div className="w-8 h-8 sm:w-9 sm:h-9 bg-green-100 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300">
+                                                        <svg className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                                                             <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V8zm0 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2z" clipRule="evenodd" />
                                                         </svg>
                                                     </div>
                                                 )}
+                                                <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full border border-green-100">
+                                                    {item.tipo}
+                                                </span>
                                             </div>
                                         </div>
-                                        <h4 className="font-medium text-gray-900 text-xs sm:text-sm mb-3 sm:mb-4 leading-tight px-1">{item.titulo}</h4>
+                                        <h4 className="font-semibold text-gray-900 text-sm mb-4 leading-tight px-2 group-hover:text-gray-700 transition-colors duration-200">
+                                            {item.titulo}
+                                        </h4>
                                         <a 
                                             href={item.url}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="w-full py-1.5 sm:py-2 px-2 sm:px-3 text-xs sm:text-sm border border-gray-300 rounded hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-all duration-200 inline-block text-center font-medium"
+                                            className="w-full py-2.5 px-4 text-sm font-medium bg-white text-green-600 border-2 border-green-200 rounded-lg hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-all duration-200 inline-flex items-center justify-center space-x-2 group/btn"
                                         >
-                                            Ver
+                                            <span>Ver documento</span>
+                                            <svg className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                            </svg>
                                         </a>
                                     </div>
                                 ))}
                             </div>
                         </div>
                     )}
+
+                    {/* Mensaje informativo */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
+                        <div className="flex items-start space-x-3">
+                            <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center mt-0.5 flex-shrink-0">
+                                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <div>
+                                <p className="text-sm text-blue-800 font-medium">
+                                    Todos los documentos están disponibles para su descarga
+                                </p>
+                                <p className="text-xs text-blue-600 mt-1">
+                                    Haz clic en "Ver documento" para acceder al PDF correspondiente
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -181,12 +223,12 @@ const TripCard = ({ trip, onOpenModal }) => {
     };
 
     return (
-        <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
+        <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 hover:translate-y-[-2px]">
             <div className="relative h-48 overflow-hidden">
                 <img 
                     src="/imgs/viajebaner.jpg"
                     alt={`Imagen de ${trip.paquete.nombre} - ${trip.paquete.destino}`}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-black bg-opacity-20"></div>
                 <div className="absolute top-4 right-4">
@@ -226,14 +268,21 @@ const TripCard = ({ trip, onOpenModal }) => {
                 <div className="flex space-x-2">
                     <button 
                         onClick={() => onOpenModal(trip)}
-                        className={`flex-1 py-2 px-4 rounded-md transition-colors duration-200 text-sm font-medium ${
+                        className={`flex-1 py-2.5 px-4 rounded-lg transition-all duration-200 text-sm font-medium ${
                             trip.status === 'en_curso' 
-                                ? 'bg-red-500 text-white hover:bg-red-600 cursor-pointer' 
+                                ? 'bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 cursor-pointer shadow-md hover:shadow-lg transform hover:scale-105' 
                                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         }`}
                         disabled={trip.status !== 'en_curso'}
                     >
-                        Descargar Info
+                        {trip.status === 'en_curso' ? (
+                            <span className="flex items-center justify-center space-x-2">
+                                <DocumentIcon className="w-4 h-4" />
+                                <span>Descargar Documentos</span>
+                            </span>
+                        ) : (
+                            'Documentos no disponibles'
+                        )}
                     </button>
                 </div>
             </div>
@@ -281,8 +330,6 @@ export default function MisViajes({ auth, viajes = [] }) {
         setSelectedTrip(null);
     };
 
-
-
     return (
         <AuthenticatedLayout
             user={auth.user}
@@ -308,9 +355,9 @@ export default function MisViajes({ auth, viajes = [] }) {
                                 <div className="flex flex-wrap gap-2">
                                     <button
                                         onClick={() => setFiltroActivo('todos')}
-                                        className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
+                                        className={`px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200 ${
                                             filtroActivo === 'todos'
-                                                ? 'bg-blue-600 text-white'
+                                                ? 'bg-blue-600 text-white shadow-md'
                                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                         }`}
                                     >
@@ -318,9 +365,9 @@ export default function MisViajes({ auth, viajes = [] }) {
                                     </button>
                                     <button
                                         onClick={() => setFiltroActivo('en_curso')}
-                                        className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
+                                        className={`px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200 ${
                                             filtroActivo === 'en_curso'
-                                                ? 'bg-green-600 text-white'
+                                                ? 'bg-green-600 text-white shadow-md'
                                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                         }`}
                                     >
@@ -328,9 +375,9 @@ export default function MisViajes({ auth, viajes = [] }) {
                                     </button>
                                     <button
                                         onClick={() => setFiltroActivo('proximo')}
-                                        className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
+                                        className={`px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200 ${
                                             filtroActivo === 'proximo'
-                                                ? 'bg-blue-600 text-white'
+                                                ? 'bg-blue-600 text-white shadow-md'
                                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                         }`}
                                     >
