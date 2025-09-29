@@ -1208,7 +1208,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                   <div className="grid grid-cols-1 gap-4">
                     <TextField
                       id="new_parent_name"
-                      label="Nombre completo del apoderado"
+                      label="Nombres y apellidos del apoderado"
                       value={newUserData.name}
                       onChange={(e) => {
                         const value = e.target.value;
