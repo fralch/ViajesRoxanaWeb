@@ -78,7 +78,14 @@ const TripCard = ({ trip }) => {
                 </p>
                 
                 <div className="flex space-x-2">
-                    <button className="flex-1 bg-red-500 text-white py-2 px-4 rounded-md hover:bg-gray-200 transition-colors duration-200 text-sm font-medium">
+                    <button 
+                        className={`flex-1 py-2 px-4 rounded-md transition-colors duration-200 text-sm font-medium ${
+                            trip.status === 'en_curso' 
+                                ? 'bg-red-500 text-white hover:bg-red-600 cursor-pointer' 
+                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
+                        disabled={trip.status !== 'en_curso'}
+                    >
                         Descargar Info
                     </button>
                 </div>
