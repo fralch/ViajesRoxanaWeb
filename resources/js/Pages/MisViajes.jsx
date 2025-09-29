@@ -78,13 +78,7 @@ const TripCard = ({ trip }) => {
                 </p>
                 
                 <div className="flex space-x-2">
-                    <Link
-                        href={route('mis-viajes.show', trip.id)}
-                        className="flex-1 bg-blue-600 text-white text-center py-2 px-4 rounded-md hover:bg-blue-700 transition-colors duration-200 text-sm font-medium"
-                    >
-                        Ver Detalles
-                    </Link>
-                    <button className="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-200 transition-colors duration-200 text-sm font-medium">
+                    <button className="flex-1 bg-red-500 text-white py-2 px-4 rounded-md hover:bg-gray-200 transition-colors duration-200 text-sm font-medium">
                         Descargar Info
                     </button>
                 </div>
@@ -121,7 +115,7 @@ export default function MisViajes({ auth, viajes = [] }) {
                                 <p className="text-gray-600 max-w-2xl">
                                     En esta área puedes descargar todos los documentos para tu próximo viaje. Además, 
                                     asegúrate de actualizar tu agenda con los consejos prácticos que hemos preparado 
-                                    para ti. <span className="text-orange-600 font-medium">¡Explora y prepárate para una experiencia de viaje inolvidable!</span>
+                                    para ti. <span className="text-red-600 font-medium">¡Explora y prepárate para una experiencia de viaje inolvidable!</span>
                                 </p>
                             </div>
 
