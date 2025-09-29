@@ -12,17 +12,8 @@ class MisViajesController extends Controller
 {
     public function index()
     {
-        // Obtener los IDs de los hijos del usuario autenticado
-        $hijosIds = auth()->user()->hijos()->pluck('id');
-
-        // Obtener los IDs de grupos únicos donde están inscritos los hijos
-        $gruposIds = \App\Models\Inscripcion::whereIn('hijo_id', $hijosIds)
-            ->pluck('grupo_id')
-            ->unique();
-
-        // Obtener solo los grupos donde están inscritos los hijos del usuario
+        // Obtener grupos activos con sus paquetes relacionados
         $grupos = Grupo::with('paquete')
-            ->whereIn('id', $gruposIds)
             ->where('activo', true)
             ->orderBy('fecha_inicio', 'asc')
             ->get();
