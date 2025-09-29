@@ -82,10 +82,7 @@ const DocumentosModal = ({ isOpen, onClose, trip }) => {
                     {/* Documentos del viaje */}
                     {documentosDisponibles.length > 0 && (
                         <div className="space-y-4">
-                            <div className="flex items-center space-x-2">
-                                <div className="w-1 h-6 bg-red-500 rounded-full"></div>
-                                <h3 className="text-lg sm:text-xl font-bold text-gray-900">Documentos del viaje</h3>
-                            </div>
+                           
                             <div className={getGridClasses(documentosDisponibles.length)}>
                                 {documentosDisponibles.map((doc, index) => (
                                     <div 
