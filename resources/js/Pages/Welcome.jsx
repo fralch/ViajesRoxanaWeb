@@ -202,7 +202,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion, user_with_ch
                     <div className="flex flex-col items-center text-center space-y-6">
                         <div className={`w-20 h-20 bg-gradient-to-br ${colorClasses[color]} rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110`}>
                             {typeof icon === 'string' ? 
-                                <img src={icon} alt={title} className="w-12 h-12 object-contain filter brightness-0 invert" /> : 
+                                <img src={icon} alt={title} className="w-12 h-12 object-contain" /> : 
                                 icon
                             }
                         </div>
