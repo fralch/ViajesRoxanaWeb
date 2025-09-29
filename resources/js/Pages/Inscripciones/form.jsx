@@ -1190,7 +1190,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
             {userCreationMode && selectedChild && (
               <section className="mb-8">
                 <SectionTitle subtitle="Complete los datos del nuevo apoderado responsable">
-                  Crear Apoderado para {selectedChild.nombres}
+                  Registrar Apoderado para {selectedChild.nombres}
                 </SectionTitle>
 
                 <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
@@ -1201,10 +1201,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                       </svg>
                     </div>
                     <div>
-                      <h4 className="font-semibold text-blue-900">Nuevo Apoderado</h4>
-                      <p className="text-sm text-blue-700">
-                        {selectedChild.nombres} necesita un apoderado responsable
-                      </p>
+                      <h4 className="font-semibold text-blue-900">Datos del Apoderado</h4>
                     </div>
                   </div>
 
