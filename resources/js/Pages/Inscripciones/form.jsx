@@ -1189,7 +1189,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
             {/* Formulario para crear nuevo usuario cuando es necesario */}
             {userCreationMode && selectedChild && (
               <section className="mb-8">
-                <SectionTitle subtitle="Complete los datos del nuevo apoderado responsable">
+                <SectionTitle subtitle="">
                   Registrar Apoderado para {selectedChild.nombres}
                 </SectionTitle>
 
