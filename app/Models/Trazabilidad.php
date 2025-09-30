@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Trazabilidad extends Model
 {
     protected $table = 'trazabilidad';
-    
+
     protected $fillable = [
         'paquete_id',
         'grupo_id',
@@ -15,6 +15,11 @@ class Trazabilidad extends Model
         'descripcion',
         'latitud',
         'longitud'
+    ];
+
+    protected $casts = [
+        'latitud' => 'float',
+        'longitud' => 'float',
     ];
 
     public function paquete()

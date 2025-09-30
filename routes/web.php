@@ -177,16 +177,14 @@ Route::middleware('auth')->group(function () {
     Route::put('/perfil/hijo/{hijo}/nutricion', [PerfilHijoController::class, 'updateNutricionFicha'])->name('nutricion.ficha.update');
     Route::delete('/perfil/hijo/{hijo}/nutricion', [PerfilHijoController::class, 'destroyNutricionFicha'])->name('nutricion.ficha.destroy');
     
-    // Rutas API para Mapbox - COMENTADAS TEMPORALMENTE (MapboxController no existe)
-    /*
+    // Rutas API para Mapbox
     Route::prefix('api/mapbox')->group(function () {
-        Route::get('/token', [App\Http\Controllers\MapboxController::class, 'getMapboxToken'])->name('mapbox.token');
+        Route::get('/token', [App\Http\Controllers\MapboxController::class, 'getMapboxTokenPublic'])->name('mapbox.token');
         Route::post('/reverse-geocode', [App\Http\Controllers\MapboxController::class, 'reverseGeocode'])->name('mapbox.reverse-geocode');
         Route::post('/search-places', [App\Http\Controllers\MapboxController::class, 'searchPlaces'])->name('mapbox.search-places');
         Route::post('/calculate-distance', [App\Http\Controllers\MapboxController::class, 'calculateDistance'])->name('mapbox.calculate-distance');
         Route::post('/get-route', [App\Http\Controllers\MapboxController::class, 'getRoute'])->name('mapbox.get-route');
     });
-    */
     
     // Rutas API para ubicación de hijos
     Route::prefix('api/hijo-location')->group(function () {
