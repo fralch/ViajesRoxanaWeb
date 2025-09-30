@@ -49,6 +49,7 @@ class MisViajesController extends Controller
                 'capacidad' => $grupo->capacidad,
                 'activo' => $grupo->activo,
                 'status' => $status,
+                'documentos_links' => $grupo->documentos_links ?? [],
                 'paquete' => [
                     'id' => $grupo->paquete->id,
                     'nombre' => $grupo->paquete->nombre,
