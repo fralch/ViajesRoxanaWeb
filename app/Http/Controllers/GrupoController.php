@@ -82,7 +82,10 @@ class GrupoController extends Controller
             'subgrupos.*.email_encargado_secundario' => 'nullable|email|max:255',
             'subgrupos.*.capacidad_maxima' => 'required|integer|min:1|max:50',
             'subgrupos.*.activo' => 'boolean',
-            'subgrupos.*.observaciones' => 'nullable|string'
+            'subgrupos.*.observaciones' => 'nullable|string',
+            'documentos_links' => 'nullable|array',
+            'documentos_links.*.titulo' => 'required|string|max:255',
+            'documentos_links.*.url' => 'required|url|max:500'
         ]);
         
         $validated['activo'] = $request->boolean('activo', true);
@@ -165,7 +168,10 @@ class GrupoController extends Controller
             'fecha_inicio' => 'required|date',
             'fecha_fin' => 'required|date|after_or_equal:fecha_inicio',
             'capacidad' => 'required|integer|min:1|max:100',
-            'activo' => 'boolean'
+            'activo' => 'boolean',
+            'documentos_links' => 'nullable|array',
+            'documentos_links.*.titulo' => 'required|string|max:255',
+            'documentos_links.*.url' => 'required|url|max:500'
         ]);
 
         $validated['activo'] = $request->boolean('activo', $grupo->activo);

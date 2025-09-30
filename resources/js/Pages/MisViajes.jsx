@@ -7,45 +7,11 @@ import { CalendarIcon, MapPinIcon, UsersIcon, ClockIcon, XMarkIcon, DocumentIcon
 const DocumentosModal = ({ isOpen, onClose, trip }) => {
     if (!isOpen) return null;
 
-    const documentos = [
-        {
-            titulo: "Equipaje Latam",
-            tipo: "PDF",
-            url: "https://drive.google.com/file/d/1EKL9hhpe7YXyo1036UzfAQqaTRDD4o9r/view?usp=sharing"
-        },
-        {
-            titulo: "Hospitales Cuzco",
-            tipo: "PDF",
-            url: "https://drive.google.com/file/d/1dv7n-4MDc-fnB6e3rvdj4tzdPMh0TTSu/view?usp=sharing"
-        },
-        {
-            titulo: "Guia de ropa Cuzco",
-            tipo: "PDF",
-            url: "https://drive.google.com/file/d/1ak3hG58Ro3Frxxx7-0Mn6L_bENq-8Dss/view?usp=sharing"
-        },
-        {
-            titulo: "Permiso Notarial",
-            tipo: "PDF",
-            url: ""  // URL vacía - no se mostrará
-        }
-    ];
+    // Obtener documentos desde el campo documentos_links del grupo
+    const documentos = trip?.documentos_links || [];
 
-    const asistenciaMedica = [
-        {
-            titulo: "Voucher",
-            tipo: "voucher",
-            url: ""
-        },
-        {
-            titulo: "Lista de Clínicas Cercanas al Hotel",
-            tipo: "clinicas",
-            url: ""  // URL vacía - no se mostrará
-        }
-    ];
-
-    // Filtrar documentos disponibles
+    // Filtrar documentos disponibles (solo los que tienen URL)
     const documentosDisponibles = documentos.filter(doc => doc.url && doc.url.trim() !== '');
-    const asistenciaMedicaDisponible = asistenciaMedica.filter(item => item.url && item.url.trim() !== '');
 
     // Función para determinar las clases del grid según la cantidad de elementos
     const getGridClasses = (count) => {
@@ -80,27 +46,27 @@ const DocumentosModal = ({ isOpen, onClose, trip }) => {
                 {/* Contenido del Modal */}
                 <div className="p-4 sm:p-6 space-y-8">
                     {/* Documentos del viaje */}
-                    {documentosDisponibles.length > 0 && (
+                    {documentosDisponibles.length > 0 ? (
                         <div className="space-y-4">
-                           
+
                             <div className={getGridClasses(documentosDisponibles.length)}>
                                 {documentosDisponibles.map((doc, index) => (
-                                    <div 
-                                        key={index} 
+                                    <div
+                                        key={index}
                                         className="group relative bg-white border border-gray-200 rounded-xl p-4 text-center hover:shadow-lg transition-all duration-300 hover:border-red-200 hover:translate-y-[-2px]"
                                     >
                                         <div className="mb-3 relative">
                                             <div className="mx-auto w-14 h-18 sm:w-16 sm:h-20 bg-gradient-to-br from-red-50 to-white rounded-lg border-2 border-red-100 flex flex-col items-center justify-center group-hover:border-red-200 transition-colors duration-300">
                                                 <DocumentIcon className="w-7 h-7 sm:w-8 sm:h-8 text-red-500 mb-2 group-hover:scale-110 transition-transform duration-300" />
                                                 <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-full border border-red-100">
-                                                    {doc.tipo}
+                                                    PDF
                                                 </span>
                                             </div>
                                         </div>
                                         <h4 className="font-semibold text-gray-900 text-sm mb-4 leading-tight px-2 group-hover:text-gray-700 transition-colors duration-200">
                                             {doc.titulo}
                                         </h4>
-                                        <a 
+                                        <a
                                             href={doc.url}
                                             target="_blank"
                                             rel="noopener noreferrer"
@@ -115,77 +81,38 @@ const DocumentosModal = ({ isOpen, onClose, trip }) => {
                                 ))}
                             </div>
                         </div>
-                    )}
-
-                    {/* Tarjeta de Asistencia Médica del viaje */}
-                    {asistenciaMedicaDisponible.length > 0 && (
-                        <div className="space-y-4">
-                            <div className="flex items-center space-x-2">
-                                <div className="w-1 h-6 bg-green-500 rounded-full"></div>
-                                <h3 className="text-lg sm:text-xl font-bold text-gray-900">Asistencia Médica</h3>
+                    ) : (
+                        <div className="text-center py-12">
+                            <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                <DocumentIcon className="w-12 h-12 text-gray-400" />
                             </div>
-                            <div className={getGridClasses(asistenciaMedicaDisponible.length)}>
-                                {asistenciaMedicaDisponible.map((item, index) => (
-                                    <div 
-                                        key={index} 
-                                        className="group relative bg-white border border-gray-200 rounded-xl p-4 text-center hover:shadow-lg transition-all duration-300 hover:border-green-200 hover:translate-y-[-2px]"
-                                    >
-                                        <div className="mb-3 relative">
-                                            <div className="mx-auto w-14 h-18 sm:w-16 sm:h-20 bg-gradient-to-br from-green-50 to-white rounded-lg border-2 border-green-100 flex flex-col items-center justify-center group-hover:border-green-200 transition-colors duration-300">
-                                                {item.tipo === 'voucher' ? (
-                                                    <div className="w-8 h-8 sm:w-9 sm:h-9 bg-green-100 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300">
-                                                        <span className="text-green-600 font-bold text-base">$</span>
-                                                    </div>
-                                                ) : (
-                                                    <div className="w-8 h-8 sm:w-9 sm:h-9 bg-green-100 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300">
-                                                        <svg className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                                                            <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V8zm0 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2z" clipRule="evenodd" />
-                                                        </svg>
-                                                    </div>
-                                                )}
-                                                <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full border border-green-100">
-                                                    {item.tipo}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <h4 className="font-semibold text-gray-900 text-sm mb-4 leading-tight px-2 group-hover:text-gray-700 transition-colors duration-200">
-                                            {item.titulo}
-                                        </h4>
-                                        <a 
-                                            href={item.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="w-full py-2.5 px-4 text-sm font-medium bg-white text-green-600 border-2 border-green-200 rounded-lg hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-all duration-200 inline-flex items-center justify-center space-x-2 group/btn"
-                                        >
-                                            <span>Ver documento</span>
-                                            <svg className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                            </svg>
-                                        </a>
-                                    </div>
-                                ))}
-                            </div>
+                            <h3 className="text-lg font-medium text-gray-900 mb-2">No hay documentos disponibles</h3>
+                            <p className="text-gray-500">
+                                Aún no se han cargado documentos para este viaje.
+                            </p>
                         </div>
                     )}
 
                     {/* Mensaje informativo */}
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
-                        <div className="flex items-start space-x-3">
-                            <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center mt-0.5 flex-shrink-0">
-                                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                                </svg>
-                            </div>
-                            <div>
-                                <p className="text-sm text-blue-800 font-medium">
-                                    Todos los documentos están disponibles para su descarga
-                                </p>
-                                <p className="text-xs text-blue-600 mt-1">
-                                    Haz clic en "Ver documento" para acceder al PDF correspondiente
-                                </p>
+                    {documentosDisponibles.length > 0 && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
+                            <div className="flex items-start space-x-3">
+                                <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center mt-0.5 flex-shrink-0">
+                                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-blue-800 font-medium">
+                                        Todos los documentos están disponibles para su descarga
+                                    </p>
+                                    <p className="text-xs text-blue-600 mt-1">
+                                        Haz clic en "Ver documento" para acceder al PDF correspondiente
+                                    </p>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             </div>
         </div>
