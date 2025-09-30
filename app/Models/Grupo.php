@@ -14,14 +14,16 @@ class Grupo extends Model
         'fecha_inicio',
         'fecha_fin',
         'capacidad',
-        'activo'
+        'activo',
+        'documentos_links'
     ];
 
     protected $casts = [
         'activo' => 'boolean',
         'capacidad' => 'integer',
         'fecha_inicio' => 'date:Y-m-d',
-        'fecha_fin' => 'date:Y-m-d'
+        'fecha_fin' => 'date:Y-m-d',
+        'documentos_links' => 'array'
     ];
 
     public function paquete()
