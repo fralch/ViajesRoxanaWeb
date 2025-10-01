@@ -65,6 +65,11 @@ Route::get('/nfc/{dni_hijo}/confirmar', [TrazabilidadController::class, 'confirm
     ->name('trazabilidad.confirmacion')
     ->where('dni_hijo', '[0-9]+');
 
+// Ruta pública para ver equipajes por DNI del hijo (NFC)
+Route::get('/equipaje/nfc/{dni_hijo}', [EquipajeController::class, 'showByDni'])
+    ->name('equipaje.show-by-dni')
+    ->where('dni_hijo', '[0-9]+');
+
 // Ruta de prueba para WhatsApp
 Route::get('/probarwhatsapp/{numero}', function ($numero) {
     $resultado = WhatsAppService::enviarMensajeTrazabilidad($numero, "🧪 Mensaje de prueba de WhatsApp\n\nEste es un mensaje de prueba para verificar que el servicio de WhatsApp está funcionando correctamente.\n\n✅ Si recibiste este mensaje, el servicio está operativo.");
