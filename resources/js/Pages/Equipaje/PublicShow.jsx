@@ -163,22 +163,38 @@ export default function PublicShow({ hijo, equipajes }) {
                                             </div>
                                         )}
 
-                                        {/* Fecha de registro */}
+                                        {/* Fechas de creación y actualización */}
                                         <div className="border-t border-red-100 pt-4 mt-4">
-                                            <div className="flex items-center bg-red-50 rounded-lg p-3">
+                                            <div className="flex items-center bg-red-50 rounded-lg p-3 mb-2">
                                                 <svg className="w-5 h-5 text-red-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                                 </svg>
                                                 <span className="text-gray-600 text-xs">
-                                                    <strong>Registrado:</strong> {new Date(equipaje.created_at).toLocaleDateString('es-ES', {
+                                                    <strong>Creado:</strong> {new Date(equipaje.created_at).toLocaleDateString('es-ES', {
                                                         year: 'numeric',
-                                                        month: 'long',
+                                                        month: 'short',
                                                         day: 'numeric',
                                                         hour: '2-digit',
                                                         minute: '2-digit'
                                                     })}
                                                 </span>
                                             </div>
+                                            {equipaje.updated_at !== equipaje.created_at && (
+                                                <div className="flex items-center bg-red-50 rounded-lg p-3">
+                                                    <svg className="w-5 h-5 text-red-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                    </svg>
+                                                    <span className="text-gray-600 text-xs">
+                                                        <strong>Actualizado:</strong> {new Date(equipaje.updated_at).toLocaleDateString('es-ES', {
+                                                            year: 'numeric',
+                                                            month: 'short',
+                                                            day: 'numeric',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit'
+                                                        })}
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
