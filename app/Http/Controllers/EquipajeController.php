@@ -397,6 +397,27 @@ class EquipajeController extends Controller
     }
 
     /**
+     * Display equipajes by hijo DNI (public route for NFC)
+     */
+    public function showByDni($dni_hijo)
+    {
+        // Buscar el hijo por DNI
+        $hijo = Hijo::where('doc_numero', $dni_hijo)->first();
+
+        if (!$hijo) {
+            abort(404, 'Hijo no encontrado');
+        }
+
+        // Obtener los equipajes del hijo
+        $equipajes = $hijo->equipajes()->orderBy('created_at', 'desc')->get();
+
+        return Inertia::render('Equipaje/PublicShow', [
+            'hijo' => $hijo,
+            'equipajes' => $equipajes,
+        ]);
+    }
+
+    /**
      * Export equipajes to PDF
      */
     public function exportPdf(Request $request)
