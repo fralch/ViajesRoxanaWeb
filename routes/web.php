@@ -60,6 +60,11 @@ Route::get('/nfc/{dni_hijo}', [TrazabilidadController::class, 'preConfirmacionTr
     ->name('trazabilidad.preconfirmacion')
     ->where('dni_hijo', '[0-9]+');
 
+// Ruta pública para ver fichas de salud y nutrición por DNI (NFC)
+Route::get('/nfc/{dni_hijo}/fichas', [TrazabilidadController::class, 'verFichasSaludNutricion'])
+    ->name('trazabilidad.fichas')
+    ->where('dni_hijo', '[0-9]+');
+
 // Ruta pública para confirmación final de trazabilidad por DNI (NFC)
 Route::get('/nfc/{dni_hijo}/confirmar', [TrazabilidadController::class, 'confirmacionTrazabilidad'])
     ->name('trazabilidad.confirmacion')
