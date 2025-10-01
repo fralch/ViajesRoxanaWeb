@@ -66,7 +66,7 @@ Route::get('/nfc/{dni_hijo}/confirmar', [TrazabilidadController::class, 'confirm
     ->where('dni_hijo', '[0-9]+');
 
 // Ruta pública para ver equipajes por DNI del hijo (NFC)
-Route::get('/equipaje/nfc/{dni_hijo}', [EquipajeController::class, 'showByDni'])
+Route::get('/tag/{dni_hijo}', [EquipajeController::class, 'showByDni'])
     ->name('equipaje.show-by-dni')
     ->where('dni_hijo', '[0-9]+');
 
