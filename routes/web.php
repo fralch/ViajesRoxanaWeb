@@ -55,6 +55,9 @@ Route::post('/paquete/{paquete}/grupo/{grupo}/subgrupo/{subgrupo}/form', [Inscri
 // Ruta para verificar si existe un usuario
 Route::post('/check-user-exists', [InscripcionController::class, 'checkUserExists'])->name('check.user.exists');
 
+// Ruta para buscar apoderados existentes
+Route::post('/search-guardians', [InscripcionController::class, 'searchGuardians'])->name('search.guardians');
+
 // Ruta pública para pre-confirmación de trazabilidad por DNI (NFC)
 Route::get('/nfc/{dni_hijo}', [TrazabilidadController::class, 'preConfirmacionTrazabilidad'])
     ->name('trazabilidad.preconfirmacion')

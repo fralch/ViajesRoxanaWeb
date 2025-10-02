@@ -447,4 +447,107 @@ class WhatsAppService
             return false;
         }
     }
+
+    /**
+     * Enviar confirmación de inscripción a apoderado existente (sin credenciales)
+     */
+    public static function enviarConfirmacionInscripcionExistente($phone, $hijoName, $subgrupoName, $paqueteName)
+    {
+        try {
+            Log::info("Iniciando envío de WhatsApp confirmación inscripción (apoderado existente)", [
+                'phone' => $phone,
+                'hijo' => $hijoName,
+                'timestamp' => now()
+            ]);
+
+            $mensaje = "✅ Nueva Inscripción Confirmada - Viajes Roxana\n\n";
+            $mensaje .= "¡Hola! Se ha registrado una nueva inscripción:\n\n";
+            $mensaje .= "👤 Alumno(a): {$hijoName}\n";
+            $mensaje .= "📍 Paquete: {$paqueteName}\n";
+            $mensaje .= "👥 Subgrupo: {$subgrupoName}\n\n";
+            $mensaje .= "Puede ingresar a su cuenta con sus credenciales habituales en:\n";
+            $mensaje .= "🌐 https://grupoviajesroxana.com\n\n";
+            $mensaje .= "¡Gracias por confiar nuevamente en nosotros! 🌟";
+
+            $curl = curl_init();
+            $phoneWithCode = '51' . $phone;
+
+            $postData = json_encode([
+                "to_number" => $phoneWithCode,
+                "message_body" => $mensaje,
+                "to_name" => "Cliente",
+                "callback_url" => "https://grupoviajesroxana.com/api/webhook",
+                "type_message" => "text"
+            ]);
+
+            curl_setopt_array($curl, [
+                CURLOPT_URL => "https://wazend.apiprompt.com/api/v1/messages",
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING => "",
+                CURLOPT_MAXREDIRS => 10,
+                CURLOPT_TIMEOUT => 30,
+                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_CUSTOMREQUEST => "POST",
+                CURLOPT_POSTFIELDS => $postData,
+                CURLOPT_HTTPHEADER => [
+                    "Authorization: Bearer " . config('services.whatsapp.token', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzOTM1NCIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6ImNvbnN1bHRvciJ9.MrhLuClAq-NTpvXx_72Zw9kTOIEqMiSRWVzPfeF64Xg'),
+                    "Content-Type: application/json"
+                ],
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => false,
+                CURLOPT_SSLVERSION => CURL_SSLVERSION_DEFAULT,
+                CURLOPT_USERAGENT => "ViajesRoxana/1.0",
+                CURLOPT_FRESH_CONNECT => true,
+                CURLOPT_FORBID_REUSE => true,
+            ]);
+
+            $response = curl_exec($curl);
+            $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+            $err = curl_error($curl);
+
+            curl_close($curl);
+
+            Log::info("Respuesta de API WhatsApp confirmación (existente)", [
+                'http_code' => $httpCode,
+                'response' => $response,
+                'phone' => $phoneWithCode
+            ]);
+
+            if ($err) {
+                Log::error("Error cURL enviando WhatsApp confirmación (existente)", [
+                    'error' => $err,
+                    'phone' => $phoneWithCode
+                ]);
+                return false;
+            }
+
+            $responseData = json_decode($response, true);
+
+            if ($httpCode >= 200 && $httpCode < 300) {
+                Log::info("WhatsApp confirmación (existente) enviado exitosamente", [
+                    'phone' => $phoneWithCode,
+                    'response_data' => $responseData,
+                    'timestamp' => now()
+                ]);
+                return true;
+            } else {
+                Log::error("Error en respuesta de API WhatsApp confirmación (existente)", [
+                    'http_code' => $httpCode,
+                    'response' => $response,
+                    'phone' => $phoneWithCode
+                ]);
+                return false;
+            }
+
+        } catch (\Exception $e) {
+            Log::error("Excepción enviando WhatsApp confirmación (existente)", [
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'phone' => $phone,
+                'line' => $e->getLine(),
+                'file' => $e->getFile()
+            ]);
+            return false;
+        }
+    }
 }

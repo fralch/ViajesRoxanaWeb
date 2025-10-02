@@ -749,7 +749,7 @@ class InscripcionController extends Controller
                 ]);
             }
 
-            \Log::error('Existing guardian not found for user_id:', $child->user_id);
+            \Log::error('Existing guardian not found for user_id:', ['user_id' => $child->user_id]);
             return response()->json([
                 'success' => false,
                 'message' => 'No se pudo encontrar el apoderado del niño.'
@@ -761,8 +761,72 @@ class InscripcionController extends Controller
         try {
             DB::transaction(function () use ($request, $child, $inscription, $userCreationMode, $subgrupo, $paquete) {
                 \Log::info('Starting DB transaction for guardian assignment');
+                \Log::info('Request params:', [
+                    'has_link_existing_guardian' => $request->has('link_existing_guardian'),
+                    'link_existing_guardian' => $request->link_existing_guardian,
+                    'has_existing_guardian_id' => $request->has('existing_guardian_id'),
+                    'existing_guardian_id' => $request->existing_guardian_id,
+                    'userCreationMode' => $userCreationMode,
+                    'all_request' => $request->all()
+                ]);
 
-                if ($userCreationMode) {
+                // Caso 1: Vincular apoderado existente
+                if ($request->has('link_existing_guardian') && $request->link_existing_guardian && $request->has('existing_guardian_id')) {
+                    \Log::info('=== LINKING EXISTING GUARDIAN START ===');
+                    \Log::info('Guardian ID to link:', ['guardian_id' => $request->existing_guardian_id]);
+
+                    $existingGuardian = User::find($request->existing_guardian_id);
+
+                    if (!$existingGuardian) {
+                        \Log::error('Guardian not found with ID:', ['id' => $request->existing_guardian_id]);
+                        throw new \Exception('guardian_not_found');
+                    }
+
+                    \Log::info('Guardian found:', [
+                        'id' => $existingGuardian->id,
+                        'name' => $existingGuardian->name,
+                        'email' => $existingGuardian->email,
+                        'phone' => $existingGuardian->phone
+                    ]);
+
+                    // Actualizar hijo con el apoderado existente
+                    \Log::info('Before child update:', ['child_user_id' => $child->user_id]);
+                    $child->user_id = $existingGuardian->id;
+                    $child->nums_emergencia = [$existingGuardian->phone];
+                    $child->save();
+                    \Log::info('After child update:', ['child_user_id' => $child->user_id]);
+
+                    // Actualizar inscripción
+                    \Log::info('Before inscription update:', [
+                        'inscription_usuario_id' => $inscription->usuario_id,
+                        'inscription_confirmado' => $inscription->confirmado
+                    ]);
+                    $inscription->usuario_id = $existingGuardian->id;
+                    $inscription->confirmado = true;
+                    $inscription->save();
+                    \Log::info('After inscription update:', [
+                        'inscription_usuario_id' => $inscription->usuario_id,
+                        'inscription_confirmado' => $inscription->confirmado
+                    ]);
+
+                    \Log::info('=== LINKING EXISTING GUARDIAN SUCCESS ===');
+
+                    // Enviar WhatsApp de confirmación
+                    try {
+                        WhatsAppService::enviarConfirmacionInscripcionExistente(
+                            $existingGuardian->phone,
+                            $child->nombres,
+                            $subgrupo->nombre,
+                            $paquete->nombre
+                        );
+                        \Log::info('WhatsApp sent successfully');
+                    } catch (\Exception $e) {
+                        \Log::error('WhatsApp send failed but continuing:', ['error' => $e->getMessage()]);
+                        // No lanzar excepción, solo log
+                    }
+
+                } elseif ($userCreationMode) {
+                    // Caso 2: Crear nuevo apoderado
                     \Log::info('Creating new user for guardian assignment', ['request_data' => [
                         'parent_name' => $request->parent_name,
                         'parent_email' => $request->parent_email,
@@ -887,7 +951,10 @@ class InscripcionController extends Controller
                         );
                         \Log::info('Confirmation WhatsApp sent to existing user');
                     } else {
-                        \Log::error('Existing user not found by DNI or email:', $request->parent_dni, $request->parent_email);
+                        \Log::error('Existing user not found by DNI or email:', [
+                            'parent_dni' => $request->parent_dni,
+                            'parent_email' => $request->parent_email
+                        ]);
                         throw new \Exception('user_not_found');
                     }
                 }
@@ -936,6 +1003,11 @@ class InscripcionController extends Controller
             if ($e->getMessage() === 'user_not_found') {
                 return back()->withErrors([
                     'parent_email' => 'No se pudo encontrar el usuario existente.'
+                ])->withInput();
+            }
+            if ($e->getMessage() === 'guardian_not_found') {
+                return back()->withErrors([
+                    'parent_name' => 'No se pudo encontrar el apoderado seleccionado.'
                 ])->withInput();
             }
 
@@ -1014,7 +1086,7 @@ class InscripcionController extends Controller
                 ]);
             }
 
-            \Log::error('Existing guardian not found for user_id:', $child->user_id);
+            \Log::error('Existing guardian not found for user_id:', ['user_id' => $child->user_id]);
             return response()->json([
                 'success' => false,
                 'message' => 'No se pudo encontrar el apoderado del niño.'
@@ -1026,11 +1098,75 @@ class InscripcionController extends Controller
         try {
             DB::transaction(function () use ($request, $child, $inscription, $userCreationMode, $paquete, $grupo) {
                 \Log::info('Starting DB transaction for guardian assignment');
+                \Log::info('Request params:', [
+                    'has_link_existing_guardian' => $request->has('link_existing_guardian'),
+                    'link_existing_guardian' => $request->link_existing_guardian,
+                    'has_existing_guardian_id' => $request->has('existing_guardian_id'),
+                    'existing_guardian_id' => $request->existing_guardian_id,
+                    'userCreationMode' => $userCreationMode,
+                    'all_request' => $request->all()
+                ]);
 
                 // Get the subgroup for the inscription
                 $subgrupo = Subgrupo::find($inscription->subgrupo_id);
 
-                if ($userCreationMode) {
+                // Caso 1: Vincular apoderado existente
+                if ($request->has('link_existing_guardian') && $request->link_existing_guardian && $request->has('existing_guardian_id')) {
+                    \Log::info('=== LINKING EXISTING GUARDIAN START ===');
+                    \Log::info('Guardian ID to link:', ['guardian_id' => $request->existing_guardian_id]);
+
+                    $existingGuardian = User::find($request->existing_guardian_id);
+
+                    if (!$existingGuardian) {
+                        \Log::error('Guardian not found with ID:', ['id' => $request->existing_guardian_id]);
+                        throw new \Exception('guardian_not_found');
+                    }
+
+                    \Log::info('Guardian found:', [
+                        'id' => $existingGuardian->id,
+                        'name' => $existingGuardian->name,
+                        'email' => $existingGuardian->email,
+                        'phone' => $existingGuardian->phone
+                    ]);
+
+                    // Actualizar hijo con el apoderado existente
+                    \Log::info('Before child update:', ['child_user_id' => $child->user_id]);
+                    $child->user_id = $existingGuardian->id;
+                    $child->nums_emergencia = [$existingGuardian->phone];
+                    $child->save();
+                    \Log::info('After child update:', ['child_user_id' => $child->user_id]);
+
+                    // Actualizar inscripción
+                    \Log::info('Before inscription update:', [
+                        'inscription_usuario_id' => $inscription->usuario_id,
+                        'inscription_confirmado' => $inscription->confirmado
+                    ]);
+                    $inscription->usuario_id = $existingGuardian->id;
+                    $inscription->confirmado = true;
+                    $inscription->save();
+                    \Log::info('After inscription update:', [
+                        'inscription_usuario_id' => $inscription->usuario_id,
+                        'inscription_confirmado' => $inscription->confirmado
+                    ]);
+
+                    \Log::info('=== LINKING EXISTING GUARDIAN SUCCESS ===');
+
+                    // Enviar WhatsApp de confirmación
+                    try {
+                        WhatsAppService::enviarConfirmacionInscripcionExistente(
+                            $existingGuardian->phone,
+                            $child->nombres,
+                            $subgrupo->nombre,
+                            $paquete->nombre
+                        );
+                        \Log::info('WhatsApp sent successfully');
+                    } catch (\Exception $e) {
+                        \Log::error('WhatsApp send failed but continuing:', ['error' => $e->getMessage()]);
+                        // No lanzar excepción, solo log
+                    }
+
+                } elseif ($userCreationMode) {
+                    // Caso 2: Crear nuevo apoderado
                     \Log::info('Creating new user for guardian assignment');
 
                     // Validate required fields for new user creation
@@ -1150,7 +1286,10 @@ class InscripcionController extends Controller
                         );
                         \Log::info('Confirmation WhatsApp sent to existing user');
                     } else {
-                        \Log::error('Existing user not found by DNI or email:', $request->parent_dni, $request->parent_email);
+                        \Log::error('Existing user not found by DNI or email:', [
+                            'parent_dni' => $request->parent_dni,
+                            'parent_email' => $request->parent_email
+                        ]);
                         throw new \Exception('user_not_found');
                     }
                 }
@@ -1194,6 +1333,11 @@ class InscripcionController extends Controller
                     'parent_email' => 'No se pudo encontrar el usuario existente.'
                 ])->withInput();
             }
+            if ($e->getMessage() === 'guardian_not_found') {
+                return back()->withErrors([
+                    'parent_name' => 'No se pudo encontrar el apoderado seleccionado.'
+                ])->withInput();
+            }
 
             // Error genérico para cualquier otra excepción
             return back()->withErrors([
@@ -1221,7 +1365,7 @@ class InscripcionController extends Controller
         if ($user) {
             // Si encontramos usuario, obtener sus hijos
             $hijos = $user->hijos()->get(['nombres', 'doc_tipo', 'doc_numero']);
-            
+
             return response()->json([
                 'exists' => true,
                 'user' => [
@@ -1242,6 +1386,43 @@ class InscripcionController extends Controller
 
         return response()->json([
             'exists' => false
+        ]);
+    }
+
+    /**
+     * Buscar apoderados (users) por nombre, DNI, email o teléfono
+     */
+    public function searchGuardians(Request $request)
+    {
+        $request->validate([
+            'query' => 'required|string|min:3',
+        ]);
+
+        $searchQuery = $request->input('query');
+
+        // Buscar usuarios que NO sean admin y que coincidan con el query
+        $guardians = User::where('is_admin', false)
+            ->where(function($q) use ($searchQuery) {
+                $q->where('name', 'like', "%{$searchQuery}%")
+                  ->orWhere('dni', 'like', "%{$searchQuery}%")
+                  ->orWhere('email', 'like', "%{$searchQuery}%")
+                  ->orWhere('phone', 'like', "%{$searchQuery}%");
+            })
+            ->withCount('hijos') // Contar cuántos hijos tiene cada apoderado
+            ->limit(20)
+            ->get(['id', 'name', 'email', 'phone', 'dni']);
+
+        return response()->json([
+            'guardians' => $guardians->map(function($guardian) {
+                return [
+                    'id' => $guardian->id,
+                    'name' => $guardian->name,
+                    'email' => $guardian->email,
+                    'phone' => $guardian->phone,
+                    'dni' => $guardian->dni,
+                    'hijos_count' => $guardian->hijos_count
+                ];
+            })
         ]);
     }
 }

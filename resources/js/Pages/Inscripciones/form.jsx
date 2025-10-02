@@ -199,8 +199,6 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
     ],
   });
 
-  const [showUserExistsWarning, setShowUserExistsWarning] = useState(false);
-  const [existingUserData, setExistingUserData] = useState(null);
   const [dniValidated, setDniValidated] = useState(false);
   const [dniLoading, setDniLoading] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
@@ -212,6 +210,13 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
   const [selectedChild, setSelectedChild] = useState(null);
   const [showUserCreationForm, setShowUserCreationForm] = useState(false);
   const [userCreationMode, setUserCreationMode] = useState(false);
+
+  // States for searching and linking existing guardians
+  const [showGuardianSearchModal, setShowGuardianSearchModal] = useState(false);
+  const [guardianSearchQuery, setGuardianSearchQuery] = useState('');
+  const [searchedGuardians, setSearchedGuardians] = useState([]);
+  const [searchingGuardians, setSearchingGuardians] = useState(false);
+  const [selectedGuardianToLink, setSelectedGuardianToLink] = useState(null);
 
   // States for child search functionality
   const [childSearchQuery, setChildSearchQuery] = useState('');
@@ -240,8 +245,6 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
   const validateDNI = async (dni) => {
     if (!dni?.trim() || dni.trim().length !== 8) {
       setDniValidated(false);
-      setShowUserExistsWarning(false);
-      setExistingUserData(null);
       return;
     }
 
@@ -252,20 +255,13 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
       });
 
       if (response.data.exists) {
-        setExistingUserData(response.data);
-        setShowUserExistsWarning(true);
         setDniValidated(true);
-        showToast('Usuario encontrado en el sistema', 'info');
       } else {
-        setShowUserExistsWarning(false);
-        setExistingUserData(null);
         setDniValidated(true);
         showToast('DNI disponible para registro', 'success');
       }
     } catch (error) {
       console.error('Error verificando DNI:', error);
-      setShowUserExistsWarning(false);
-      setExistingUserData(null);
       setDniValidated(false);
 
       // Mejorar el manejo de errores de verificación
@@ -364,8 +360,6 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
       parent_dni: "",
     });
     setDniValidated(false);
-    setExistingUserData(null);
-    setShowUserExistsWarning(false);
     // Limpiar datos de nuevo usuario
     setNewUserData({
       name: '',
@@ -376,32 +370,56 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
     showToast('Búsqueda reiniciada. Puedes seleccionar otro alumno.', 'info');
   };
 
-  // Función para usar los datos del usuario existente
-  const useExistingUserData = () => {
-    if (existingUserData) {
-      setData({
-        ...data,
-        parent_name: existingUserData.user.name,
-        parent_email: existingUserData.user.email,
-        parent_phone: existingUserData.user.phone,
-        parent_dni: existingUserData.user.dni || "",
-        children: existingUserData.children.length > 0
-          ? existingUserData.children.map(child => ({
-              ...child,
-              errors: {}
-            }))
-          : [{
-              name: "",
-              docType: "DNI",
-              docNumber: "",
-              errors: {}
-            }]
-      });
-      setShowUserExistsWarning(false);
-      setExistingUserData(null);
-      setDniValidated(true);
-      showToast('Datos cargados correctamente', 'success');
+  // Función para buscar apoderados existentes
+  const searchGuardians = async (query) => {
+    if (!query || query.trim().length < 3) {
+      setSearchedGuardians([]);
+      return;
     }
+
+    setSearchingGuardians(true);
+    try {
+      const response = await axios.post('/search-guardians', {
+        query: query.trim()
+      });
+
+      if (response.data.guardians) {
+        setSearchedGuardians(response.data.guardians);
+      } else {
+        setSearchedGuardians([]);
+      }
+    } catch (error) {
+      console.error('Error buscando apoderados:', error);
+      showError('Error', 'No se pudo buscar apoderados. Intenta nuevamente.');
+      setSearchedGuardians([]);
+    } finally {
+      setSearchingGuardians(false);
+    }
+  };
+
+  // Función para vincular un apoderado existente al hijo
+  const linkExistingGuardian = (guardian) => {
+    console.log('Vinculando apoderado:', guardian);
+
+    setSelectedGuardianToLink(guardian);
+
+    // Cargar datos del apoderado en el formulario
+    setData({
+      ...data,
+      parent_name: guardian.name,
+      parent_email: guardian.email,
+      parent_phone: guardian.phone || "",
+      parent_dni: guardian.dni || "",
+    });
+
+    setDniValidated(true);
+    setUserCreationMode(true); // Activar para mostrar el formulario con los datos
+    setIsExistingGuardian(false); // No es el guardian del hijo, es uno nuevo que estamos vinculando
+    setShowGuardianSearchModal(false);
+    setGuardianSearchQuery('');
+    setSearchedGuardians([]);
+
+    showToast('Apoderado seleccionado. Completa y confirma para vincular.', 'success');
   };
 
   // Efecto para mostrar mensajes flash y errores al cargar
@@ -437,8 +455,6 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
         validateDNI(data.parent_dni);
       } else if (data.parent_dni && data.parent_dni.length < 8) {
         setDniValidated(false);
-        setShowUserExistsWarning(false);
-        setExistingUserData(null);
       }
     }, 800);
 
@@ -478,6 +494,19 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
   useEffect(() => {
     setFilteredChildren(hijosInscritos || []);
   }, [hijosInscritos]);
+
+  // Efecto para buscar apoderados cuando cambia el query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (guardianSearchQuery && guardianSearchQuery.trim().length >= 3) {
+        searchGuardians(guardianSearchQuery);
+      } else {
+        setSearchedGuardians([]);
+      }
+    }, 500); // Debounce de 500ms
+
+    return () => clearTimeout(timer);
+  }, [guardianSearchQuery]);
 
   const addChild = () => {
     setData("children", [
@@ -672,7 +701,8 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
     }
 
     // Validación mejorada para creación de nuevo usuario
-    if (userCreationMode) {
+    // Si es un apoderado existente seleccionado, saltar validaciones
+    if (userCreationMode && !selectedGuardianToLink) {
       // Validar que todos los campos requeridos estén completos
       if (!data.parent_name?.trim() || !data.parent_dni?.trim() || !data.parent_phone?.trim() || !data.parent_email?.trim()) {
         showWarning('Campos incompletos', 'Complete todos los datos del apoderado para continuar.');
@@ -731,19 +761,30 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
     // Preparar datos específicos para asignación de apoderado
     const submitData = {
       selected_child_id: selectedChildId,
-      user_creation_mode: userCreationMode,
       assign_guardian: true,
-      parent_name: data.parent_name,
-      parent_dni: data.parent_dni,
-      parent_phone: data.parent_phone,
-      parent_email: data.parent_email
     };
+
+    // Si es un apoderado existente, solo enviar el ID
+    if (selectedGuardianToLink) {
+      submitData.existing_guardian_id = selectedGuardianToLink.id;
+      submitData.link_existing_guardian = true;
+      // NO enviar user_creation_mode cuando se vincula apoderado existente
+      console.log('Vinculando apoderado existente:', selectedGuardianToLink);
+    } else {
+      // Si es nuevo, enviar todos los datos
+      submitData.user_creation_mode = userCreationMode;
+      submitData.parent_name = data.parent_name;
+      submitData.parent_dni = data.parent_dni;
+      submitData.parent_phone = data.parent_phone;
+      submitData.parent_email = data.parent_email;
+    }
 
     console.log('=== GUARDIAN ASSIGNMENT DEBUG ===');
     console.log('Submit URL:', submitUrl);
     console.log('Submit Data:', submitData);
     console.log('Selected Child:', selectedChild);
     console.log('User Creation Mode:', userCreationMode);
+    console.log('Selected Guardian To Link:', selectedGuardianToLink);
 
     setAssignmentProcessing(true);
 
@@ -762,6 +803,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
         setUserCreationMode(false);
         setShowUserCreationForm(false);
         setIsExistingGuardian(false);
+        setSelectedGuardianToLink(null); // Limpiar apoderado seleccionado
         setNewUserData({name: '', email: '', phone: '', dni: ''});
         setData({
           parent_name: "",
@@ -782,8 +824,6 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
         });
         // Resetear estados de validación
         setDniValidated(false);
-        setShowUserExistsWarning(false);
-        setExistingUserData(null);
         setConsentChecked(false);
 
         // Reload the page to update the child list
@@ -1104,145 +1144,118 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
               </section>
             )}
 
-            {/* Advertencia de usuario existente */}
-            {showUserExistsWarning && existingUserData && (
-              <section className="mb-6">
-                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                  <div className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.732 15.5c-.77.833.192 2.5 1.732 2.5z" />
-                    </svg>
-                    <div className="flex-1">
-                      <h3 className="text-sm font-semibold text-amber-800 mb-2">
-                        ¡Usuario encontrado en el sistema!
-                      </h3>
-                      <p className="text-xs text-amber-700 mb-3">
-                        Ya existe una cuenta con este DNI. Puedes usar los datos guardados.
-                      </p>
-                      
-                      <div className="bg-white/60 rounded-lg p-3 mb-3 text-xs">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <div>
-                            <span className="font-medium text-gray-600">Nombre:</span>
-                            <p className="text-gray-800">{existingUserData.user.name}</p>
-                          </div>
-                          <div>
-                            <span className="font-medium text-gray-600">DNI:</span>
-                            <p className="text-gray-800">{existingUserData.user.dni || "No registrado"}</p>
-                          </div>
-                          <div>
-                            <span className="font-medium text-gray-600">Email:</span>
-                            <p className="text-gray-800">{existingUserData.user.email}</p>
-                          </div>
-                          <div>
-                            <span className="font-medium text-gray-600">Teléfono:</span>
-                            <p className="text-gray-800">{existingUserData.user.phone}</p>
-                          </div>
-                          <div className="sm:col-span-2">
-                            <span className="font-medium text-gray-600">alumno registrados:</span>
-                            <p className="text-gray-800">{existingUserData.children.length}</p>
-                          </div>
-                        </div>
-                        
-                        {existingUserData.children.length > 0 && (
-                          <div className="mt-2 pt-2 border-t border-gray-200">
-                            <span className="font-medium text-gray-600">Alumnos:</span>
-                            <ul className="mt-1 space-y-1">
-                              {existingUserData.children.map((child, index) => (
-                                <li key={index} className="text-gray-700">
-                                  • {child.name} ({child.docType}: {child.docNumber})
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={useExistingUserData}
-                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-600 text-white text-xs font-medium hover:bg-amber-700 focus:ring-2 focus:ring-amber-500"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                          </svg>
-                          Usar datos guardados
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setShowUserExistsWarning(false);
-                            setExistingUserData(null);
-                          }}
-                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 text-gray-700 text-xs font-medium hover:bg-gray-50 focus:ring-2 focus:ring-gray-500"
-                        >
-                          Continuar sin cambios
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </section>
-            )}
-
             {/* Formulario para crear nuevo usuario cuando es necesario */}
             {userCreationMode && selectedChild && (
               <section className="mb-8">
-                <SectionTitle subtitle="">
-                  Registrar Apoderado para {selectedChild.nombres}
-                </SectionTitle>
+                <div className="flex items-center justify-between mb-4">
+                  <SectionTitle subtitle="">
+                    {selectedGuardianToLink ? `Apoderado Seleccionado para ${selectedChild.nombres}` : `Registrar Apoderado para ${selectedChild.nombres}`}
+                  </SectionTitle>
+                  {!selectedGuardianToLink && (
+                    <button
+                      type="button"
+                      onClick={() => setShowGuardianSearchModal(true)}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      Buscar Apoderado Existente
+                    </button>
+                  )}
+                </div>
 
-                <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
+                <div className={classNames(
+                  "p-6 rounded-xl border",
+                  selectedGuardianToLink
+                    ? "bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-200"
+                    : "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200"
+                )}>
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className={classNames(
+                      "flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center",
+                      selectedGuardianToLink ? "bg-purple-100" : "bg-blue-100"
+                    )}>
+                      <svg className={classNames("w-5 h-5", selectedGuardianToLink ? "text-purple-600" : "text-blue-600")} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                     </div>
-                    <div>
-                      <h4 className="font-semibold text-blue-900">Datos del Apoderado</h4>
+                    <div className="flex-1">
+                      <h4 className={classNames("font-semibold", selectedGuardianToLink ? "text-purple-900" : "text-blue-900")}>
+                        Datos del Apoderado
+                      </h4>
+                      {selectedGuardianToLink && (
+                        <p className="text-sm text-purple-700 mt-1">
+                          Apoderado existente seleccionado del sistema
+                        </p>
+                      )}
                     </div>
+                    {selectedGuardianToLink && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedGuardianToLink(null);
+                          setData({
+                            ...data,
+                            parent_name: "",
+                            parent_email: "",
+                            parent_phone: "",
+                            parent_dni: "",
+                          });
+                          setNewUserData({name: '', email: '', phone: '', dni: ''});
+                          setDniValidated(false);
+                          showToast('Selección cancelada. Puedes buscar otro apoderado.', 'info');
+                        }}
+                        className="text-sm text-purple-600 hover:text-purple-700 font-medium underline"
+                      >
+                        Cambiar
+                      </button>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 gap-4">
                     <TextField
                       id="new_parent_name"
                       label="Nombres y apellidos del apoderado"
-                      value={newUserData.name}
+                      value={selectedGuardianToLink ? data.parent_name : newUserData.name}
                       onChange={(e) => {
-                        const value = e.target.value;
-                        setNewUserData({...newUserData, name: value});
-                        setData('parent_name', value);
+                        if (!selectedGuardianToLink) {
+                          const value = e.target.value;
+                          setNewUserData({...newUserData, name: value});
+                          setData('parent_name', value);
 
-                        // Limpiar errores previos de nombre
-                        if (errors.parent_name) {
-                          clearErrors('parent_name');
+                          // Limpiar errores previos de nombre
+                          if (errors.parent_name) {
+                            clearErrors('parent_name');
+                          }
                         }
                       }}
                       placeholder="Nombre y apellidos del apoderado responsable"
                       required
+                      disabled={!!selectedGuardianToLink}
                     />
 
                     <TextField
                       id="new_parent_dni"
                       label="DNI del apoderado"
-                      value={newUserData.dni}
+                      value={selectedGuardianToLink ? data.parent_dni : newUserData.dni}
                       onChange={(e) => {
-                        const value = e.target.value.replace(/[^0-9]/g, "");
-                        if (value.length <= 8) {
-                          setNewUserData({...newUserData, dni: value});
-                          setData('parent_dni', value);
+                        if (!selectedGuardianToLink) {
+                          const value = e.target.value.replace(/[^0-9]/g, "");
+                          if (value.length <= 8) {
+                            setNewUserData({...newUserData, dni: value});
+                            setData('parent_dni', value);
 
-                          // Limpiar errores previos de DNI
-                          if (errors.parent_dni) {
-                            clearErrors('parent_dni');
-                          }
+                            // Limpiar errores previos de DNI
+                            if (errors.parent_dni) {
+                              clearErrors('parent_dni');
+                            }
 
-                          if (value.length === 8) {
-                            setDniValidated(true);
-                          } else {
-                            setDniValidated(false);
+                            if (value.length === 8) {
+                              setDniValidated(true);
+                            } else {
+                              setDniValidated(false);
+                            }
                           }
                         }
                       }}
@@ -1250,22 +1263,25 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                       required
                       inputMode="numeric"
                       pattern="^\d{8}$"
+                      disabled={!!selectedGuardianToLink}
                     />
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <TextField
                         id="new_parent_phone"
                         label="Teléfono del apoderado"
-                        value={newUserData.phone}
+                        value={selectedGuardianToLink ? data.parent_phone : newUserData.phone}
                         onChange={(e) => {
-                          const value = e.target.value.replace(/[^0-9]/g, "");
-                          if (value.length <= 9) {
-                            setNewUserData({...newUserData, phone: value});
-                            setData('parent_phone', value);
+                          if (!selectedGuardianToLink) {
+                            const value = e.target.value.replace(/[^0-9]/g, "");
+                            if (value.length <= 9) {
+                              setNewUserData({...newUserData, phone: value});
+                              setData('parent_phone', value);
 
-                            // Limpiar errores previos de teléfono
-                            if (errors.parent_phone) {
-                              clearErrors('parent_phone');
+                              // Limpiar errores previos de teléfono
+                              if (errors.parent_phone) {
+                                clearErrors('parent_phone');
+                              }
                             }
                           }
                         }}
@@ -1273,29 +1289,45 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                         required
                         inputMode="numeric"
                         pattern="^9\\d{8}$"
+                        disabled={!!selectedGuardianToLink}
                       />
 
                       <TextField
                         id="new_parent_email"
                         label="Correo electrónico"
                         type="email"
-                        value={newUserData.email}
+                        value={selectedGuardianToLink ? data.parent_email : newUserData.email}
                         onChange={(e) => {
-                          const value = e.target.value;
-                          setNewUserData({...newUserData, email: value});
-                          setData('parent_email', value);
+                          if (!selectedGuardianToLink) {
+                            const value = e.target.value;
+                            setNewUserData({...newUserData, email: value});
+                            setData('parent_email', value);
 
-                          // Limpiar errores previos de email
-                          if (errors.parent_email) {
-                            clearErrors('parent_email');
+                            // Limpiar errores previos de email
+                            if (errors.parent_email) {
+                              clearErrors('parent_email');
+                            }
                           }
                         }}
                         placeholder="correo@ejemplo.com"
                         required
                         autoComplete="email"
+                        disabled={!!selectedGuardianToLink}
                       />
                     </div>
                   </div>
+
+                  {/* Información adicional cuando se selecciona un apoderado existente */}
+                  {selectedGuardianToLink && selectedGuardianToLink.hijos_count > 0 && (
+                    <div className="mt-4 p-3 bg-purple-100 border border-purple-200 rounded-lg">
+                      <p className="text-sm text-purple-800 flex items-center gap-2">
+                        <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Este apoderado ya tiene {selectedGuardianToLink.hijos_count} hijo{selectedGuardianToLink.hijos_count !== 1 ? 's' : ''} registrado{selectedGuardianToLink.hijos_count !== 1 ? 's' : ''} en el sistema.
+                      </p>
+                    </div>
+                  )}
 
                  
                 </div>
@@ -1373,6 +1405,8 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                   <>Complete los datos del apoderado</>
                 ) : userCreationMode && !dniValidated ? (
                   <>Complete el DNI del apoderado</>
+                ) : userCreationMode && selectedGuardianToLink ? (
+                  <>Vincular Apoderado al Hijo</>
                 ) : userCreationMode ? (
                   <>Crear y Asignar Apoderado</>
                 ) : (
@@ -1460,6 +1494,150 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                      Volver a buscar
                    </button>
                  </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de búsqueda de apoderados existentes */}
+        {showGuardianSearchModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-auto max-h-[90vh] overflow-hidden flex flex-col">
+              {/* Header */}
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900">Buscar Apoderado Existente</h3>
+                    <p className="text-sm text-gray-600 mt-1">Busca por nombre, DNI, email o teléfono</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowGuardianSearchModal(false);
+                      setGuardianSearchQuery('');
+                      setSearchedGuardians([]);
+                    }}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* Search Input */}
+              <div className="p-6 border-b border-gray-200">
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={guardianSearchQuery}
+                    onChange={(e) => setGuardianSearchQuery(e.target.value)}
+                    placeholder="Escribe al menos 3 caracteres..."
+                    className={classNames(
+                      inputBase,
+                      "bg-white border-gray-300 focus:ring-purple-500 focus:border-purple-500 pr-10"
+                    )}
+                    autoFocus
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    {searchingGuardians ? (
+                      <svg className="animate-spin h-5 w-5 text-purple-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Results */}
+              <div className="flex-1 overflow-y-auto p-6">
+                {guardianSearchQuery.trim().length < 3 ? (
+                  <div className="text-center py-12">
+                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <p className="mt-4 text-sm text-gray-500">Escribe al menos 3 caracteres para buscar</p>
+                  </div>
+                ) : searchingGuardians ? (
+                  <div className="text-center py-12">
+                    <svg className="animate-spin mx-auto h-12 w-12 text-purple-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p className="mt-4 text-sm text-gray-500">Buscando apoderados...</p>
+                  </div>
+                ) : searchedGuardians.length === 0 ? (
+                  <div className="text-center py-12">
+                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                    </svg>
+                    <p className="mt-4 text-sm text-gray-500">No se encontraron apoderados</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {searchedGuardians.map((guardian) => (
+                      <div
+                        key={guardian.id}
+                        className="p-4 border border-gray-200 rounded-xl hover:border-purple-300 hover:bg-purple-50 transition-all cursor-pointer"
+                        onClick={() => linkExistingGuardian(guardian)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-900">{guardian.name}</h4>
+                            <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-600">
+                              {guardian.dni && (
+                                <div className="flex items-center gap-1">
+                                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+                                  </svg>
+                                  <span>DNI: {guardian.dni}</span>
+                                </div>
+                              )}
+                              {guardian.email && (
+                                <div className="flex items-center gap-1">
+                                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                  </svg>
+                                  <span className="truncate">{guardian.email}</span>
+                                </div>
+                              )}
+                              {guardian.phone && (
+                                <div className="flex items-center gap-1">
+                                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                  </svg>
+                                  <span>{guardian.phone}</span>
+                                </div>
+                              )}
+                              {guardian.hijos_count > 0 && (
+                                <div className="flex items-center gap-1">
+                                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                  </svg>
+                                  <span>{guardian.hijos_count} hijo{guardian.hijos_count !== 1 ? 's' : ''}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="ml-4">
+                            <button
+                              type="button"
+                              className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
+                            >
+                              Seleccionar
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
