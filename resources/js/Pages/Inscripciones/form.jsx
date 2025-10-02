@@ -413,35 +413,24 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
 
   // Función para buscar apoderados existentes
   const searchGuardians = async (query) => {
-    console.log('=== SEARCH GUARDIANS FRONTEND ===');
-    console.log('Query:', query);
-
     if (!query || query.trim().length < 3) {
-      console.log('Query too short, clearing results');
       setSearchedGuardians([]);
       return;
     }
 
     setSearchingGuardians(true);
     try {
-      console.log('Sending request to /search-guardians with query:', query.trim());
-
       const response = await axios.post('/search-guardians', {
         query: query.trim()
       });
 
-      console.log('Response received:', response.data);
-
       if (response.data.guardians) {
-        console.log('Guardians found:', response.data.guardians.length);
         setSearchedGuardians(response.data.guardians);
       } else {
-        console.log('No guardians in response');
         setSearchedGuardians([]);
       }
     } catch (error) {
       console.error('Error buscando apoderados:', error);
-      console.error('Error details:', error.response?.data);
       showError('Error', 'No se pudo buscar apoderados. Intenta nuevamente.');
       setSearchedGuardians([]);
     } finally {
@@ -451,6 +440,8 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
 
   // Función para vincular un apoderado existente al hijo
   const linkExistingGuardian = (guardian) => {
+    console.log('Vinculando apoderado:', guardian);
+
     setSelectedGuardianToLink(guardian);
 
     // Cargar datos del apoderado en el formulario
@@ -463,12 +454,13 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
     });
 
     setDniValidated(true);
-    setUserCreationMode(false); // No estamos creando, estamos vinculando
+    setUserCreationMode(true); // Activar para mostrar el formulario con los datos
+    setIsExistingGuardian(false); // No es el guardian del hijo, es uno nuevo que estamos vinculando
     setShowGuardianSearchModal(false);
     setGuardianSearchQuery('');
     setSearchedGuardians([]);
 
-    showToast('Apoderado seleccionado. Confirma para vincular.', 'success');
+    showToast('Apoderado seleccionado. Completa y confirma para vincular.', 'success');
   };
 
   // Efecto para mostrar mensajes flash y errores al cargar
@@ -752,7 +744,8 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
     }
 
     // Validación mejorada para creación de nuevo usuario
-    if (userCreationMode) {
+    // Si es un apoderado existente seleccionado, saltar validaciones
+    if (userCreationMode && !selectedGuardianToLink) {
       // Validar que todos los campos requeridos estén completos
       if (!data.parent_name?.trim() || !data.parent_dni?.trim() || !data.parent_phone?.trim() || !data.parent_email?.trim()) {
         showWarning('Campos incompletos', 'Complete todos los datos del apoderado para continuar.');
@@ -811,19 +804,30 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
     // Preparar datos específicos para asignación de apoderado
     const submitData = {
       selected_child_id: selectedChildId,
-      user_creation_mode: userCreationMode,
       assign_guardian: true,
-      parent_name: data.parent_name,
-      parent_dni: data.parent_dni,
-      parent_phone: data.parent_phone,
-      parent_email: data.parent_email
     };
+
+    // Si es un apoderado existente, solo enviar el ID
+    if (selectedGuardianToLink) {
+      submitData.existing_guardian_id = selectedGuardianToLink.id;
+      submitData.link_existing_guardian = true;
+      // NO enviar user_creation_mode cuando se vincula apoderado existente
+      console.log('Vinculando apoderado existente:', selectedGuardianToLink);
+    } else {
+      // Si es nuevo, enviar todos los datos
+      submitData.user_creation_mode = userCreationMode;
+      submitData.parent_name = data.parent_name;
+      submitData.parent_dni = data.parent_dni;
+      submitData.parent_phone = data.parent_phone;
+      submitData.parent_email = data.parent_email;
+    }
 
     console.log('=== GUARDIAN ASSIGNMENT DEBUG ===');
     console.log('Submit URL:', submitUrl);
     console.log('Submit Data:', submitData);
     console.log('Selected Child:', selectedChild);
     console.log('User Creation Mode:', userCreationMode);
+    console.log('Selected Guardian To Link:', selectedGuardianToLink);
 
     setAssignmentProcessing(true);
 
@@ -842,6 +846,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
         setUserCreationMode(false);
         setShowUserCreationForm(false);
         setIsExistingGuardian(false);
+        setSelectedGuardianToLink(null); // Limpiar apoderado seleccionado
         setNewUserData({name: '', email: '', phone: '', dni: ''});
         setData({
           parent_name: "",
@@ -1271,70 +1276,113 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
               <section className="mb-8">
                 <div className="flex items-center justify-between mb-4">
                   <SectionTitle subtitle="">
-                    Registrar Apoderado para {selectedChild.nombres}
+                    {selectedGuardianToLink ? `Apoderado Seleccionado para ${selectedChild.nombres}` : `Registrar Apoderado para ${selectedChild.nombres}`}
                   </SectionTitle>
-                  <button
-                    type="button"
-                    onClick={() => setShowGuardianSearchModal(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    Buscar Apoderado Existente
-                  </button>
+                  {!selectedGuardianToLink && (
+                    <button
+                      type="button"
+                      onClick={() => setShowGuardianSearchModal(true)}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      Buscar Apoderado Existente
+                    </button>
+                  )}
                 </div>
 
-                <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
+                <div className={classNames(
+                  "p-6 rounded-xl border",
+                  selectedGuardianToLink
+                    ? "bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-200"
+                    : "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200"
+                )}>
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className={classNames(
+                      "flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center",
+                      selectedGuardianToLink ? "bg-purple-100" : "bg-blue-100"
+                    )}>
+                      <svg className={classNames("w-5 h-5", selectedGuardianToLink ? "text-purple-600" : "text-blue-600")} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                     </div>
-                    <div>
-                      <h4 className="font-semibold text-blue-900">Datos del Apoderado</h4>
+                    <div className="flex-1">
+                      <h4 className={classNames("font-semibold", selectedGuardianToLink ? "text-purple-900" : "text-blue-900")}>
+                        Datos del Apoderado
+                      </h4>
+                      {selectedGuardianToLink && (
+                        <p className="text-sm text-purple-700 mt-1">
+                          Apoderado existente seleccionado del sistema
+                        </p>
+                      )}
                     </div>
+                    {selectedGuardianToLink && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedGuardianToLink(null);
+                          setData({
+                            ...data,
+                            parent_name: "",
+                            parent_email: "",
+                            parent_phone: "",
+                            parent_dni: "",
+                          });
+                          setNewUserData({name: '', email: '', phone: '', dni: ''});
+                          setDniValidated(false);
+                          showToast('Selección cancelada. Puedes buscar otro apoderado.', 'info');
+                        }}
+                        className="text-sm text-purple-600 hover:text-purple-700 font-medium underline"
+                      >
+                        Cambiar
+                      </button>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 gap-4">
                     <TextField
                       id="new_parent_name"
                       label="Nombres y apellidos del apoderado"
-                      value={newUserData.name}
+                      value={selectedGuardianToLink ? data.parent_name : newUserData.name}
                       onChange={(e) => {
-                        const value = e.target.value;
-                        setNewUserData({...newUserData, name: value});
-                        setData('parent_name', value);
+                        if (!selectedGuardianToLink) {
+                          const value = e.target.value;
+                          setNewUserData({...newUserData, name: value});
+                          setData('parent_name', value);
 
-                        // Limpiar errores previos de nombre
-                        if (errors.parent_name) {
-                          clearErrors('parent_name');
+                          // Limpiar errores previos de nombre
+                          if (errors.parent_name) {
+                            clearErrors('parent_name');
+                          }
                         }
                       }}
                       placeholder="Nombre y apellidos del apoderado responsable"
                       required
+                      disabled={!!selectedGuardianToLink}
                     />
 
                     <TextField
                       id="new_parent_dni"
                       label="DNI del apoderado"
-                      value={newUserData.dni}
+                      value={selectedGuardianToLink ? data.parent_dni : newUserData.dni}
                       onChange={(e) => {
-                        const value = e.target.value.replace(/[^0-9]/g, "");
-                        if (value.length <= 8) {
-                          setNewUserData({...newUserData, dni: value});
-                          setData('parent_dni', value);
+                        if (!selectedGuardianToLink) {
+                          const value = e.target.value.replace(/[^0-9]/g, "");
+                          if (value.length <= 8) {
+                            setNewUserData({...newUserData, dni: value});
+                            setData('parent_dni', value);
 
-                          // Limpiar errores previos de DNI
-                          if (errors.parent_dni) {
-                            clearErrors('parent_dni');
-                          }
+                            // Limpiar errores previos de DNI
+                            if (errors.parent_dni) {
+                              clearErrors('parent_dni');
+                            }
 
-                          if (value.length === 8) {
-                            setDniValidated(true);
-                          } else {
-                            setDniValidated(false);
+                            if (value.length === 8) {
+                              setDniValidated(true);
+                            } else {
+                              setDniValidated(false);
+                            }
                           }
                         }
                       }}
@@ -1342,22 +1390,25 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                       required
                       inputMode="numeric"
                       pattern="^\d{8}$"
+                      disabled={!!selectedGuardianToLink}
                     />
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <TextField
                         id="new_parent_phone"
                         label="Teléfono del apoderado"
-                        value={newUserData.phone}
+                        value={selectedGuardianToLink ? data.parent_phone : newUserData.phone}
                         onChange={(e) => {
-                          const value = e.target.value.replace(/[^0-9]/g, "");
-                          if (value.length <= 9) {
-                            setNewUserData({...newUserData, phone: value});
-                            setData('parent_phone', value);
+                          if (!selectedGuardianToLink) {
+                            const value = e.target.value.replace(/[^0-9]/g, "");
+                            if (value.length <= 9) {
+                              setNewUserData({...newUserData, phone: value});
+                              setData('parent_phone', value);
 
-                            // Limpiar errores previos de teléfono
-                            if (errors.parent_phone) {
-                              clearErrors('parent_phone');
+                              // Limpiar errores previos de teléfono
+                              if (errors.parent_phone) {
+                                clearErrors('parent_phone');
+                              }
                             }
                           }
                         }}
@@ -1365,29 +1416,45 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                         required
                         inputMode="numeric"
                         pattern="^9\\d{8}$"
+                        disabled={!!selectedGuardianToLink}
                       />
 
                       <TextField
                         id="new_parent_email"
                         label="Correo electrónico"
                         type="email"
-                        value={newUserData.email}
+                        value={selectedGuardianToLink ? data.parent_email : newUserData.email}
                         onChange={(e) => {
-                          const value = e.target.value;
-                          setNewUserData({...newUserData, email: value});
-                          setData('parent_email', value);
+                          if (!selectedGuardianToLink) {
+                            const value = e.target.value;
+                            setNewUserData({...newUserData, email: value});
+                            setData('parent_email', value);
 
-                          // Limpiar errores previos de email
-                          if (errors.parent_email) {
-                            clearErrors('parent_email');
+                            // Limpiar errores previos de email
+                            if (errors.parent_email) {
+                              clearErrors('parent_email');
+                            }
                           }
                         }}
                         placeholder="correo@ejemplo.com"
                         required
                         autoComplete="email"
+                        disabled={!!selectedGuardianToLink}
                       />
                     </div>
                   </div>
+
+                  {/* Información adicional cuando se selecciona un apoderado existente */}
+                  {selectedGuardianToLink && selectedGuardianToLink.hijos_count > 0 && (
+                    <div className="mt-4 p-3 bg-purple-100 border border-purple-200 rounded-lg">
+                      <p className="text-sm text-purple-800 flex items-center gap-2">
+                        <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Este apoderado ya tiene {selectedGuardianToLink.hijos_count} hijo{selectedGuardianToLink.hijos_count !== 1 ? 's' : ''} registrado{selectedGuardianToLink.hijos_count !== 1 ? 's' : ''} en el sistema.
+                      </p>
+                    </div>
+                  )}
 
                  
                 </div>
@@ -1465,6 +1532,8 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                   <>Complete los datos del apoderado</>
                 ) : userCreationMode && !dniValidated ? (
                   <>Complete el DNI del apoderado</>
+                ) : userCreationMode && selectedGuardianToLink ? (
+                  <>Vincular Apoderado al Hijo</>
                 ) : userCreationMode ? (
                   <>Crear y Asignar Apoderado</>
                 ) : (
