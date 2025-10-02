@@ -9,7 +9,7 @@ class WhatsAppServices
     public static function enviarWhatsApp($phone, $name, $password)
     {
         try {
-            Log::info("Iniciando envío de WhatsApp", [
+            Log::info("Iniciando envíode WhatsApp", [
                 'phone' => $phone,
                 'name' => $name,
                 'timestamp' => now()
