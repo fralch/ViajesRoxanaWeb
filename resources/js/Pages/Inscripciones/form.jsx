@@ -213,6 +213,13 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
   const [showUserCreationForm, setShowUserCreationForm] = useState(false);
   const [userCreationMode, setUserCreationMode] = useState(false);
 
+  // States for searching and linking existing guardians
+  const [showGuardianSearchModal, setShowGuardianSearchModal] = useState(false);
+  const [guardianSearchQuery, setGuardianSearchQuery] = useState('');
+  const [searchedGuardians, setSearchedGuardians] = useState([]);
+  const [searchingGuardians, setSearchingGuardians] = useState(false);
+  const [selectedGuardianToLink, setSelectedGuardianToLink] = useState(null);
+
   // States for child search functionality
   const [childSearchQuery, setChildSearchQuery] = useState('');
   const [filteredChildren, setFilteredChildren] = useState(hijosInscritos || []);
@@ -404,6 +411,66 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
     }
   };
 
+  // Función para buscar apoderados existentes
+  const searchGuardians = async (query) => {
+    console.log('=== SEARCH GUARDIANS FRONTEND ===');
+    console.log('Query:', query);
+
+    if (!query || query.trim().length < 3) {
+      console.log('Query too short, clearing results');
+      setSearchedGuardians([]);
+      return;
+    }
+
+    setSearchingGuardians(true);
+    try {
+      console.log('Sending request to /search-guardians with query:', query.trim());
+
+      const response = await axios.post('/search-guardians', {
+        query: query.trim()
+      });
+
+      console.log('Response received:', response.data);
+
+      if (response.data.guardians) {
+        console.log('Guardians found:', response.data.guardians.length);
+        setSearchedGuardians(response.data.guardians);
+      } else {
+        console.log('No guardians in response');
+        setSearchedGuardians([]);
+      }
+    } catch (error) {
+      console.error('Error buscando apoderados:', error);
+      console.error('Error details:', error.response?.data);
+      showError('Error', 'No se pudo buscar apoderados. Intenta nuevamente.');
+      setSearchedGuardians([]);
+    } finally {
+      setSearchingGuardians(false);
+    }
+  };
+
+  // Función para vincular un apoderado existente al hijo
+  const linkExistingGuardian = (guardian) => {
+    setSelectedGuardianToLink(guardian);
+
+    // Cargar datos del apoderado en el formulario
+    setData({
+      ...data,
+      parent_name: guardian.name,
+      parent_email: guardian.email,
+      parent_phone: guardian.phone || "",
+      parent_dni: guardian.dni || "",
+    });
+
+    setDniValidated(true);
+    setUserCreationMode(false); // No estamos creando, estamos vinculando
+    setShowGuardianSearchModal(false);
+    setGuardianSearchQuery('');
+    setSearchedGuardians([]);
+
+    showToast('Apoderado seleccionado. Confirma para vincular.', 'success');
+  };
+
   // Efecto para mostrar mensajes flash y errores al cargar
   useEffect(() => {
     if (flash?.success) {
@@ -478,6 +545,19 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
   useEffect(() => {
     setFilteredChildren(hijosInscritos || []);
   }, [hijosInscritos]);
+
+  // Efecto para buscar apoderados cuando cambia el query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (guardianSearchQuery && guardianSearchQuery.trim().length >= 3) {
+        searchGuardians(guardianSearchQuery);
+      } else {
+        setSearchedGuardians([]);
+      }
+    }, 500); // Debounce de 500ms
+
+    return () => clearTimeout(timer);
+  }, [guardianSearchQuery]);
 
   const addChild = () => {
     setData("children", [
@@ -1189,9 +1269,21 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
             {/* Formulario para crear nuevo usuario cuando es necesario */}
             {userCreationMode && selectedChild && (
               <section className="mb-8">
-                <SectionTitle subtitle="">
-                  Registrar Apoderado para {selectedChild.nombres}
-                </SectionTitle>
+                <div className="flex items-center justify-between mb-4">
+                  <SectionTitle subtitle="">
+                    Registrar Apoderado para {selectedChild.nombres}
+                  </SectionTitle>
+                  <button
+                    type="button"
+                    onClick={() => setShowGuardianSearchModal(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    Buscar Apoderado Existente
+                  </button>
+                </div>
 
                 <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
                   <div className="flex items-center gap-3 mb-4">
@@ -1460,6 +1552,150 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                      Volver a buscar
                    </button>
                  </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de búsqueda de apoderados existentes */}
+        {showGuardianSearchModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-auto max-h-[90vh] overflow-hidden flex flex-col">
+              {/* Header */}
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900">Buscar Apoderado Existente</h3>
+                    <p className="text-sm text-gray-600 mt-1">Busca por nombre, DNI, email o teléfono</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowGuardianSearchModal(false);
+                      setGuardianSearchQuery('');
+                      setSearchedGuardians([]);
+                    }}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* Search Input */}
+              <div className="p-6 border-b border-gray-200">
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={guardianSearchQuery}
+                    onChange={(e) => setGuardianSearchQuery(e.target.value)}
+                    placeholder="Escribe al menos 3 caracteres..."
+                    className={classNames(
+                      inputBase,
+                      "bg-white border-gray-300 focus:ring-purple-500 focus:border-purple-500 pr-10"
+                    )}
+                    autoFocus
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    {searchingGuardians ? (
+                      <svg className="animate-spin h-5 w-5 text-purple-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Results */}
+              <div className="flex-1 overflow-y-auto p-6">
+                {guardianSearchQuery.trim().length < 3 ? (
+                  <div className="text-center py-12">
+                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <p className="mt-4 text-sm text-gray-500">Escribe al menos 3 caracteres para buscar</p>
+                  </div>
+                ) : searchingGuardians ? (
+                  <div className="text-center py-12">
+                    <svg className="animate-spin mx-auto h-12 w-12 text-purple-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p className="mt-4 text-sm text-gray-500">Buscando apoderados...</p>
+                  </div>
+                ) : searchedGuardians.length === 0 ? (
+                  <div className="text-center py-12">
+                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                    </svg>
+                    <p className="mt-4 text-sm text-gray-500">No se encontraron apoderados</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {searchedGuardians.map((guardian) => (
+                      <div
+                        key={guardian.id}
+                        className="p-4 border border-gray-200 rounded-xl hover:border-purple-300 hover:bg-purple-50 transition-all cursor-pointer"
+                        onClick={() => linkExistingGuardian(guardian)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-900">{guardian.name}</h4>
+                            <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-600">
+                              {guardian.dni && (
+                                <div className="flex items-center gap-1">
+                                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+                                  </svg>
+                                  <span>DNI: {guardian.dni}</span>
+                                </div>
+                              )}
+                              {guardian.email && (
+                                <div className="flex items-center gap-1">
+                                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                  </svg>
+                                  <span className="truncate">{guardian.email}</span>
+                                </div>
+                              )}
+                              {guardian.phone && (
+                                <div className="flex items-center gap-1">
+                                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                  </svg>
+                                  <span>{guardian.phone}</span>
+                                </div>
+                              )}
+                              {guardian.hijos_count > 0 && (
+                                <div className="flex items-center gap-1">
+                                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                  </svg>
+                                  <span>{guardian.hijos_count} hijo{guardian.hijos_count !== 1 ? 's' : ''}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="ml-4">
+                            <button
+                              type="button"
+                              className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
+                            >
+                              Seleccionar
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>

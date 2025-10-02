@@ -1221,7 +1221,7 @@ class InscripcionController extends Controller
         if ($user) {
             // Si encontramos usuario, obtener sus hijos
             $hijos = $user->hijos()->get(['nombres', 'doc_tipo', 'doc_numero']);
-            
+
             return response()->json([
                 'exists' => true,
                 'user' => [
@@ -1242,6 +1242,49 @@ class InscripcionController extends Controller
 
         return response()->json([
             'exists' => false
+        ]);
+    }
+
+    /**
+     * Buscar apoderados (users) por nombre, DNI, email o teléfono
+     */
+    public function searchGuardians(Request $request)
+    {
+        \Log::info('=== SEARCH GUARDIANS DEBUG ===');
+        \Log::info('Request data:', $request->all());
+
+        $request->validate([
+            'query' => 'required|string|min:3',
+        ]);
+
+        $searchQuery = $request->input('query');
+        \Log::info('Search query:', ['query' => $searchQuery]);
+
+        // Buscar usuarios que NO sean admin y que coincidan con el query
+        $guardians = User::where('is_admin', false)
+            ->where(function($q) use ($searchQuery) {
+                $q->where('name', 'like', "%{$searchQuery}%")
+                  ->orWhere('dni', 'like', "%{$searchQuery}%")
+                  ->orWhere('email', 'like', "%{$searchQuery}%")
+                  ->orWhere('phone', 'like', "%{$searchQuery}%");
+            })
+            ->withCount('hijos') // Contar cuántos hijos tiene cada apoderado
+            ->limit(20)
+            ->get(['id', 'name', 'email', 'phone', 'dni']);
+
+        \Log::info('Guardians found:', ['count' => $guardians->count(), 'guardians' => $guardians->toArray()]);
+
+        return response()->json([
+            'guardians' => $guardians->map(function($guardian) {
+                return [
+                    'id' => $guardian->id,
+                    'name' => $guardian->name,
+                    'email' => $guardian->email,
+                    'phone' => $guardian->phone,
+                    'dni' => $guardian->dni,
+                    'hijos_count' => $guardian->hijos_count
+                ];
+            })
         ]);
     }
 }
