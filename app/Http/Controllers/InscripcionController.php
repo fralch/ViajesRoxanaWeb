@@ -686,7 +686,7 @@ class InscripcionController extends Controller
         \Log::info('Request headers:', $request->headers->all());
         \Log::info('Request input:', $request->input());
 
-        \Log::info('Selected child ID:', ['selected_child_id' => $request->selected_child_id]);
+        \Log::info('Selected children IDs:', ['selected_children_ids' => $request->selected_children_ids]);
         \Log::info('User creation mode:', ['user_creation_mode' => $request->user_creation_mode]);
         \Log::info('Confirm existing guardian:', ['confirm_existing_guardian' => $request->confirm_existing_guardian]);
         \Log::info('Assign guardian:', ['assign_guardian' => $request->assign_guardian]);
@@ -698,44 +698,59 @@ class InscripcionController extends Controller
             'parent_dni' => $request->parent_dni
         ]);
 
-        $childId = $request->selected_child_id;
+        $childrenIds = $request->selected_children_ids ?? [$request->selected_child_id]; // Mantener compatibilidad con versión anterior
         $userCreationMode = $request->user_creation_mode;
         $confirmExistingGuardian = $request->confirm_existing_guardian;
 
-        // Find the child
-        $child = Hijo::findOrFail($childId);
-        \Log::info('Child found:', ['id' => $child->id, 'nombres' => $child->nombres, 'user_id' => $child->user_id]);
+        // Find all children
+        $children = Hijo::whereIn('id', $childrenIds)->get();
+        \Log::info('Children found:', ['count' => $children->count(), 'ids' => $children->pluck('id')->toArray()]);
 
-        // Verify the child is enrolled in this subgroup
-        $inscription = Inscripcion::where('hijo_id', $childId)
+        // Verify all children are enrolled in this subgroup
+        $inscriptions = Inscripcion::whereIn('hijo_id', $childrenIds)
             ->where('subgrupo_id', $subgrupo->id)
-            ->first();
+            ->get();
 
-        if (!$inscription) {
-            \Log::error('Child not enrolled in subgroup:', ['child_id' => $childId, 'subgrupo_id' => $subgrupo->id]);
+        if ($inscriptions->count() !== count($childrenIds)) {
+            \Log::error('Not all children enrolled in subgroup:', ['expected' => count($childrenIds), 'found' => $inscriptions->count()]);
             return back()->withErrors([
-                'selected_child_id' => 'El niño seleccionado no está inscrito en este subgrupo.'
+                'selected_children_ids' => 'No todos los niños seleccionados están inscritos en este subgrupo.'
             ]);
         }
 
-        \Log::info('Inscription found:', ['id' => $inscription->id, 'confirmado' => $inscription->confirmado ?? 'null']);
+        \Log::info('All inscriptions found:', ['count' => $inscriptions->count()]);
 
-        // If just confirming existing guardian, confirm inscription and send WhatsApp message
-        if ($confirmExistingGuardian && $child->user_id !== 1) {
-            \Log::info('Confirming existing guardian for child');
-            $existingUser = User::find($child->user_id);
+        // CASO 1: Usar apoderado existente para todos los hijos
+        if ($request->use_existing_guardian && $request->existing_guardian_id) {
+            \Log::info('Using existing guardian for all children:', ['guardian_id' => $request->existing_guardian_id]);
+            $existingUser = User::find($request->existing_guardian_id);
 
             if ($existingUser) {
                 \Log::info('Existing guardian found:', ['id' => $existingUser->id, 'name' => $existingUser->name]);
 
-                // Confirm the inscription
-                $inscription->update(['confirmado' => true]);
-                \Log::info('Inscription confirmed');
+                // Asignar el apoderado a todos los hijos
+                foreach ($children as $child) {
+                    $child->update([
+                        'user_id' => $existingUser->id,
+                        'nums_emergencia' => [$existingUser->phone]
+                    ]);
+                    \Log::info('Child updated with guardian:', ['child_id' => $child->id, 'guardian_id' => $existingUser->id]);
+                }
 
-                // Send WhatsApp confirmation message
+                // Confirmar todas las inscripciones
+                foreach ($inscriptions as $inscription) {
+                    $inscription->update([
+                        'usuario_id' => $existingUser->id,
+                        'confirmado' => true
+                    ]);
+                    \Log::info('Inscription confirmed:', ['inscription_id' => $inscription->id]);
+                }
+
+                // Send WhatsApp confirmation message for all children
+                $childrenNames = $children->pluck('nombres')->join(', ');
                 WhatsAppService::enviarConfirmacionInscripcion(
                     $existingUser->phone,
-                    $child->nombres,
+                    $childrenNames,
                     $subgrupo->nombre,
                     $paquete->nombre,
                     $existingUser->email,
@@ -745,28 +760,29 @@ class InscripcionController extends Controller
 
                 return response()->json([
                     'success' => true,
-                    'message' => 'Inscripción confirmada exitosamente. Se ha enviado un mensaje de confirmación por WhatsApp.'
+                    'message' => 'Inscripciones confirmadas exitosamente. Se ha enviado un mensaje de confirmación por WhatsApp.'
                 ]);
             }
 
-            \Log::error('Existing guardian not found for user_id:', ['user_id' => $child->user_id]);
+            \Log::error('Existing guardian not found:', ['guardian_id' => $request->existing_guardian_id]);
             return response()->json([
                 'success' => false,
-                'message' => 'No se pudo encontrar el apoderado del niño.'
+                'message' => 'No se pudo encontrar el apoderado.'
             ], 400);
         }
 
-        \Log::info('Child needs new guardian assignment');
+        \Log::info('Children need new guardian assignment or confirmation');
 
         try {
-            DB::transaction(function () use ($request, $child, $inscription, $userCreationMode, $subgrupo, $paquete) {
-                \Log::info('Starting DB transaction for guardian assignment');
+            DB::transaction(function () use ($request, $children, $inscriptions, $userCreationMode, $subgrupo, $paquete) {
+                \Log::info('Starting DB transaction for guardian assignment - MULTIPLE CHILDREN');
                 \Log::info('Request params:', [
                     'has_link_existing_guardian' => $request->has('link_existing_guardian'),
                     'link_existing_guardian' => $request->link_existing_guardian,
                     'has_existing_guardian_id' => $request->has('existing_guardian_id'),
                     'existing_guardian_id' => $request->existing_guardian_id,
                     'userCreationMode' => $userCreationMode,
+                    'children_count' => $children->count(),
                     'all_request' => $request->all()
                 ]);
 
@@ -789,33 +805,40 @@ class InscripcionController extends Controller
                         'phone' => $existingGuardian->phone
                     ]);
 
-                    // Actualizar hijo con el apoderado existente
-                    \Log::info('Before child update:', ['child_user_id' => $child->user_id]);
-                    $child->user_id = $existingGuardian->id;
-                    $child->nums_emergencia = [$existingGuardian->phone];
-                    $child->save();
-                    \Log::info('After child update:', ['child_user_id' => $child->user_id]);
+                    // Actualizar todos los hijos con el apoderado existente
+                    foreach ($children as $child) {
+                        \Log::info('Before child update:', ['child_id' => $child->id, 'child_user_id' => $child->user_id]);
+                        $child->user_id = $existingGuardian->id;
+                        $child->nums_emergencia = [$existingGuardian->phone];
+                        $child->save();
+                        \Log::info('After child update:', ['child_id' => $child->id, 'child_user_id' => $child->user_id]);
+                    }
 
-                    // Actualizar inscripción
-                    \Log::info('Before inscription update:', [
-                        'inscription_usuario_id' => $inscription->usuario_id,
-                        'inscription_confirmado' => $inscription->confirmado
-                    ]);
-                    $inscription->usuario_id = $existingGuardian->id;
-                    $inscription->confirmado = true;
-                    $inscription->save();
-                    \Log::info('After inscription update:', [
-                        'inscription_usuario_id' => $inscription->usuario_id,
-                        'inscription_confirmado' => $inscription->confirmado
-                    ]);
+                    // Actualizar todas las inscripciones
+                    foreach ($inscriptions as $inscription) {
+                        \Log::info('Before inscription update:', [
+                            'inscription_id' => $inscription->id,
+                            'inscription_usuario_id' => $inscription->usuario_id,
+                            'inscription_confirmado' => $inscription->confirmado
+                        ]);
+                        $inscription->usuario_id = $existingGuardian->id;
+                        $inscription->confirmado = true;
+                        $inscription->save();
+                        \Log::info('After inscription update:', [
+                            'inscription_id' => $inscription->id,
+                            'inscription_usuario_id' => $inscription->usuario_id,
+                            'inscription_confirmado' => $inscription->confirmado
+                        ]);
+                    }
 
                     \Log::info('=== LINKING EXISTING GUARDIAN SUCCESS ===');
 
                     // Enviar WhatsApp de confirmación
                     try {
+                        $childrenNames = $children->pluck('nombres')->join(', ');
                         WhatsAppService::enviarConfirmacionInscripcionExistente(
                             $existingGuardian->phone,
-                            $child->nombres,
+                            $childrenNames,
                             $subgrupo->nombre,
                             $paquete->nombre
                         );
@@ -871,29 +894,43 @@ class InscripcionController extends Controller
 
                     \Log::info('New user created:', ['id' => $newUser->id, 'name' => $newUser->name, 'email' => $newUser->email, 'phone' => $newUser->phone]);
 
-                    // CRITICAL FIX: Update child's user_id to new guardian
-                    $child->update([
-                        'user_id' => $newUser->id,
-                        'nums_emergencia' => [$request->parent_phone] // Update emergency contact
-                    ]);
-                    \Log::info('Child updated with new guardian ID and emergency contact:', ['child_id' => $child->id, 'old_user_id' => $child->getOriginal('user_id'), 'new_user_id' => $child->user_id]);
+                    // Update all children's user_id to new guardian
+                    foreach ($children as $child) {
+                        $child->update([
+                            'user_id' => $newUser->id,
+                            'nums_emergencia' => [$request->parent_phone] // Update emergency contact
+                        ]);
+                        \Log::info('Child updated with new guardian ID and emergency contact:', [
+                            'child_id' => $child->id,
+                            'old_user_id' => $child->getOriginal('user_id'),
+                            'new_user_id' => $child->user_id
+                        ]);
+                    }
 
-                    // Update inscription's usuario_id and confirm it
-                    $inscription->update([
-                        'usuario_id' => $newUser->id,
-                        'confirmado' => true
-                    ]);
-                    \Log::info('Inscription updated and confirmed:', ['inscription_id' => $inscription->id, 'old_usuario_id' => $inscription->getOriginal('usuario_id'), 'new_usuario_id' => $inscription->usuario_id, 'confirmado' => $inscription->confirmado]);
+                    // Update all inscriptions' usuario_id and confirm them
+                    foreach ($inscriptions as $inscription) {
+                        $inscription->update([
+                            'usuario_id' => $newUser->id,
+                            'confirmado' => true
+                        ]);
+                        \Log::info('Inscription updated and confirmed:', [
+                            'inscription_id' => $inscription->id,
+                            'old_usuario_id' => $inscription->getOriginal('usuario_id'),
+                            'new_usuario_id' => $inscription->usuario_id,
+                            'confirmado' => $inscription->confirmado
+                        ]);
+                    }
 
                     // Send WhatsApp notification
                     if ($newUser) {
                         WhatsAppService::enviarWhatsApp($request->parent_phone, $request->parent_email, $password);
                         \Log::info('Welcome WhatsApp sent');
 
-                        // Also send confirmation message with email and password
+                        // Also send confirmation message with all children names
+                        $childrenNames = $children->pluck('nombres')->join(', ');
                         WhatsAppService::enviarConfirmacionInscripcion(
                             $request->parent_phone,
-                            $child->nombres,
+                            $childrenNames,
                             $subgrupo->nombre,
                             $paquete->nombre,
                             $request->parent_email,
@@ -921,29 +958,34 @@ class InscripcionController extends Controller
                             'dni' => $request->parent_dni ?: $existingUser->dni,
                         ]);
 
-                        // CRITICAL FIX: Update child's user_id to existing guardian
-                        $child->update([
-                            'user_id' => $existingUser->id,
-                            'nums_emergencia' => [$existingUser->phone] // Update emergency contact
-                        ]);
-                        \Log::info('Child updated with existing guardian ID and emergency contact');
+                        // Update all children's user_id to existing guardian
+                        foreach ($children as $child) {
+                            $child->update([
+                                'user_id' => $existingUser->id,
+                                'nums_emergencia' => [$existingUser->phone] // Update emergency contact
+                            ]);
+                            \Log::info('Child updated with existing guardian ID and emergency contact', ['child_id' => $child->id]);
+                        }
 
-                        // Update inscription's usuario_id and confirm it
-                        $inscription->update([
-                            'usuario_id' => $existingUser->id,
-                            'confirmado' => true
-                        ]);
-                        \Log::info('Inscription updated and confirmed with existing user');
+                        // Update all inscriptions' usuario_id and confirm them
+                        foreach ($inscriptions as $inscription) {
+                            $inscription->update([
+                                'usuario_id' => $existingUser->id,
+                                'confirmado' => true
+                            ]);
+                            \Log::info('Inscription updated and confirmed with existing user', ['inscription_id' => $inscription->id]);
+                        }
 
                         // Send WhatsApp with existing user credentials (password is DNI)
                         $password = $existingUser->dni;
                         WhatsAppService::enviarWhatsApp($existingUser->phone, $existingUser->email, $password);
                         \Log::info('Welcome WhatsApp sent to existing user');
 
-                        // Also send confirmation message with email and password
+                        // Also send confirmation message with all children names
+                        $childrenNames = $children->pluck('nombres')->join(', ');
                         WhatsAppService::enviarConfirmacionInscripcion(
                             $existingUser->phone,
-                            $child->nombres,
+                            $childrenNames,
                             $subgrupo->nombre,
                             $paquete->nombre,
                             $existingUser->email,
@@ -962,15 +1004,23 @@ class InscripcionController extends Controller
 
             \Log::info('=== GUARDIAN ASSIGNMENT DEBUG END - SUCCESS ===');
 
-            // Refresh child and inscription data to show updates
-            $child->refresh();
-            $inscription->refresh();
+            // Refresh all children and inscriptions data to show updates
+            foreach ($children as $child) {
+                $child->refresh();
+                \Log::info('Final verification - Child user_id:', ['child_id' => $child->id, 'child_user_id' => $child->user_id]);
+            }
 
-            \Log::info('Final verification - Child user_id:', ['child_user_id' => $child->user_id]);
-            \Log::info('Final verification - Inscription usuario_id:', ['inscription_usuario_id' => $inscription->usuario_id, 'confirmado' => $inscription->confirmado]);
+            foreach ($inscriptions as $inscription) {
+                $inscription->refresh();
+                \Log::info('Final verification - Inscription usuario_id:', [
+                    'inscription_id' => $inscription->id,
+                    'inscription_usuario_id' => $inscription->usuario_id,
+                    'confirmado' => $inscription->confirmado
+                ]);
+            }
 
             return redirect()->route('inscripcion.subgrupo.form', [$paquete->id, $grupo->id, $subgrupo->id])
-                ->with('success', 'Apoderado asignado exitosamente. El niño ahora tiene un apoderado responsable y se han enviado las credenciales por WhatsApp.');
+                ->with('success', 'Apoderado asignado exitosamente. Los ' . $children->count() . ' alumnos ahora tienen un apoderado responsable y se han enviado las credenciales por WhatsApp.');
 
         } catch (\Exception $e) {
             \Log::error('Guardian assignment error', [
@@ -1029,50 +1079,65 @@ class InscripcionController extends Controller
         \Log::info('Full request data:', $request->all());
         \Log::info('Request method:', ['method' => $request->method()]);
 
-        $childId = $request->selected_child_id;
+        $childrenIds = $request->selected_children_ids ?? [$request->selected_child_id]; // Mantener compatibilidad
         $userCreationMode = $request->user_creation_mode;
         $confirmExistingGuardian = $request->confirm_existing_guardian;
 
-        // Find the child
-        $child = Hijo::findOrFail($childId);
-        \Log::info('Child found:', ['id' => $child->id, 'nombres' => $child->nombres, 'user_id' => $child->user_id]);
+        // Find all children
+        $children = Hijo::whereIn('id', $childrenIds)->get();
+        \Log::info('Children found:', ['count' => $children->count(), 'ids' => $children->pluck('id')->toArray()]);
 
         // Get all active subgroups for this group
         $subgrupos = $grupo->subgrupos()->activos()->get();
 
-        // Verify the child is enrolled in this group (any of its subgroups)
-        $inscription = Inscripcion::where('hijo_id', $childId)
+        // Verify all children are enrolled in this group (any of its subgroups)
+        $inscriptions = Inscripcion::whereIn('hijo_id', $childrenIds)
             ->whereIn('subgrupo_id', $subgrupos->pluck('id'))
-            ->first();
+            ->get();
 
-        if (!$inscription) {
-            \Log::error('Child not enrolled in group:', ['child_id' => $childId, 'grupo_id' => $grupo->id]);
+        if ($inscriptions->count() !== count($childrenIds)) {
+            \Log::error('Not all children enrolled in group:', ['expected' => count($childrenIds), 'found' => $inscriptions->count()]);
             return back()->withErrors([
-                'selected_child_id' => 'El niño seleccionado no está inscrito en este grupo.'
+                'selected_children_ids' => 'No todos los niños seleccionados están inscritos en este grupo.'
             ]);
         }
 
-        \Log::info('Inscription found:', ['id' => $inscription->id, 'subgrupo_id' => $inscription->subgrupo_id, 'confirmado' => $inscription->confirmado ?? 'null']);
+        \Log::info('All inscriptions found:', ['count' => $inscriptions->count()]);
 
-        // If just confirming existing guardian, confirm inscription and send WhatsApp message
-        if ($confirmExistingGuardian && $child->user_id !== 1) {
-            \Log::info('Confirming existing guardian for child');
-            $existingUser = User::find($child->user_id);
+        // CASO 1: Usar apoderado existente para todos los hijos
+        if ($request->use_existing_guardian && $request->existing_guardian_id) {
+            \Log::info('Using existing guardian for all children:', ['guardian_id' => $request->existing_guardian_id]);
+            $existingUser = User::find($request->existing_guardian_id);
 
             if ($existingUser) {
                 \Log::info('Existing guardian found:', ['id' => $existingUser->id, 'name' => $existingUser->name]);
 
-                // Get the subgroup for the inscription
-                $subgrupo = Subgrupo::find($inscription->subgrupo_id);
+                // Get the subgroup for the first inscription
+                $subgrupo = Subgrupo::find($inscriptions->first()->subgrupo_id);
 
-                // Confirm the inscription
-                $inscription->update(['confirmado' => true]);
-                \Log::info('Inscription confirmed');
+                // Asignar el apoderado a todos los hijos
+                foreach ($children as $child) {
+                    $child->update([
+                        'user_id' => $existingUser->id,
+                        'nums_emergencia' => [$existingUser->phone]
+                    ]);
+                    \Log::info('Child updated with guardian:', ['child_id' => $child->id, 'guardian_id' => $existingUser->id]);
+                }
 
-                // Send WhatsApp confirmation message
+                // Confirmar todas las inscripciones
+                foreach ($inscriptions as $inscription) {
+                    $inscription->update([
+                        'usuario_id' => $existingUser->id,
+                        'confirmado' => true
+                    ]);
+                    \Log::info('Inscription confirmed:', ['inscription_id' => $inscription->id]);
+                }
+
+                // Send WhatsApp confirmation message for all children
+                $childrenNames = $children->pluck('nombres')->join(', ');
                 WhatsAppService::enviarConfirmacionInscripcion(
                     $existingUser->phone,
-                    $child->nombres,
+                    $childrenNames,
                     $subgrupo->nombre,
                     $paquete->nombre,
                     $existingUser->email,
@@ -1082,22 +1147,22 @@ class InscripcionController extends Controller
 
                 return response()->json([
                     'success' => true,
-                    'message' => 'Inscripción confirmada exitosamente. Se ha enviado un mensaje de confirmación por WhatsApp.'
+                    'message' => 'Inscripciones confirmadas exitosamente. Se ha enviado un mensaje de confirmación por WhatsApp.'
                 ]);
             }
 
-            \Log::error('Existing guardian not found for user_id:', ['user_id' => $child->user_id]);
+            \Log::error('Existing guardian not found:', ['guardian_id' => $request->existing_guardian_id]);
             return response()->json([
                 'success' => false,
-                'message' => 'No se pudo encontrar el apoderado del niño.'
+                'message' => 'No se pudo encontrar el apoderado.'
             ], 400);
         }
 
-        \Log::info('Child needs new guardian assignment');
+        \Log::info('Children need new guardian assignment or confirmation');
 
         try {
-            DB::transaction(function () use ($request, $child, $inscription, $userCreationMode, $paquete, $grupo) {
-                \Log::info('Starting DB transaction for guardian assignment');
+            DB::transaction(function () use ($request, $children, $inscriptions, $userCreationMode, $paquete, $grupo) {
+                \Log::info('Starting DB transaction for guardian assignment - MULTIPLE CHILDREN');
                 \Log::info('Request params:', [
                     'has_link_existing_guardian' => $request->has('link_existing_guardian'),
                     'link_existing_guardian' => $request->link_existing_guardian,
@@ -1107,8 +1172,8 @@ class InscripcionController extends Controller
                     'all_request' => $request->all()
                 ]);
 
-                // Get the subgroup for the inscription
-                $subgrupo = Subgrupo::find($inscription->subgrupo_id);
+                // Get the subgroup for the first inscription
+                $subgrupo = Subgrupo::find($inscriptions->first()->subgrupo_id);
 
                 // Caso 1: Vincular apoderado existente
                 if ($request->has('link_existing_guardian') && $request->link_existing_guardian && $request->has('existing_guardian_id')) {
@@ -1129,33 +1194,40 @@ class InscripcionController extends Controller
                         'phone' => $existingGuardian->phone
                     ]);
 
-                    // Actualizar hijo con el apoderado existente
-                    \Log::info('Before child update:', ['child_user_id' => $child->user_id]);
-                    $child->user_id = $existingGuardian->id;
-                    $child->nums_emergencia = [$existingGuardian->phone];
-                    $child->save();
-                    \Log::info('After child update:', ['child_user_id' => $child->user_id]);
+                    // Actualizar todos los hijos con el apoderado existente
+                    foreach ($children as $child) {
+                        \Log::info('Before child update:', ['child_id' => $child->id, 'child_user_id' => $child->user_id]);
+                        $child->user_id = $existingGuardian->id;
+                        $child->nums_emergencia = [$existingGuardian->phone];
+                        $child->save();
+                        \Log::info('After child update:', ['child_id' => $child->id, 'child_user_id' => $child->user_id]);
+                    }
 
-                    // Actualizar inscripción
-                    \Log::info('Before inscription update:', [
-                        'inscription_usuario_id' => $inscription->usuario_id,
-                        'inscription_confirmado' => $inscription->confirmado
-                    ]);
-                    $inscription->usuario_id = $existingGuardian->id;
-                    $inscription->confirmado = true;
-                    $inscription->save();
-                    \Log::info('After inscription update:', [
-                        'inscription_usuario_id' => $inscription->usuario_id,
-                        'inscription_confirmado' => $inscription->confirmado
-                    ]);
+                    // Actualizar todas las inscripciones
+                    foreach ($inscriptions as $inscription) {
+                        \Log::info('Before inscription update:', [
+                            'inscription_id' => $inscription->id,
+                            'inscription_usuario_id' => $inscription->usuario_id,
+                            'inscription_confirmado' => $inscription->confirmado
+                        ]);
+                        $inscription->usuario_id = $existingGuardian->id;
+                        $inscription->confirmado = true;
+                        $inscription->save();
+                        \Log::info('After inscription update:', [
+                            'inscription_id' => $inscription->id,
+                            'inscription_usuario_id' => $inscription->usuario_id,
+                            'inscription_confirmado' => $inscription->confirmado
+                        ]);
+                    }
 
                     \Log::info('=== LINKING EXISTING GUARDIAN SUCCESS ===');
 
                     // Enviar WhatsApp de confirmación
                     try {
+                        $childrenNames = $children->pluck('nombres')->join(', ');
                         WhatsAppService::enviarConfirmacionInscripcionExistente(
                             $existingGuardian->phone,
-                            $child->nombres,
+                            $childrenNames,
                             $subgrupo->nombre,
                             $paquete->nombre
                         );
@@ -1206,29 +1278,34 @@ class InscripcionController extends Controller
 
                     \Log::info('New user created:', ['id' => $newUser->id, 'name' => $newUser->name]);
 
-                    // Update child's user_id to new guardian
-                    $child->update([
-                        'user_id' => $newUser->id,
-                        'nums_emergencia' => [$request->parent_phone]
-                    ]);
-                    \Log::info('Child updated with new guardian ID');
+                    // Update all children's user_id to new guardian
+                    foreach ($children as $child) {
+                        $child->update([
+                            'user_id' => $newUser->id,
+                            'nums_emergencia' => [$request->parent_phone]
+                        ]);
+                        \Log::info('Child updated with new guardian ID', ['child_id' => $child->id]);
+                    }
 
-                    // Update inscription's usuario_id and confirm it
-                    $inscription->update([
-                        'usuario_id' => $newUser->id,
-                        'confirmado' => true
-                    ]);
-                    \Log::info('Inscription updated and confirmed');
+                    // Update all inscriptions' usuario_id and confirm them
+                    foreach ($inscriptions as $inscription) {
+                        $inscription->update([
+                            'usuario_id' => $newUser->id,
+                            'confirmado' => true
+                        ]);
+                        \Log::info('Inscription updated and confirmed', ['inscription_id' => $inscription->id]);
+                    }
 
                     // Send WhatsApp notifications
                     if ($newUser) {
                         WhatsAppService::enviarWhatsApp($request->parent_phone, $request->parent_email, $password);
                         \Log::info('Welcome WhatsApp sent');
 
-                        // Also send confirmation message
+                        // Also send confirmation message with all children names
+                        $childrenNames = $children->pluck('nombres')->join(', ');
                         WhatsAppService::enviarConfirmacionInscripcion(
                             $request->parent_phone,
-                            $child->nombres,
+                            $childrenNames,
                             $subgrupo->nombre,
                             $paquete->nombre,
                             $request->parent_email,
@@ -1256,29 +1333,34 @@ class InscripcionController extends Controller
                             'dni' => $request->parent_dni ?: $existingUser->dni,
                         ]);
 
-                        // Update child's user_id to existing guardian
-                        $child->update([
-                            'user_id' => $existingUser->id,
-                            'nums_emergencia' => [$existingUser->phone]
-                        ]);
-                        \Log::info('Child updated with existing guardian ID');
+                        // Update all children's user_id to existing guardian
+                        foreach ($children as $child) {
+                            $child->update([
+                                'user_id' => $existingUser->id,
+                                'nums_emergencia' => [$existingUser->phone]
+                            ]);
+                            \Log::info('Child updated with existing guardian ID', ['child_id' => $child->id]);
+                        }
 
-                        // Update inscription's usuario_id and confirm it
-                        $inscription->update([
-                            'usuario_id' => $existingUser->id,
-                            'confirmado' => true
-                        ]);
-                        \Log::info('Inscription updated and confirmed with existing user');
+                        // Update all inscriptions' usuario_id and confirm them
+                        foreach ($inscriptions as $inscription) {
+                            $inscription->update([
+                                'usuario_id' => $existingUser->id,
+                                'confirmado' => true
+                            ]);
+                            \Log::info('Inscription updated and confirmed with existing user', ['inscription_id' => $inscription->id]);
+                        }
 
                         // Send WhatsApp with existing user credentials
                         $password = $existingUser->dni;
                         WhatsAppService::enviarWhatsApp($existingUser->phone, $existingUser->email, $password);
                         \Log::info('Welcome WhatsApp sent to existing user');
 
-                        // Also send confirmation message
+                        // Also send confirmation message with all children names
+                        $childrenNames = $children->pluck('nombres')->join(', ');
                         WhatsAppService::enviarConfirmacionInscripcion(
                             $existingUser->phone,
-                            $child->nombres,
+                            $childrenNames,
                             $subgrupo->nombre,
                             $paquete->nombre,
                             $existingUser->email,
@@ -1298,7 +1380,7 @@ class InscripcionController extends Controller
             \Log::info('=== GUARDIAN ASSIGNMENT GROUP DEBUG END - SUCCESS ===');
 
             return redirect()->route('inscripcion.form', [$paquete->id, $grupo->id])
-                ->with('success', 'Apoderado asignado exitosamente. El niño ahora tiene un apoderado responsable y se han enviado las credenciales por WhatsApp.');
+                ->with('success', 'Apoderado asignado exitosamente. Los ' . $children->count() . ' alumnos ahora tienen un apoderado responsable y se han enviado las credenciales por WhatsApp.');
 
         } catch (\Exception $e) {
             \Log::error('Guardian assignment group error', [
