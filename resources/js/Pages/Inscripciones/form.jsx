@@ -1151,18 +1151,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                   <SectionTitle subtitle="">
                     {selectedGuardianToLink ? `Apoderado Seleccionado para ${selectedChild.nombres}` : `Registrar Apoderado para ${selectedChild.nombres}`}
                   </SectionTitle>
-                  {!selectedGuardianToLink && (
-                    <button
-                      type="button"
-                      onClick={() => setShowGuardianSearchModal(true)}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
-                      Buscar Apoderado Existente
-                    </button>
-                  )}
+                 
                 </div>
 
                 <div className={classNames(
