@@ -877,11 +877,11 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
         <Card>
           <form onSubmit={handleSubmit} noValidate>
             {/* Logo */}
-            <div className="flex justify-center mb-6">
+            <div className="flex justify-center mb-10">
               <img
                 src="/imgs/logo-viajesroxana.png"
                 alt="Viajes Roxana"
-                className="h-12 w-auto"
+                className="h-8 w-auto mx-auto"
                 loading="lazy"
               />
             </div>
