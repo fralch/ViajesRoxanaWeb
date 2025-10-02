@@ -4,7 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Log;
 
-class WhatsAppServices
+class WhatsAppService
 {
     public static function enviarWhatsApp($phone, $name, $password)
     {
