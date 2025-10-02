@@ -216,6 +216,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
   const [childSearchQuery, setChildSearchQuery] = useState('');
   const [filteredChildren, setFilteredChildren] = useState(hijosInscritos || []);
   const [showChildDropdown, setShowChildDropdown] = useState(false);
+  const [showSearchBar, setShowSearchBar] = useState(true);
 
   // New user creation form data
   const [newUserData, setNewUserData] = useState({
@@ -384,6 +385,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
   // Función para seleccionar un hijo del dropdown
   const selectChildFromDropdown = (child) => {
     handleChildSelection(child);
+    setShowSearchBar(false);
   };
 
   // Función para limpiar todas las selecciones
@@ -963,79 +965,89 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                   </div>
 
                     <div className="space-y-4">
-                      <div className="relative">
-                        <label htmlFor="child_search" className="block text-sm font-medium text-gray-700 mb-2">
-                          Barrra de búsqueda
-                        </label>
+                      {!showSearchBar && selectedChildren.length > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => setShowSearchBar(true)}
+                          className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl shadow-sm hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                        >
+                          Agregar otro hijo
+                        </button>
+                      ) : (
                         <div className="relative">
-                          <input
-                            id="child_search"
-                            type="text"
-                            value={childSearchQuery}
-                            onChange={handleChildSearchChange}
-                            onFocus={() => setShowChildDropdown(true)}
-                            onBlur={() => setTimeout(() => setShowChildDropdown(false), 200)}
-                            placeholder="Ej. Pedro Pascal Suarez o DNI 71541225"
-                            className={classNames(
-                              inputBase,
-                              "bg-white/80 backdrop-blur border-gray-300 focus:ring-green-500 focus:border-green-500 pr-10"
-                            )}
-                          />
-                          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
+                          <label htmlFor="child_search" className="block text-sm font-medium text-gray-700 mb-2">
+                            Barra de búsqueda
+                          </label>
+                          <div className="relative">
+                            <input
+                              id="child_search"
+                              type="text"
+                              value={childSearchQuery}
+                              onChange={handleChildSearchChange}
+                              onFocus={() => setShowChildDropdown(true)}
+                              onBlur={() => setTimeout(() => setShowChildDropdown(false), 200)}
+                              placeholder="Ej. Pedro Pascal Suarez o DNI 71541225"
+                              className={classNames(
+                                inputBase,
+                                "bg-white/80 backdrop-blur border-gray-300 focus:ring-green-500 focus:border-green-500 pr-10"
+                              )}
+                            />
+                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                              </svg>
+                            </div>
                           </div>
-                        </div>
 
-                        {/* Dropdown con resultados filtrados */}
-                        {showChildDropdown && filteredChildren.length > 0 && (
-                          <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                            {filteredChildren.map((hijo) => {
-                              const isSelected = selectedChildrenIds.includes(hijo.id);
-                              return (
-                                <div
-                                  key={hijo.id}
-                                  className={classNames(
-                                    "px-4 py-3 border-b border-gray-100 last:border-b-0",
-                                    isSelected ? "bg-green-100" : "hover:bg-green-50"
-                                  )}
-                                >
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex-1">
-                                      <div className="font-medium text-gray-900">{hijo.nombres}</div>
-                                      <div className="text-sm text-gray-600">
-                                        {hijo.doc_tipo}: {hijo.doc_numero} - {hijo.subgrupo_nombre}
+                          {/* Dropdown con resultados filtrados */}
+                          {showChildDropdown && filteredChildren.length > 0 && (
+                            <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                              {filteredChildren.map((hijo) => {
+                                const isSelected = selectedChildrenIds.includes(hijo.id);
+                                return (
+                                  <div
+                                    key={hijo.id}
+                                    className={classNames(
+                                      "px-4 py-3 border-b border-gray-100 last:border-b-0",
+                                      isSelected ? "bg-green-100" : "hover:bg-green-50"
+                                    )}
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex-1">
+                                        <div className="font-medium text-gray-900">{hijo.nombres}</div>
+                                        <div className="text-sm text-gray-600">
+                                          {hijo.doc_tipo}: {hijo.doc_numero} - {hijo.subgrupo_nombre}
+                                        </div>
                                       </div>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          selectChildFromDropdown(hijo);
+                                        }}
+                                        className={classNames(
+                                          "ml-3 px-4 py-2 text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-1 transition-colors",
+                                          isSelected
+                                            ? "bg-gray-400 text-white hover:bg-gray-500 focus:ring-gray-500"
+                                            : "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500"
+                                        )}
+                                      >
+                                        {isSelected ? 'Remover' : 'Seleccionar'}
+                                      </button>
                                     </div>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        selectChildFromDropdown(hijo);
-                                      }}
-                                      className={classNames(
-                                        "ml-3 px-4 py-2 text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-1 transition-colors",
-                                        isSelected
-                                          ? "bg-gray-400 text-white hover:bg-gray-500 focus:ring-gray-500"
-                                          : "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500"
-                                      )}
-                                    >
-                                      {isSelected ? 'Remover' : 'Seleccionar'}
-                                    </button>
                                   </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
+                                );
+                              })}
+                            </div>
+                          )}
 
-                        {/* Mensaje cuando no hay resultados */}
-                        {showChildDropdown && childSearchQuery.trim() && filteredChildren.length === 0 && (
-                          <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-xl shadow-lg p-4 text-center text-gray-500">
-                            No se encontraron alumnos con ese nombre o documento.
-                          </div>
-                        )}
-                      </div>
+                          {/* Mensaje cuando no hay resultados */}
+                          {showChildDropdown && childSearchQuery.trim() && filteredChildren.length === 0 && (
+                            <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-xl shadow-lg p-4 text-center text-gray-500">
+                              No se encontraron alumnos con ese nombre o documento.
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {/* Mostrar hijos seleccionados */}
                       {selectedChildren.length > 0 && (
