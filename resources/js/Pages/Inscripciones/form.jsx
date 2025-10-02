@@ -199,8 +199,6 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
     ],
   });
 
-  const [showUserExistsWarning, setShowUserExistsWarning] = useState(false);
-  const [existingUserData, setExistingUserData] = useState(null);
   const [dniValidated, setDniValidated] = useState(false);
   const [dniLoading, setDniLoading] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
@@ -247,8 +245,6 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
   const validateDNI = async (dni) => {
     if (!dni?.trim() || dni.trim().length !== 8) {
       setDniValidated(false);
-      setShowUserExistsWarning(false);
-      setExistingUserData(null);
       return;
     }
 
@@ -259,20 +255,13 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
       });
 
       if (response.data.exists) {
-        setExistingUserData(response.data);
-        setShowUserExistsWarning(true);
         setDniValidated(true);
-        showToast('Usuario encontrado en el sistema', 'info');
       } else {
-        setShowUserExistsWarning(false);
-        setExistingUserData(null);
         setDniValidated(true);
         showToast('DNI disponible para registro', 'success');
       }
     } catch (error) {
       console.error('Error verificando DNI:', error);
-      setShowUserExistsWarning(false);
-      setExistingUserData(null);
       setDniValidated(false);
 
       // Mejorar el manejo de errores de verificación
@@ -371,8 +360,6 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
       parent_dni: "",
     });
     setDniValidated(false);
-    setExistingUserData(null);
-    setShowUserExistsWarning(false);
     // Limpiar datos de nuevo usuario
     setNewUserData({
       name: '',
@@ -381,34 +368,6 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
       dni: ''
     });
     showToast('Búsqueda reiniciada. Puedes seleccionar otro alumno.', 'info');
-  };
-
-  // Función para usar los datos del usuario existente
-  const useExistingUserData = () => {
-    if (existingUserData) {
-      setData({
-        ...data,
-        parent_name: existingUserData.user.name,
-        parent_email: existingUserData.user.email,
-        parent_phone: existingUserData.user.phone,
-        parent_dni: existingUserData.user.dni || "",
-        children: existingUserData.children.length > 0
-          ? existingUserData.children.map(child => ({
-              ...child,
-              errors: {}
-            }))
-          : [{
-              name: "",
-              docType: "DNI",
-              docNumber: "",
-              errors: {}
-            }]
-      });
-      setShowUserExistsWarning(false);
-      setExistingUserData(null);
-      setDniValidated(true);
-      showToast('Datos cargados correctamente', 'success');
-    }
   };
 
   // Función para buscar apoderados existentes
@@ -496,8 +455,6 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
         validateDNI(data.parent_dni);
       } else if (data.parent_dni && data.parent_dni.length < 8) {
         setDniValidated(false);
-        setShowUserExistsWarning(false);
-        setExistingUserData(null);
       }
     }, 800);
 
@@ -867,8 +824,6 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
         });
         // Resetear estados de validación
         setDniValidated(false);
-        setShowUserExistsWarning(false);
-        setExistingUserData(null);
         setConsentChecked(false);
 
         // Reload the page to update the child list
@@ -1184,88 +1139,6 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                       </svg>
                       Este alumno ya está correctamente asignado a un apoderado responsable.
                     </p>
-                  </div>
-                </div>
-              </section>
-            )}
-
-            {/* Advertencia de usuario existente */}
-            {showUserExistsWarning && existingUserData && (
-              <section className="mb-6">
-                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                  <div className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.732 15.5c-.77.833.192 2.5 1.732 2.5z" />
-                    </svg>
-                    <div className="flex-1">
-                      <h3 className="text-sm font-semibold text-amber-800 mb-2">
-                        ¡Usuario encontrado en el sistema!
-                      </h3>
-                      <p className="text-xs text-amber-700 mb-3">
-                        Ya existe una cuenta con este DNI. Puedes usar los datos guardados.
-                      </p>
-                      
-                      <div className="bg-white/60 rounded-lg p-3 mb-3 text-xs">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <div>
-                            <span className="font-medium text-gray-600">Nombre:</span>
-                            <p className="text-gray-800">{existingUserData.user.name}</p>
-                          </div>
-                          <div>
-                            <span className="font-medium text-gray-600">DNI:</span>
-                            <p className="text-gray-800">{existingUserData.user.dni || "No registrado"}</p>
-                          </div>
-                          <div>
-                            <span className="font-medium text-gray-600">Email:</span>
-                            <p className="text-gray-800">{existingUserData.user.email}</p>
-                          </div>
-                          <div>
-                            <span className="font-medium text-gray-600">Teléfono:</span>
-                            <p className="text-gray-800">{existingUserData.user.phone}</p>
-                          </div>
-                          <div className="sm:col-span-2">
-                            <span className="font-medium text-gray-600">alumno registrados:</span>
-                            <p className="text-gray-800">{existingUserData.children.length}</p>
-                          </div>
-                        </div>
-                        
-                        {existingUserData.children.length > 0 && (
-                          <div className="mt-2 pt-2 border-t border-gray-200">
-                            <span className="font-medium text-gray-600">Alumnos:</span>
-                            <ul className="mt-1 space-y-1">
-                              {existingUserData.children.map((child, index) => (
-                                <li key={index} className="text-gray-700">
-                                  • {child.name} ({child.docType}: {child.docNumber})
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={useExistingUserData}
-                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-600 text-white text-xs font-medium hover:bg-amber-700 focus:ring-2 focus:ring-amber-500"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                          </svg>
-                          Usar datos guardados
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setShowUserExistsWarning(false);
-                            setExistingUserData(null);
-                          }}
-                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 text-gray-700 text-xs font-medium hover:bg-gray-50 focus:ring-2 focus:ring-gray-500"
-                        >
-                          Continuar sin cambios
-                        </button>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </section>
