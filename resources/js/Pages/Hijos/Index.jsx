@@ -170,14 +170,28 @@ export default function Index({ users, filters, isAdmin }) {
             <h2 className="text-xl sm:text-2xl font-bold text-red-600">
               {isAdmin ? 'Gestión de Hijos por Padre' : 'Mis Hijos'}
             </h2>
-            <Link href={route('hijos.create')} className="w-full sm:w-auto">
-              <PrimaryButton size="lg" className="w-full sm:w-auto gap-2 bg-red-600 hover:bg-red-700 focus:ring-red-500">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Registrar Nuevo Hijo
-              </PrimaryButton>
-            </Link>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <a 
+                href="http://127.0.0.1:8000/hijos-all"  
+                rel="noopener noreferrer"
+                className="w-full sm:w-auto"
+              >
+                <SecondaryButton size="lg" className="w-full sm:w-auto gap-2 border-red-600 text-red-600 hover:bg-red-50 focus:ring-red-500">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                  Ver Todos los Hijos
+                </SecondaryButton>
+              </a>
+              <Link href={route('hijos.create')} className="w-full sm:w-auto">
+                <PrimaryButton size="lg" className="w-full sm:w-auto gap-2 bg-red-600 hover:bg-red-700 focus:ring-red-500">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Registrar Nuevo Hijo
+                </PrimaryButton>
+              </Link>
+            </div>
           </div>
 
           <Card className="overflow-hidden">
