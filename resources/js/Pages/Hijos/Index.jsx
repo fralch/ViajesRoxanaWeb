@@ -172,7 +172,7 @@ export default function Index({ users, filters, isAdmin }) {
             </h2>
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <a 
-                href="http://127.0.0.1:8000/hijos-all"  
+                href="https://grupoviajesroxana.com/hijos-all"  
                 rel="noopener noreferrer"
                 className="w-full sm:w-auto"
               >
