@@ -14,21 +14,40 @@ export default function Index({ users, filters, isAdmin }) {
   const [expandedUsers, setExpandedUsers] = useState(new Set());
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [hijoToDelete, setHijoToDelete] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10); // Número de padres por página
+
+  // Filtrar usuarios basado en la búsqueda (solo padres)
+  const filteredUsers = users.data.filter((user) => {
+    if (!search) return true;
+
+    const searchLower = search.toLowerCase();
+    return (
+      user.name.toLowerCase().includes(searchLower) ||
+      user.email.toLowerCase().includes(searchLower) ||
+      user.dni?.toLowerCase().includes(searchLower) ||
+      user.phone?.toLowerCase().includes(searchLower)
+    );
+  });
+
+  // Calcular paginación
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentUsers = filteredUsers.slice(startIndex, endIndex);
 
   const handleSearch = (e) => {
     e.preventDefault();
-    router.get(route('hijos.index'), { search }, {
-      preserveState: true,
-      replace: true
-    });
+    setCurrentPage(1); // Resetear a primera página al buscar
   };
 
   const clearSearch = () => {
     setSearch('');
-    router.get(route('hijos.index'), {}, {
-      preserveState: true,
-      replace: true
-    });
+    setCurrentPage(1); // Resetear a primera página al limpiar
+  };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
   };
 
   const toggleUserExpansion = (userId) => {
@@ -43,14 +62,14 @@ export default function Index({ users, filters, isAdmin }) {
 
   const confirmDelete = async (hijo) => {
     const result = await showDelete(
-      `Â¿Eliminar "${hijo.nombres}"?`,
-      'Esta acciÃ³n eliminarÃ¡ el hijo permanentemente'
+      `¿Eliminar "${hijo.nombres}"?`,
+      'Esta acción eliminará el hijo permanentemente'
     );
-    
+
     if (result.isConfirmed) {
       router.delete(route('hijos.destroy', hijo.doc_numero), {
         onSuccess: () => {
-          showSuccess('Â¡Eliminado!', 'El hijo ha sido eliminado exitosamente.');
+          showSuccess('¡Eliminado!', 'El hijo ha sido eliminado exitosamente.');
         },
         onError: () => {
           showError('Error', 'No se pudo eliminar el hijo. Intenta nuevamente.');
@@ -61,14 +80,14 @@ export default function Index({ users, filters, isAdmin }) {
 
   const confirmDeleteParent = async (user) => {
     const result = await showDelete(
-      `Â¿Eliminar al padre "${user.name}"?`,
-      'Esta acciÃ³n eliminarÃ¡ al padre y TODOS sus hijos, inscripciones y notificaciones PERMANENTEMENTE. Esta acciÃ³n NO se puede deshacer.'
+      `¿Eliminar al padre "${user.name}"?`,
+      'Esta acción eliminará al padre y TODOS sus hijos, inscripciones y notificaciones PERMANENTEMENTE. Esta acción NO se puede deshacer.'
     );
-    
+
     if (result.isConfirmed) {
       router.delete(route('hijos.destroy-parent', user.id), {
         onSuccess: () => {
-          showSuccess('Â¡Eliminado!', 'El padre y todas sus dependencias han sido eliminados exitosamente.');
+          showSuccess('¡Eliminado!', 'El padre y todas sus dependencias han sido eliminados exitosamente.');
         },
         onError: (errors) => {
           const errorMessage = errors?.message || 'No se pudo eliminar el padre. Intenta nuevamente.';
@@ -132,11 +151,11 @@ export default function Index({ users, filters, isAdmin }) {
     const today = new Date();
     let age = today.getFullYear() - birth.getFullYear();
     const monthDiff = today.getMonth() - birth.getMonth();
-    
+
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
       age--;
     }
-    
+
     return age;
   };
 
@@ -169,7 +188,7 @@ export default function Index({ users, filters, isAdmin }) {
                   <div>
                     <TextInput
                       type="text"
-                      placeholder="Buscar por padre, hijo, email o documento..."
+                      placeholder="Buscar por nombre, email, DNI o teléfono del padre..."
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                       className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 placeholder-gray-400"
@@ -202,9 +221,9 @@ export default function Index({ users, filters, isAdmin }) {
               </div>
 
               {/* Users/Parents list */}
-              {users.data && users.data.length > 0 ? (
+              {currentUsers && currentUsers.length > 0 ? (
                 <div className="space-y-4">
-                  {users.data.map((user) => (
+                  {currentUsers.map((user) => (
                     <div key={user.id} className="bg-white border border-gray-200 rounded-lg shadow-sm">
                       {/* Parent header */}
                       <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
@@ -274,7 +293,7 @@ export default function Index({ users, filters, isAdmin }) {
                                         <div className="text-sm text-gray-600">
                                           {hijo.doc_tipo}: {hijo.doc_numero}
                                           {hijo.fecha_nacimiento && (
-                                            <span className="ml-2">â€¢ {calculateAge(hijo.fecha_nacimiento)} aÃ±os</span>
+                                            <span className="ml-2">• {calculateAge(hijo.fecha_nacimiento)} años</span>
                                           )}
                                         </div>
                                       </div>
@@ -310,7 +329,7 @@ export default function Index({ users, filters, isAdmin }) {
                                       </button>
                                     </div>
                                   </div>
-                                  
+
                                   {/* Additional child info */}
                                   {(hijo.plato_favorito || hijo.color_favorito || hijo.pasatiempos || hijo.deportes) && (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
@@ -348,7 +367,7 @@ export default function Index({ users, filters, isAdmin }) {
                                         <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                         </svg>
-                                        <span className="text-sm font-medium text-gray-700">Acceso a fichas medicas</span>
+                                        <span className="text-sm font-medium text-gray-700">Acceso a fichas médicas</span>
                                       </div>
                                       <div className="flex items-center gap-2">
                                         <span className={`text-xs font-medium ${hijo.ver_fichas ? 'text-green-600' : 'text-red-600'}`}>
@@ -359,7 +378,7 @@ export default function Index({ users, filters, isAdmin }) {
                                           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
                                             hijo.ver_fichas ? 'bg-green-600' : 'bg-gray-200'
                                           }`}
-                                          title={`${hijo.ver_fichas ? 'Desactivar' : 'Activar'} acceso a fichas mÃ©dicas`}
+                                          title={`${hijo.ver_fichas ? 'Desactivar' : 'Activar'} acceso a fichas médicas`}
                                         >
                                           <span
                                             className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -395,8 +414,77 @@ export default function Index({ users, filters, isAdmin }) {
                     {search ? 'No se encontraron resultados' : 'No hay padres con hijos registrados'}
                   </h3>
                   <p className="text-gray-600">
-                    {search ? 'Intenta con otros tÃ©rminos de bÃºsqueda.' : 'Los padres aparecerÃ¡n aquÃ­ cuando tengan hijos registrados.'}
+                    {search ? 'Intenta con otros términos de búsqueda.' : 'Los padres aparecerán aquí cuando tengan hijos registrados.'}
                   </p>
+                </div>
+              )}
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="mt-8 flex items-center justify-between border-t border-gray-200 pt-6">
+                  <div className="flex items-center gap-2 text-sm text-gray-700">
+                    <span>Mostrando</span>
+                    <span className="font-medium">{startIndex + 1}</span>
+                    <span>a</span>
+                    <span className="font-medium">{Math.min(endIndex, filteredUsers.length)}</span>
+                    <span>de</span>
+                    <span className="font-medium">{filteredUsers.length}</span>
+                    <span>padres</span>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    {/* Previous button */}
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage <= 1}
+                      className="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                      Anterior
+                    </button>
+
+                    {/* Page numbers */}
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => handlePageChange(pageNum)}
+                          className={`relative inline-flex items-center px-4 py-2 text-sm font-medium border ${
+                            currentPage === pageNum
+                              ? 'z-10 bg-red-50 border-red-500 text-red-600'
+                              : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+
+                    {/* Next button */}
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage >= totalPages}
+                      className="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Siguiente
+                      <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -406,4 +494,3 @@ export default function Index({ users, filters, isAdmin }) {
     </AuthenticatedLayout>
   );
 }
-
