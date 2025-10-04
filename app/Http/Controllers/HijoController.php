@@ -296,6 +296,11 @@ class HijoController extends Controller
 
         \Log::info('Hijo after update ver_fichas:', ['updated' => $hijo->fresh()->ver_fichas]);
 
+        // Si es una petición Inertia con preserveState, simplemente devolver back
+        if ($request->header('X-Inertia')) {
+            return back()->with('success', 'Hijo actualizado exitosamente.');
+        }
+
         return Redirect::route('hijos.index')
                       ->with('success', 'Hijo actualizado exitosamente.');
     }

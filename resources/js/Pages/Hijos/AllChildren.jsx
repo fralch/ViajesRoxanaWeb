@@ -66,6 +66,9 @@ export default function AllChildren({ hijos, filters, isAdmin }) {
     console.log('Data a enviar:', dataToSend);
 
     router.patch(route('hijos.update', hijo.doc_numero), dataToSend, {
+      preserveState: true,
+      preserveScroll: true,
+      only: ['hijos'],
       onSuccess: () => {
         console.log('Success callback ejecutado');
         showSuccess(
