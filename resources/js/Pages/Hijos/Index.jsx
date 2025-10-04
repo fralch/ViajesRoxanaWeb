@@ -43,14 +43,14 @@ export default function Index({ users, filters, isAdmin }) {
 
   const confirmDelete = async (hijo) => {
     const result = await showDelete(
-      `¿Eliminar "${hijo.nombres}"?`,
-      'Esta acción eliminará el hijo permanentemente'
+      `Â¿Eliminar "${hijo.nombres}"?`,
+      'Esta acciÃ³n eliminarÃ¡ el hijo permanentemente'
     );
     
     if (result.isConfirmed) {
-      router.delete(route('hijos.destroy', hijo.id), {
+      router.delete(route('hijos.destroy', hijo.doc_numero), {
         onSuccess: () => {
-          showSuccess('¡Eliminado!', 'El hijo ha sido eliminado exitosamente.');
+          showSuccess('Â¡Eliminado!', 'El hijo ha sido eliminado exitosamente.');
         },
         onError: () => {
           showError('Error', 'No se pudo eliminar el hijo. Intenta nuevamente.');
@@ -61,14 +61,14 @@ export default function Index({ users, filters, isAdmin }) {
 
   const confirmDeleteParent = async (user) => {
     const result = await showDelete(
-      `¿Eliminar al padre "${user.name}"?`,
-      'Esta acción eliminará al padre y TODOS sus hijos, inscripciones y notificaciones PERMANENTEMENTE. Esta acción NO se puede deshacer.'
+      `Â¿Eliminar al padre "${user.name}"?`,
+      'Esta acciÃ³n eliminarÃ¡ al padre y TODOS sus hijos, inscripciones y notificaciones PERMANENTEMENTE. Esta acciÃ³n NO se puede deshacer.'
     );
     
     if (result.isConfirmed) {
       router.delete(route('hijos.destroy-parent', user.id), {
         onSuccess: () => {
-          showSuccess('¡Eliminado!', 'El padre y todas sus dependencias han sido eliminados exitosamente.');
+          showSuccess('Â¡Eliminado!', 'El padre y todas sus dependencias han sido eliminados exitosamente.');
         },
         onError: (errors) => {
           const errorMessage = errors?.message || 'No se pudo eliminar el padre. Intenta nuevamente.';
@@ -76,6 +76,30 @@ export default function Index({ users, filters, isAdmin }) {
         }
       });
     }
+  };
+
+  const handleToggleVerFichas = async (hijo) => {
+    const newVerFichasValue = !hijo.ver_fichas;
+    
+    router.patch(route('hijos.update', hijo.doc_numero), {
+      user_id: hijo.user_id,
+      nombres: hijo.nombres,
+      doc_numero: hijo.doc_numero,
+      nums_emergencia: hijo.nums_emergencia || [],
+      fecha_nacimiento: hijo.fecha_nacimiento,
+      ver_fichas: newVerFichasValue
+    }, {
+      onSuccess: () => {
+        showSuccess(
+          'Â¡Actualizado!', 
+          `${newVerFichasValue ? 'Activado' : 'Desactivado'} el acceso a fichas para ${hijo.nombres}`
+        );
+      },
+      onError: (errors) => {
+        const errorMessage = errors?.message || 'No se pudo actualizar el acceso a fichas. Intenta nuevamente.';
+        showError('Error', errorMessage);
+      }
+    });
   };
 
   const getStatusBadge = (activo) => {
@@ -107,14 +131,14 @@ export default function Index({ users, filters, isAdmin }) {
 
   return (
     <AuthenticatedLayout>
-      <Head title="Gestión de Hijos" />
+      <Head title="GestiÃ³n de Hijos" />
 
       <div className="px-3 sm:px-4 md:px-6 py-5 sm:py-6">
         <div className="w-full max-w-screen-xl mx-auto">
           {/* Header */}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6">
             <h2 className="text-xl sm:text-2xl font-bold text-red-600">
-              {isAdmin ? 'Gestión de Hijos por Padre' : 'Mis Hijos'}
+              {isAdmin ? 'GestiÃ³n de Hijos por Padre' : 'Mis Hijos'}
             </h2>
             <Link href={route('hijos.create')} className="w-full sm:w-auto">
               <PrimaryButton size="lg" className="w-full sm:w-auto gap-2 bg-red-600 hover:bg-red-700 focus:ring-red-500">
@@ -239,14 +263,14 @@ export default function Index({ users, filters, isAdmin }) {
                                         <div className="text-sm text-gray-600">
                                           {hijo.doc_tipo}: {hijo.doc_numero}
                                           {hijo.fecha_nacimiento && (
-                                            <span className="ml-2">• {calculateAge(hijo.fecha_nacimiento)} años</span>
+                                            <span className="ml-2">â€¢ {calculateAge(hijo.fecha_nacimiento)} aÃ±os</span>
                                           )}
                                         </div>
                                       </div>
                                     </div>
                                     <div className="flex items-center gap-2">
                                       <Link
-                                        href={route('hijos.show', hijo.id)}
+                                        href={route('hijos.show', hijo.doc_numero)}
                                         className="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-100 rounded-lg transition-colors"
                                         title="Ver detalles"
                                       >
@@ -256,7 +280,7 @@ export default function Index({ users, filters, isAdmin }) {
                                         </svg>
                                       </Link>
                                       <Link
-                                        href={route('hijos.edit', hijo.id)}
+                                        href={route('hijos.edit', hijo.doc_numero)}
                                         className="inline-flex items-center justify-center w-8 h-8 text-green-600 hover:text-green-700 hover:bg-green-100 rounded-lg transition-colors"
                                         title="Editar"
                                       >
@@ -305,6 +329,36 @@ export default function Index({ users, filters, isAdmin }) {
                                       )}
                                     </div>
                                   )}
+
+                                  {/* Ver Fichas Toggle */}
+                                  <div className="mt-3 pt-3 border-t border-gray-200">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-2">
+                                        <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                        <span className="text-sm font-medium text-gray-700">Acceso a fichas mÃ©dicas</span>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <span className={`text-xs font-medium ${hijo.ver_fichas ? 'text-green-600' : 'text-red-600'}`}>
+                                          {hijo.ver_fichas ? 'Activado' : 'Desactivado'}
+                                        </span>
+                                        <button
+                                          onClick={() => handleToggleVerFichas(hijo)}
+                                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
+                                            hijo.ver_fichas ? 'bg-green-600' : 'bg-gray-200'
+                                          }`}
+                                          title={`${hijo.ver_fichas ? 'Desactivar' : 'Activar'} acceso a fichas mÃ©dicas`}
+                                        >
+                                          <span
+                                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                              hijo.ver_fichas ? 'translate-x-6' : 'translate-x-1'
+                                            }`}
+                                          />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
                                 </div>
                               ))}
                             </div>
@@ -330,43 +384,8 @@ export default function Index({ users, filters, isAdmin }) {
                     {search ? 'No se encontraron resultados' : 'No hay padres con hijos registrados'}
                   </h3>
                   <p className="text-gray-600">
-                    {search ? 'Intenta con otros términos de búsqueda.' : 'Los padres aparecerán aquí cuando tengan hijos registrados.'}
+                    {search ? 'Intenta con otros tÃ©rminos de bÃºsqueda.' : 'Los padres aparecerÃ¡n aquÃ­ cuando tengan hijos registrados.'}
                   </p>
-                </div>
-              )}
-
-              {/* Pagination */}
-              {users.links && users.links.length > 3 && (
-                <div className="mt-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div className="text-xs sm:text-sm text-gray-700">
-                    Mostrando <span className="font-medium">{users.from}</span> a <span className="font-medium">{users.to}</span> de <span className="font-medium">{users.total}</span> resultados
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {users.links.map((link, index) => {
-                      if (link.url === null) {
-                        return (
-                          <span
-                            key={index}
-                            className="px-3 py-2 text-sm text-gray-400 cursor-not-allowed"
-                            dangerouslySetInnerHTML={{ __html: link.label }}
-                          />
-                        );
-                      }
-
-                      return (
-                        <Link
-                          key={index}
-                          href={link.url}
-                          className={`px-3 py-2 text-sm border rounded-lg transition-all duration-200 ${
-                            link.active
-                              ? 'bg-red-600 text-white border-red-600 shadow-sm'
-                              : 'bg-white text-gray-700 border-gray-300 hover:bg-red-50 hover:border-red-300'
-                          }`}
-                          dangerouslySetInnerHTML={{ __html: link.label }}
-                        />
-                      );
-                    })}
-                  </div>
                 </div>
               )}
             </div>
@@ -376,3 +395,4 @@ export default function Index({ users, filters, isAdmin }) {
     </AuthenticatedLayout>
   );
 }
+
