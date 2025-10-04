@@ -73,6 +73,39 @@ class HijoController extends Controller
     }
 
     /**
+     * Display all children with ver_fichas management functionality
+     */
+    public function allChildren(Request $request)
+    {
+        // Only admin can access this view
+        if (!Auth::user()->is_admin) {
+            abort(403, 'No tienes permisos para acceder a esta vista.');
+        }
+
+        $query = Hijo::with('user');
+
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('nombres', 'like', "%{$search}%")
+                  ->orWhere('doc_numero', 'like', "%{$search}%")
+                  ->orWhereHas('user', function($userQuery) use ($search) {
+                      $userQuery->where('name', 'like', "%{$search}%")
+                               ->orWhere('email', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $hijos = $query->orderBy('nombres')->get();
+
+        return Inertia::render('Hijos/AllChildren', [
+            'hijos' => $hijos,
+            'filters' => $request->only(['search']),
+            'isAdmin' => true
+        ]);
+    }
+
+    /**
      * Show the form for creating a new resource.
      */
     public function create()
