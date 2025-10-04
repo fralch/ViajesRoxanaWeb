@@ -224,27 +224,45 @@ class HijoController extends Controller
         if (!Auth::user()->is_admin && $hijo->user_id !== Auth::id()) {
             abort(403, 'No tienes permisos para editar este hijo.');
         }
-        
+
+        \Log::info('=== UPDATE HIJO DEBUG ===');
+        \Log::info('Request all data:', $request->all());
+        \Log::info('ver_fichas value:', ['ver_fichas' => $request->ver_fichas]);
+        \Log::info('ver_fichas has:', ['has' => $request->has('ver_fichas')]);
+        \Log::info('Hijo actual ver_fichas:', ['current' => $hijo->ver_fichas]);
+
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
             'nombres' => 'required|string|max:255',
             'doc_numero' => 'required|string|max:20|unique:hijos,doc_numero,' . $hijo->id,
             'nums_emergencia' => 'nullable|array|max:5',
-            'nums_emergencia.*' => 'required|string|max:20',
-            'fecha_nacimiento' => 'required|date|before:today',
-            'ver_fichas' => 'nullable|boolean'
+            'nums_emergencia.*' => 'nullable|string|max:20',
+            'fecha_nacimiento' => 'nullable|date|before:today',
+            'ver_fichas' => 'sometimes|boolean'
         ]);
-        
+
+        \Log::info('Validated data:', $validated);
+
         // El tipo de documento no se puede cambiar, mantener el actual
         $validated['doc_tipo'] = $hijo->doc_tipo;
-        
+
         // Si no es admin, mantener el usuario actual
         if (!Auth::user()->is_admin) {
             $validated['user_id'] = $hijo->user_id;
         }
-        
+
+        // Asegurarse de que ver_fichas se actualice explícitamente
+        if ($request->has('ver_fichas')) {
+            $validated['ver_fichas'] = filter_var($request->ver_fichas, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
+            \Log::info('ver_fichas after filter_var:', ['value' => $validated['ver_fichas']]);
+        }
+
+        \Log::info('Final data to update:', $validated);
+
         $hijo->update($validated);
-        
+
+        \Log::info('Hijo after update ver_fichas:', ['updated' => $hijo->fresh()->ver_fichas]);
+
         return Redirect::route('hijos.index')
                       ->with('success', 'Hijo actualizado exitosamente.');
     }

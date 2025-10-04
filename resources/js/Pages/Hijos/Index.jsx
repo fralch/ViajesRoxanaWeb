@@ -80,22 +80,33 @@ export default function Index({ users, filters, isAdmin }) {
 
   const handleToggleVerFichas = async (hijo) => {
     const newVerFichasValue = !hijo.ver_fichas;
-    
-    router.patch(route('hijos.update', hijo.doc_numero), {
+
+    console.log('=== TOGGLE VER FICHAS DEBUG ===');
+    console.log('Hijo actual:', hijo);
+    console.log('ver_fichas actual:', hijo.ver_fichas);
+    console.log('nuevo ver_fichas:', newVerFichasValue);
+
+    const dataToSend = {
       user_id: hijo.user_id,
       nombres: hijo.nombres,
       doc_numero: hijo.doc_numero,
       nums_emergencia: hijo.nums_emergencia || [],
       fecha_nacimiento: hijo.fecha_nacimiento,
       ver_fichas: newVerFichasValue
-    }, {
+    };
+
+    console.log('Data a enviar:', dataToSend);
+
+    router.patch(route('hijos.update', hijo.doc_numero), dataToSend, {
       onSuccess: () => {
+        console.log('Success callback ejecutado');
         showSuccess(
-          'Â¡Actualizado!', 
+          'Actualizado!',
           `${newVerFichasValue ? 'Activado' : 'Desactivado'} el acceso a fichas para ${hijo.nombres}`
         );
       },
       onError: (errors) => {
+        console.log('Error callback ejecutado:', errors);
         const errorMessage = errors?.message || 'No se pudo actualizar el acceso a fichas. Intenta nuevamente.';
         showError('Error', errorMessage);
       }
@@ -337,7 +348,7 @@ export default function Index({ users, filters, isAdmin }) {
                                         <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                         </svg>
-                                        <span className="text-sm font-medium text-gray-700">Acceso a fichas mÃ©dicas</span>
+                                        <span className="text-sm font-medium text-gray-700">Acceso a fichas medicas</span>
                                       </div>
                                       <div className="flex items-center gap-2">
                                         <span className={`text-xs font-medium ${hijo.ver_fichas ? 'text-green-600' : 'text-red-600'}`}>
