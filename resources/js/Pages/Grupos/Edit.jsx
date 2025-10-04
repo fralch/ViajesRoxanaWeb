@@ -147,7 +147,7 @@ export default function Edit({ grupo, paquetes }) {
                         id="capacidad"
                         type="number"
                         min="1"
-                        max="400"
+                        max="1000"
                         value={data.capacidad}
                         onChange={(e) => setData('capacidad', e.target.value)}
                         className="mt-1 block w-full"
