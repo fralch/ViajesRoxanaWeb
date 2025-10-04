@@ -38,8 +38,8 @@ class HijoController extends Controller
             ]);
         }
         
-        // Para admin, mostrar todos los usuarios con hijos y sus datos
-        $query = User::whereHas('hijos')->with(['hijos' => function($hijoQuery) use ($request) {
+        // Para admin, mostrar todos los usuarios con sus hijos
+        $query = User::with(['hijos' => function($hijoQuery) use ($request) {
             if ($request->has('search') && $request->search) {
                 $search = $request->search;
                 $hijoQuery->where(function($q) use ($search) {
@@ -49,7 +49,7 @@ class HijoController extends Controller
             }
             $hijoQuery->orderBy('nombres');
         }]);
-        
+
         if ($request->has('search') && $request->search) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
@@ -62,11 +62,11 @@ class HijoController extends Controller
                   });
             });
         }
-        
-        $users = $query->orderBy('name')->paginate(10);
-        
+
+        $users = $query->orderBy('name')->get();
+
         return Inertia::render('Hijos/Index', [
-            'users' => $users,
+            'users' => ['data' => $users],
             'filters' => $request->only(['search']),
             'isAdmin' => true
         ]);
