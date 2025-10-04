@@ -108,7 +108,8 @@ class HijoController extends Controller
             'deportes' => 'nullable|string',
             'plato_favorito' => 'nullable|string|max:255',
             'color_favorito' => 'nullable|string|max:100',
-            'informacion_adicional' => 'nullable|string'
+            'informacion_adicional' => 'nullable|string',
+            'ver_fichas' => 'nullable|boolean'
         ];
 
         $requestData = $request->all();
@@ -230,7 +231,8 @@ class HijoController extends Controller
             'doc_numero' => 'required|string|max:20|unique:hijos,doc_numero,' . $hijo->id,
             'nums_emergencia' => 'nullable|array|max:5',
             'nums_emergencia.*' => 'required|string|max:20',
-            'fecha_nacimiento' => 'required|date|before:today'
+            'fecha_nacimiento' => 'required|date|before:today',
+            'ver_fichas' => 'nullable|boolean'
         ]);
         
         // El tipo de documento no se puede cambiar, mantener el actual
@@ -358,7 +360,8 @@ class HijoController extends Controller
             'color_favorito' => 'nullable|string|max:100',
             'informacion_adicional' => 'nullable|string',
             'nums_emergencia' => 'nullable|array|max:2',
-            'nums_emergencia.*' => 'nullable|string|max:20'
+            'nums_emergencia.*' => 'nullable|string|max:20',
+            'ver_fichas' => 'nullable|boolean'
         ]);
 
         $hijo->update($validated);

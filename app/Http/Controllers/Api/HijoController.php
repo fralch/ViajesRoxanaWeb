@@ -51,7 +51,8 @@ class HijoController extends Controller
             'deportes' => 'nullable|string',
             'plato_favorito' => 'nullable|string|max:255',
             'color_favorito' => 'nullable|string|max:100',
-            'informacion_adicional' => 'nullable|string'
+            'informacion_adicional' => 'nullable|string',
+            'ver_fichas' => 'nullable|boolean'
         ]);
         
         // If not admin, assign to authenticated user
@@ -99,7 +100,8 @@ class HijoController extends Controller
             'deportes' => 'nullable|string',
             'plato_favorito' => 'nullable|string|max:255',
             'color_favorito' => 'nullable|string|max:100',
-            'informacion_adicional' => 'nullable|string'
+            'informacion_adicional' => 'nullable|string',
+            'ver_fichas' => 'nullable|boolean'
         ]);
         
         // Document type cannot be changed, keep current one
