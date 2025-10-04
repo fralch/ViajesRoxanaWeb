@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -14,9 +14,33 @@ export default function Index({ users, filters, isAdmin }) {
   const [expandedUsers, setExpandedUsers] = useState(new Set());
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [hijoToDelete, setHijoToDelete] = useState(null);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5; // Número de padres por página
 
+  // Memoized pagination calculations
+  const paginationData = useMemo(() => {
+    const allUsers = users.data || [];
+    const totalItems = allUsers.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentUsers = allUsers.slice(startIndex, endIndex);
+
+    return {
+      currentUsers,
+      totalItems,
+      totalPages,
+      startIndex,
+      endIndex: Math.min(endIndex, totalItems)
+    };
+  }, [users.data, currentPage, itemsPerPage]);
+
+  // Reset to first page when search changes
   const handleSearch = (e) => {
     e.preventDefault();
+    setCurrentPage(1); // Reset pagination
     router.get(route('hijos.index'), { search }, {
       preserveState: true,
       replace: true
@@ -25,10 +49,60 @@ export default function Index({ users, filters, isAdmin }) {
 
   const clearSearch = () => {
     setSearch('');
+    setCurrentPage(1); // Reset pagination
     router.get(route('hijos.index'), {}, {
       preserveState: true,
       replace: true
     });
+  };
+
+  // Pagination handlers
+  const goToPage = (page) => {
+    if (page >= 1 && page <= paginationData.totalPages) {
+      setCurrentPage(page);
+      // Scroll to top when changing page
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const goToPreviousPage = () => {
+    goToPage(currentPage - 1);
+  };
+
+  const goToNextPage = () => {
+    goToPage(currentPage + 1);
+  };
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const { totalPages } = paginationData;
+    const pages = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      const startPage = Math.max(1, currentPage - 2);
+      const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+      
+      if (startPage > 1) {
+        pages.push(1);
+        if (startPage > 2) pages.push('...');
+      }
+      
+      for (let i = startPage; i <= endPage; i++) {
+        pages.push(i);
+      }
+      
+      if (endPage < totalPages) {
+        if (endPage < totalPages - 1) pages.push('...');
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
   };
 
   const toggleUserExpansion = (userId) => {
@@ -204,7 +278,7 @@ export default function Index({ users, filters, isAdmin }) {
               {/* Users/Parents list */}
               {users.data && users.data.length > 0 ? (
                 <div className="space-y-4">
-                  {users.data.map((user) => (
+                  {paginationData.currentUsers.map((user) => (
                     <div key={user.id} className="bg-white border border-gray-200 rounded-lg shadow-sm">
                       {/* Parent header */}
                       <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
@@ -397,6 +471,55 @@ export default function Index({ users, filters, isAdmin }) {
                   <p className="text-gray-600">
                     {search ? 'Intenta con otros tÃ©rminos de bÃºsqueda.' : 'Los padres aparecerÃ¡n aquÃ­ cuando tengan hijos registrados.'}
                   </p>
+                </div>
+              )}
+
+              {/* Pagination */}
+              {users.data && users.data.length > 0 && paginationData.totalPages > 1 && (
+                <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="text-sm text-gray-700">
+                    Mostrando {paginationData.startIndex + 1} a {paginationData.endIndex} de {paginationData.totalItems} padres
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    {/* Previous button */}
+                    <button
+                      onClick={goToPreviousPage}
+                      disabled={currentPage === 1}
+                      className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Anterior
+                    </button>
+                    
+                    {/* Page numbers */}
+                    <div className="flex items-center gap-1">
+                      {getPageNumbers().map((page, index) => (
+                        <button
+                          key={index}
+                          onClick={() => typeof page === 'number' ? goToPage(page) : null}
+                          disabled={page === '...'}
+                          className={`px-3 py-2 text-sm font-medium rounded-md ${
+                            page === currentPage
+                              ? 'bg-red-600 text-white'
+                              : page === '...'
+                              ? 'text-gray-400 cursor-default'
+                              : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      ))}
+                    </div>
+                    
+                    {/* Next button */}
+                    <button
+                      onClick={goToNextPage}
+                      disabled={currentPage === paginationData.totalPages}
+                      className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Siguiente
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
