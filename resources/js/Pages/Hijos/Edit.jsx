@@ -84,14 +84,18 @@ export default function Edit({ hijo, users }) {
             <h2 className="text-xl sm:text-2xl font-bold text-red-600">
               Editar {hijo.nombres}
             </h2>
-            <Link href={route('hijos.show', hijo.id)} className="w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() => window.history.back()}
+              className="w-full sm:w-auto"
+            >
               <SecondaryButton className="w-full sm:w-auto gap-2">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
                 Volver
               </SecondaryButton>
-            </Link>
+            </button>
           </div>
 
           <Card>

@@ -24,12 +24,14 @@ class Hijo extends Model
         'deportes',
         'plato_favorito',
         'color_favorito',
-        'informacion_adicional'
+        'informacion_adicional',
+        'ver_fichas'
     ];
 
     protected $casts = [
         'nums_emergencia' => 'array',
-        'fecha_nacimiento' => 'date'
+        'fecha_nacimiento' => 'date',
+        'ver_fichas' => 'boolean'
     ];
 
     /**

@@ -187,6 +187,12 @@ export default function AuthenticatedLayout({ header, children }) {
                                             </svg>
                                             Padres
                                         </Link>
+                                        <Link href={route('hijos.all')} className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors duration-150">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                                            </svg>
+                                            Todos los Hijos
+                                        </Link>
                                         <Link href={route('geolocalizacion.index')} className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors duration-150">
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -266,6 +272,12 @@ export default function AuthenticatedLayout({ header, children }) {
                                     <Dropdown.Content align="right" width="48" contentClasses="py-2 bg-white shadow-xl border border-gray-100 rounded-xl">
                                         <Link href={route('hijos.index')} className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors duration-150">
                                             👶 Padres
+                                        </Link>
+                                        <Link href={route('hijos.all')} className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors duration-150">
+                                            👥 Todos los Hijos
+                                        </Link>
+                                        <Link href={route('hijos.all')} className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors duration-150">
+                                            👥 Todos los Hijos
                                         </Link>
                                         <Link href={route('geolocalizacion.index')} className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors duration-150">
                                             📍 GPS
@@ -415,6 +427,9 @@ export default function AuthenticatedLayout({ header, children }) {
                                 </ResponsiveNavLink>
                                 <ResponsiveNavLink href={route('hijos.index')} className="text-white hover:bg-red-500">
                                     Padres
+                                </ResponsiveNavLink>
+                                <ResponsiveNavLink href={route('hijos.all')} className="text-white hover:bg-red-500">
+                                    Todos los Hijos
                                 </ResponsiveNavLink>
                                 <ResponsiveNavLink href={route('geolocalizacion.index')} className="text-white hover:bg-red-500">
                                     GPS

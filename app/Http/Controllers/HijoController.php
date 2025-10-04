@@ -38,8 +38,8 @@ class HijoController extends Controller
             ]);
         }
         
-        // Para admin, mostrar todos los usuarios con hijos y sus datos
-        $query = User::whereHas('hijos')->with(['hijos' => function($hijoQuery) use ($request) {
+        // Para admin, mostrar todos los usuarios con sus hijos
+        $query = User::with(['hijos' => function($hijoQuery) use ($request) {
             if ($request->has('search') && $request->search) {
                 $search = $request->search;
                 $hijoQuery->where(function($q) use ($search) {
@@ -49,7 +49,7 @@ class HijoController extends Controller
             }
             $hijoQuery->orderBy('nombres');
         }]);
-        
+
         if ($request->has('search') && $request->search) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
@@ -62,11 +62,44 @@ class HijoController extends Controller
                   });
             });
         }
-        
-        $users = $query->orderBy('name')->paginate(10);
-        
+
+        $users = $query->orderBy('name')->get();
+
         return Inertia::render('Hijos/Index', [
-            'users' => $users,
+            'users' => ['data' => $users],
+            'filters' => $request->only(['search']),
+            'isAdmin' => true
+        ]);
+    }
+
+    /**
+     * Display all children with ver_fichas management functionality
+     */
+    public function allChildren(Request $request)
+    {
+        // Only admin can access this view
+        if (!Auth::user()->is_admin) {
+            abort(403, 'No tienes permisos para acceder a esta vista.');
+        }
+
+        $query = Hijo::with('user');
+
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('nombres', 'like', "%{$search}%")
+                  ->orWhere('doc_numero', 'like', "%{$search}%")
+                  ->orWhereHas('user', function($userQuery) use ($search) {
+                      $userQuery->where('name', 'like', "%{$search}%")
+                               ->orWhere('email', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $hijos = $query->orderBy('nombres')->get();
+
+        return Inertia::render('Hijos/AllChildren', [
+            'hijos' => $hijos,
             'filters' => $request->only(['search']),
             'isAdmin' => true
         ]);
@@ -108,7 +141,8 @@ class HijoController extends Controller
             'deportes' => 'nullable|string',
             'plato_favorito' => 'nullable|string|max:255',
             'color_favorito' => 'nullable|string|max:100',
-            'informacion_adicional' => 'nullable|string'
+            'informacion_adicional' => 'nullable|string',
+            'ver_fichas' => 'nullable|boolean'
         ];
 
         $requestData = $request->all();
@@ -223,26 +257,50 @@ class HijoController extends Controller
         if (!Auth::user()->is_admin && $hijo->user_id !== Auth::id()) {
             abort(403, 'No tienes permisos para editar este hijo.');
         }
-        
+
+        \Log::info('=== UPDATE HIJO DEBUG ===');
+        \Log::info('Request all data:', $request->all());
+        \Log::info('ver_fichas value:', ['ver_fichas' => $request->ver_fichas]);
+        \Log::info('ver_fichas has:', ['has' => $request->has('ver_fichas')]);
+        \Log::info('Hijo actual ver_fichas:', ['current' => $hijo->ver_fichas]);
+
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
             'nombres' => 'required|string|max:255',
             'doc_numero' => 'required|string|max:20|unique:hijos,doc_numero,' . $hijo->id,
             'nums_emergencia' => 'nullable|array|max:5',
-            'nums_emergencia.*' => 'required|string|max:20',
-            'fecha_nacimiento' => 'required|date|before:today'
+            'nums_emergencia.*' => 'nullable|string|max:20',
+            'fecha_nacimiento' => 'nullable|date|before:today',
+            'ver_fichas' => 'sometimes|boolean'
         ]);
-        
+
+        \Log::info('Validated data:', $validated);
+
         // El tipo de documento no se puede cambiar, mantener el actual
         $validated['doc_tipo'] = $hijo->doc_tipo;
-        
+
         // Si no es admin, mantener el usuario actual
         if (!Auth::user()->is_admin) {
             $validated['user_id'] = $hijo->user_id;
         }
-        
+
+        // Asegurarse de que ver_fichas se actualice explícitamente
+        if ($request->has('ver_fichas')) {
+            $validated['ver_fichas'] = filter_var($request->ver_fichas, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
+            \Log::info('ver_fichas after filter_var:', ['value' => $validated['ver_fichas']]);
+        }
+
+        \Log::info('Final data to update:', $validated);
+
         $hijo->update($validated);
-        
+
+        \Log::info('Hijo after update ver_fichas:', ['updated' => $hijo->fresh()->ver_fichas]);
+
+        // Si es una petición Inertia con preserveState, simplemente devolver back
+        if ($request->header('X-Inertia')) {
+            return back()->with('success', 'Hijo actualizado exitosamente.');
+        }
+
         return Redirect::route('hijos.index')
                       ->with('success', 'Hijo actualizado exitosamente.');
     }
@@ -358,7 +416,8 @@ class HijoController extends Controller
             'color_favorito' => 'nullable|string|max:100',
             'informacion_adicional' => 'nullable|string',
             'nums_emergencia' => 'nullable|array|max:2',
-            'nums_emergencia.*' => 'nullable|string|max:20'
+            'nums_emergencia.*' => 'nullable|string|max:20',
+            'ver_fichas' => 'nullable|boolean'
         ]);
 
         $hijo->update($validated);

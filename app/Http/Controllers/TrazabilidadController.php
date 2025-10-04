@@ -28,6 +28,11 @@ class TrazabilidadController extends Controller
                 abort(404, 'Niño no encontrado');
             }
 
+            // Verificar si el hijo tiene permiso para ver fichas
+            if (!$hijo->ver_fichas) {
+                abort(403, 'No tienes permiso para ver las fichas de este niño');
+            }
+
             // Obtener el padre del hijo
             $padre = $hijo->user;
             
@@ -59,6 +64,7 @@ class TrazabilidadController extends Controller
                     'apellidos' => $hijo->apellidos,
                     'doc_numero' => $hijo->doc_numero,
                     'fecha_nacimiento' => $hijo->fecha_nacimiento,
+                    'ver_fichas' => $hijo->ver_fichas,
                 ],
                 'padre' => [
                     'id' => $padre->id,
@@ -325,6 +331,7 @@ class TrazabilidadController extends Controller
                     'nombres' => $hijo->nombres,
                     'apellidos' => $hijo->apellidos,
                     'doc_numero' => $hijo->doc_numero,
+                    'ver_fichas' => $hijo->ver_fichas,
                 ],
                 'padre' => [
                     'id' => $padre->id,

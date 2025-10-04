@@ -131,6 +131,8 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    // Ruta específica debe ir antes del resource
+    Route::get('/hijos-all', [HijoController::class, 'allChildren'])->name('hijos.all');
     Route::resource('hijos', HijoController::class);
     Route::delete('/hijos/parent/{user}', [HijoController::class, 'destroyParent'])->name('hijos.destroy-parent');
     
