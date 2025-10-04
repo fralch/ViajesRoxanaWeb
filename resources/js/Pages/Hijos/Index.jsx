@@ -142,14 +142,14 @@ export default function Index({ users, filters, isAdmin }) {
 
   return (
     <AuthenticatedLayout>
-      <Head title="GestiÃ³n de Hijos" />
+      <Head title="Gestión de Hijos" />
 
       <div className="px-3 sm:px-4 md:px-6 py-5 sm:py-6">
         <div className="w-full max-w-screen-xl mx-auto">
           {/* Header */}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6">
             <h2 className="text-xl sm:text-2xl font-bold text-red-600">
-              {isAdmin ? 'GestiÃ³n de Hijos por Padre' : 'Mis Hijos'}
+              {isAdmin ? 'Gestión de Hijos por Padre' : 'Mis Hijos'}
             </h2>
             <Link href={route('hijos.create')} className="w-full sm:w-auto">
               <PrimaryButton size="lg" className="w-full sm:w-auto gap-2 bg-red-600 hover:bg-red-700 focus:ring-red-500">
