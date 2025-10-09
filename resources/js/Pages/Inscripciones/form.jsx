@@ -302,57 +302,32 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
     setChildSearchQuery(''); // Limpiar búsqueda
     setShowChildDropdown(false); // Cerrar dropdown
 
-    // NUEVA LÓGICA: Si algún hijo tiene apoderado, usar ese apoderado para todos
+    // NUEVA LÓGICA: Todos los hijos en este listado NO tienen apoderado (user_id = 1)
+    // Por lo tanto, siempre se debe crear o asignar un nuevo apoderado
     if (newSelectedChildren.length > 0) {
-      // Buscar si algún hijo tiene apoderado (que no sea el admin user_id=1)
-      const childWithGuardian = newSelectedChildren.find(c => c.user_id && c.user_id !== 1);
+      // Todos los hijos necesitan apoderado
+      setUserCreationMode(true);
+      setIsExistingGuardian(false);
 
-      if (childWithGuardian) {
-        // CASO 1: Al menos un hijo tiene apoderado → usar ese apoderado para todos
-        setUserCreationMode(false);
-        setIsExistingGuardian(true);
+      // Limpiar datos del formulario
+      setData({
+        ...data,
+        parent_name: "",
+        parent_email: "",
+        parent_phone: "",
+        parent_dni: "",
+      });
+      setDniValidated(false);
+      setNewUserData({
+        name: '',
+        email: '',
+        phone: '',
+        dni: ''
+      });
 
-        // Cargar datos del apoderado en el formulario
-        if (childWithGuardian.user) {
-          setData({
-            ...data,
-            parent_name: childWithGuardian.user.name || "",
-            parent_email: childWithGuardian.user.email || "",
-            parent_phone: childWithGuardian.user.phone || "",
-            parent_dni: childWithGuardian.user.dni || "",
-          });
-          setDniValidated(true);
-
-          // Solo mostrar el toast si estamos agregando (no removiendo)
-          if (!isAlreadySelected) {
-            showToast(`Se usará el apoderado de ${childWithGuardian.nombres} para todos los alumnos seleccionados`, 'info');
-          }
-        }
-      } else {
-        // CASO 2: Ningún hijo tiene apoderado → crear nuevo apoderado
-        setUserCreationMode(true);
-        setIsExistingGuardian(false);
-
-        // Limpiar datos del formulario
-        setData({
-          ...data,
-          parent_name: "",
-          parent_email: "",
-          parent_phone: "",
-          parent_dni: "",
-        });
-        setDniValidated(false);
-        setNewUserData({
-          name: '',
-          email: '',
-          phone: '',
-          dni: ''
-        });
-
-        // Solo mostrar el toast si estamos agregando (no removiendo)
-        if (!isAlreadySelected) {
-          showToast('Completa los datos del apoderado para los alumnos seleccionados', 'info');
-        }
+      // Solo mostrar el toast si estamos agregando (no removiendo)
+      if (!isAlreadySelected) {
+        showToast('Completa los datos del apoderado para los alumnos seleccionados', 'info');
       }
     } else {
       // Si no hay hijos seleccionados, limpiar todo
@@ -453,17 +428,23 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
   }, [data.parent_dni]);
 
   // Efecto para filtrar hijos cuando cambia la búsqueda
+  // Filtramos los hijos que ya están seleccionados para no mostrarlos
   useEffect(() => {
     if (!hijosInscritos) {
       setFilteredChildren([]);
       return;
     }
 
+    // Filtrar hijos que no están seleccionados
+    const availableChildren = hijosInscritos.filter(hijo =>
+      !selectedChildrenIds.includes(hijo.id)
+    );
+
     if (!childSearchQuery.trim()) {
-      setFilteredChildren(hijosInscritos);
+      setFilteredChildren(availableChildren);
     } else {
       const query = childSearchQuery.toLowerCase().trim();
-      const filtered = hijosInscritos.filter(hijo =>
+      const filtered = availableChildren.filter(hijo =>
         hijo.nombres.toLowerCase().includes(query) ||
         hijo.doc_numero.toLowerCase().includes(query) ||
         hijo.doc_tipo.toLowerCase().includes(query) ||
@@ -471,12 +452,7 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
       );
       setFilteredChildren(filtered);
     }
-  }, [childSearchQuery, hijosInscritos]);
-
-  // Efecto para inicializar filteredChildren cuando cambian hijosInscritos
-  useEffect(() => {
-    setFilteredChildren(hijosInscritos || []);
-  }, [hijosInscritos]);
+  }, [childSearchQuery, hijosInscritos, selectedChildrenIds]);
 
   const addChild = () => {
     setData("children", [
@@ -646,36 +622,6 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
       ? `/paquete/${paquete.id}/grupo/${grupo.id}/form`
       : "/inscripciones";
 
-    // CASO 1: Algún hijo tiene apoderado → usar ese apoderado para todos
-    const childWithGuardian = selectedChildren.find(c => c.user_id && c.user_id !== 1);
-
-    if (childWithGuardian && !userCreationMode) {
-      // Usar el apoderado existente para todos los hijos
-      const submitData = {
-        selected_children_ids: selectedChildrenIds,
-        existing_guardian_id: childWithGuardian.user_id,
-        assign_guardian: true,
-        use_existing_guardian: true
-      };
-
-      console.log('=== USANDO APODERADO EXISTENTE ===');
-      console.log('Guardian ID:', childWithGuardian.user_id);
-      console.log('Children IDs:', selectedChildrenIds);
-
-      axios.post(submitUrl, submitData)
-        .then(() => {
-          showSuccess('¡Inscripciones confirmadas!', 'Los alumnos han sido asignados al apoderado y se ha enviado un mensaje de confirmación.');
-          setTimeout(() => {
-            window.location.href = 'https://grupoviajesroxana.com/login';
-          }, 2000);
-        })
-        .catch((error) => {
-          console.error('Confirmation error:', error.response?.data || error);
-          showError('Error', 'No se pudo confirmar las inscripciones.');
-        });
-      return;
-    }
-
     // Validación mejorada para creación de nuevo usuario
     if (userCreationMode) {
       // Validar que todos los campos requeridos estén completos
@@ -728,11 +674,9 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
       }
     }
 
-    // Verificar si al menos un hijo necesita apoderado
-    const someNeedGuardian = selectedChildren.some(child => child.user_id === 1);
-
-    if (someNeedGuardian && !userCreationMode) {
-      showWarning('Apoderado requerido', 'Algunos alumnos necesitan que completes los datos del apoderado.');
+    // SEGURIDAD: Todos los hijos en este formulario necesitan apoderado
+    if (!userCreationMode) {
+      showWarning('Apoderado requerido', 'Debes completar los datos del apoderado para continuar.');
       return;
     }
 
@@ -1002,41 +946,30 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
                           {/* Dropdown con resultados filtrados */}
                           {showChildDropdown && filteredChildren.length > 0 && (
                             <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                              {filteredChildren.map((hijo) => {
-                                const isSelected = selectedChildrenIds.includes(hijo.id);
-                                return (
-                                  <div
-                                    key={hijo.id}
-                                    className={classNames(
-                                      "px-4 py-3 border-b border-gray-100 last:border-b-0",
-                                      isSelected ? "bg-green-100" : "hover:bg-green-50"
-                                    )}
-                                  >
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex-1">
-                                        <div className="font-medium text-gray-900">{hijo.nombres}</div>
-                                        <div className="text-sm text-gray-600">
-                                          {hijo.doc_tipo}: {hijo.doc_numero} - {hijo.subgrupo_nombre}
-                                        </div>
+                              {filteredChildren.map((hijo) => (
+                                <div
+                                  key={hijo.id}
+                                  className="px-4 py-3 border-b border-gray-100 last:border-b-0 hover:bg-green-50"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex-1">
+                                      <div className="font-medium text-gray-900">{hijo.nombres}</div>
+                                      <div className="text-sm text-gray-600">
+                                        {hijo.doc_tipo}: {hijo.doc_numero} - {hijo.subgrupo_nombre}
                                       </div>
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          selectChildFromDropdown(hijo);
-                                        }}
-                                        className={classNames(
-                                          "ml-3 px-4 py-2 text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-1 transition-colors",
-                                          isSelected
-                                            ? "bg-gray-400 text-white hover:bg-gray-500 focus:ring-gray-500"
-                                            : "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500"
-                                        )}
-                                      >
-                                        {isSelected ? 'Remover' : 'Seleccionar'}
-                                      </button>
                                     </div>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        selectChildFromDropdown(hijo);
+                                      }}
+                                      className="ml-3 px-4 py-2 text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-1 transition-colors bg-red-600 text-white hover:bg-red-700 focus:ring-red-500"
+                                    >
+                                      Seleccionar
+                                    </button>
                                   </div>
-                                );
-                              })}
+                                </div>
+                              ))}
                             </div>
                           )}
 
@@ -1107,77 +1040,6 @@ export default function Index({ paquete, grupo, subgrupo, capacidadDisponible, h
               </section>
             )}
 
-            {/* Información del apoderado - Mostrar cuando algún hijo tiene apoderado */}
-            {selectedChildren.length > 0 && isExistingGuardian && !userCreationMode && (() => {
-              const childWithGuardian = selectedChildren.find(c => c.user_id && c.user_id !== 1);
-              const allHaveSameGuardian = childWithGuardian && selectedChildren.every(c => c.user_id === childWithGuardian.user_id);
-
-              return childWithGuardian && (
-                <section className="mb-8">
-                  <div className="p-6 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                        <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-green-900">
-                          {allHaveSameGuardian ? 'Apoderado Confirmado' : 'Apoderado Asignado'}
-                        </h3>
-                        <p className="text-sm text-green-700">
-                          {allHaveSameGuardian
-                            ? `${selectedChildren.length} alumno(s) ya tienen el mismo apoderado`
-                            : `Se asignará el apoderado de ${childWithGuardian.nombres} a todos los alumnos`
-                          }
-                        </p>
-                      </div>
-                    </div>
-
-                    {childWithGuardian.user && (
-                      <div className="bg-white/60 rounded-lg p-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div>
-                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Apoderado</span>
-                            <p className="text-base font-semibold text-gray-900">{childWithGuardian.user.name}</p>
-                          </div>
-                          {childWithGuardian.user.email && (
-                            <div>
-                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Correo</span>
-                              <p className="text-sm text-gray-700">{childWithGuardian.user.email}</p>
-                            </div>
-                          )}
-                          {childWithGuardian.user.phone && (
-                            <div>
-                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Teléfono</span>
-                              <p className="text-sm text-gray-700">{childWithGuardian.user.phone}</p>
-                            </div>
-                          )}
-                          {childWithGuardian.user.dni && (
-                            <div>
-                              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">DNI</span>
-                              <p className="text-sm text-gray-700">{childWithGuardian.user.dni}</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                      <p className="text-sm text-blue-800 flex items-center gap-2">
-                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        {allHaveSameGuardian
-                          ? 'Estos alumnos ya están asignados al mismo apoderado.'
-                          : 'Este apoderado será asignado a todos los alumnos seleccionados.'
-                        }
-                      </p>
-                    </div>
-                  </div>
-                </section>
-              );
-            })()}
 
             {/* Formulario para crear nuevo usuario cuando es necesario */}
             {userCreationMode && selectedChildren.length > 0 && (

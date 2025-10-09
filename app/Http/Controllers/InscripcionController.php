@@ -310,16 +310,18 @@ class InscripcionController extends Controller
         $inscritosCount = Inscripcion::whereIn('subgrupo_id', $subgrupos->pluck('id'))->count();
         $capacidadDisponible = $capacidadTotal - $inscritosCount;
 
-        // Obtener hijos inscritos en TODOS los subgrupos de este grupo con información completa
-        $hijosInscritos = Hijo::select('id', 'nombres', 'doc_tipo', 'doc_numero', 'user_id', 'fecha_nacimiento')
+        // SEGURIDAD: Solo obtener hijos inscritos SIN APODERADO asignado (user_id = 1)
+        // Esto evita exponer datos de otros padres y sus hijos
+        $hijosInscritos = Hijo::select('id', 'nombres', 'doc_tipo', 'doc_numero', 'user_id')
+            ->where('user_id', 1) // Solo hijos sin apoderado asignado
             ->whereHas('inscripciones', function($query) use ($subgrupos) {
                 $query->whereIn('subgrupo_id', $subgrupos->pluck('id'));
             })
-            ->with(['user:id,name,email,phone', 'inscripciones' => function($query) use ($subgrupos) {
+            ->with(['inscripciones' => function($query) use ($subgrupos) {
                 $query->whereIn('subgrupo_id', $subgrupos->pluck('id'))->with('subgrupo:id,nombre');
             }])
             ->get()
-            ->map(function($hijo) use ($subgrupos) {
+            ->map(function($hijo) {
                 // Obtener el subgrupo específico donde está inscrito
                 $inscripcion = $hijo->inscripciones->first();
                 return [
@@ -327,15 +329,8 @@ class InscripcionController extends Controller
                     'nombres' => $hijo->nombres,
                     'doc_tipo' => $hijo->doc_tipo,
                     'doc_numero' => $hijo->doc_numero,
-                    'fecha_nacimiento' => $hijo->fecha_nacimiento,
                     'user_id' => $hijo->user_id,
                     'subgrupo_nombre' => $inscripcion ? $inscripcion->subgrupo->nombre : 'Sin subgrupo',
-                    'user' => $hijo->user ? [
-                        'id' => $hijo->user->id,
-                        'name' => $hijo->user->name,
-                        'email' => $hijo->user->email,
-                        'phone' => $hijo->user->phone
-                    ] : null
                 ];
             });
 
@@ -424,12 +419,13 @@ class InscripcionController extends Controller
         $inscritosCount = Inscripcion::where('subgrupo_id', $subgrupo->id)->count();
         $capacidadDisponible = $subgrupo->capacidad_maxima - $inscritosCount;
 
-        // Obtener hijos inscritos en este subgrupo con información completa
-        $hijosInscritos = Hijo::select('id', 'nombres', 'doc_tipo', 'doc_numero', 'user_id', 'fecha_nacimiento')
+        // SEGURIDAD: Solo obtener hijos inscritos SIN APODERADO asignado (user_id = 1)
+        // Esto evita exponer datos de otros padres y sus hijos
+        $hijosInscritos = Hijo::select('id', 'nombres', 'doc_tipo', 'doc_numero', 'user_id')
+            ->where('user_id', 1) // Solo hijos sin apoderado asignado
             ->whereHas('inscripciones', function($query) use ($subgrupo) {
                 $query->where('subgrupo_id', $subgrupo->id);
             })
-            ->with('user:id,name,email,phone')
             ->get()
             ->map(function($hijo) {
                 return [
@@ -437,14 +433,7 @@ class InscripcionController extends Controller
                     'nombres' => $hijo->nombres,
                     'doc_tipo' => $hijo->doc_tipo,
                     'doc_numero' => $hijo->doc_numero,
-                    'fecha_nacimiento' => $hijo->fecha_nacimiento,
                     'user_id' => $hijo->user_id,
-                    'user' => $hijo->user ? [
-                        'id' => $hijo->user->id,
-                        'name' => $hijo->user->name,
-                        'email' => $hijo->user->email,
-                        'phone' => $hijo->user->phone
-                    ] : null
                 ];
             });
 

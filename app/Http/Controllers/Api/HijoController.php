@@ -13,26 +13,48 @@ class HijoController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        // Show all children with their users (no authentication required)
-        $query = Hijo::with(['user', 'inscripciones.grupo.paquete']);
-        
+        // SEGURIDAD: Requiere autenticación
+        if (!Auth::check()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized - Authentication required'
+            ], 401);
+        }
+
+        // Si no es admin, solo mostrar sus propios hijos
+        if (!Auth::user()->is_admin) {
+            $query = Hijo::where('user_id', Auth::id());
+        } else {
+            $query = Hijo::query();
+        }
+
+        // NO incluir datos sensibles del usuario (email, phone, etc.)
+        $query->with(['inscripciones.grupo.paquete']);
+
         if ($request->has('search') && $request->search) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('nombres', 'like', "%{$search}%")
-                  ->orWhere('doc_numero', 'like', "%{$search}%")
-                  ->orWhereHas('user', function($userQuery) use ($search) {
-                      $userQuery->where('name', 'like', "%{$search}%")
-                               ->orWhere('email', 'like', "%{$search}%");
-                  });
+                  ->orWhere('doc_numero', 'like', "%{$search}%");
             });
         }
-        
+
         $hijos = $query->orderBy('nombres')->get();
-        
+
+        // Filtrar datos sensibles antes de retornar
+        $hijosFiltered = $hijos->map(function($hijo) {
+            return [
+                'id' => $hijo->id,
+                'nombres' => $hijo->nombres,
+                'doc_tipo' => $hijo->doc_tipo,
+                'doc_numero' => $hijo->doc_numero,
+                'inscripciones' => $hijo->inscripciones
+            ];
+        });
+
         return response()->json([
             'success' => true,
-            'data' => $hijos
+            'data' => $hijosFiltered
         ]);
     }
 
@@ -71,10 +93,32 @@ class HijoController extends Controller
 
     public function show(Hijo $hijo): JsonResponse
     {
-        // No authentication required - show any child
+        // SEGURIDAD: Requiere autenticación
+        if (!Auth::check()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized - Authentication required'
+            ], 401);
+        }
+
+        // Verificar permisos: solo el padre o admin puede ver
+        if (!Auth::user()->is_admin && $hijo->user_id !== Auth::id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Forbidden - You do not have permission to view this child'
+            ], 403);
+        }
+
+        // NO exponer datos sensibles del usuario
         return response()->json([
             'success' => true,
-            'data' => $hijo->load(['user', 'inscripciones.grupo.paquete'])
+            'data' => [
+                'id' => $hijo->id,
+                'nombres' => $hijo->nombres,
+                'doc_tipo' => $hijo->doc_tipo,
+                'doc_numero' => $hijo->doc_numero,
+                'inscripciones' => $hijo->inscripciones()->with('grupo.paquete')->get()
+            ]
         ]);
     }
 
@@ -148,6 +192,14 @@ class HijoController extends Controller
 
     public function getHijoByDni($dni): JsonResponse
     {
+        // SEGURIDAD: Requiere autenticación
+        if (!Auth::check()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized - Authentication required'
+            ], 401);
+        }
+
         $hijo = Hijo::where('doc_numero', $dni)->first();
 
         if (!$hijo) {
@@ -157,9 +209,23 @@ class HijoController extends Controller
             ], 404);
         }
 
+        // Verificar permisos: solo el padre o admin puede ver
+        if (!Auth::user()->is_admin && $hijo->user_id !== Auth::id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Forbidden - You do not have permission to view this child'
+            ], 403);
+        }
+
+        // NO exponer datos sensibles
         return response()->json([
             'success' => true,
-            'data' => $hijo
+            'data' => [
+                'id' => $hijo->id,
+                'nombres' => $hijo->nombres,
+                'doc_tipo' => $hijo->doc_tipo,
+                'doc_numero' => $hijo->doc_numero
+            ]
         ]);
     }
 
