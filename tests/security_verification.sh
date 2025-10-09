@@ -30,7 +30,7 @@ check_result() {
     fi
 }
 
-echo "📋 Test 1: Verificar  API requiere autenticación"
+echo "📋 Test 1: Verificar de  API requiere autenticación"
 echo "---------------------------------------------------"
 
 # Test 1.1: GET /hijos sin autenticación debe fallar
