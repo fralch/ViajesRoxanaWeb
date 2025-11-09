@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\NotificacionController;
 use App\Http\Controllers\Api\Gimnasio\GMiembroController;
 use App\Http\Controllers\Api\Gimnasio\GAsistenciaController;
 use App\Http\Controllers\Api\Gimnasio\GMembresiaController;
+use App\Http\Controllers\Api\Gimnasio\CheckinController;
 
 Route::prefix('v1')->group(function () {
     // Authentication routes (no auth required)
@@ -48,6 +49,7 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('miembros', GMiembroController::class);
             Route::apiResource('asistencias', GAsistenciaController::class);
             Route::apiResource('membresias', GMembresiaController::class);
+            Route::post('marcar-asistencia', [CheckinController::class, 'store']);
         });
     });
 });
