@@ -7,6 +7,9 @@ use App\Http\Controllers\Api\GeolocalizacionController;
 use App\Http\Controllers\Api\TrazabilidadController;
 use App\Http\Controllers\Api\HijoLocationController;
 use App\Http\Controllers\Api\NotificacionController;
+use App\Http\Controllers\Api\Gimnasio\GMiembroController;
+use App\Http\Controllers\Api\Gimnasio\GAsistenciaController;
+use App\Http\Controllers\Api\Gimnasio\GMembresiaController;
 
 Route::prefix('v1')->group(function () {
     // Authentication routes (no auth required)
@@ -39,6 +42,13 @@ Route::prefix('v1')->group(function () {
 
         // Notifications - protected
         Route::get('/endpoint/user/notificaciones/{dni}', [NotificacionController::class, 'index']);
+
+        // Gimnasio (agrupado)
+        Route::prefix('/endpoint/gimnasio')->group(function () {
+            Route::apiResource('miembros', GMiembroController::class);
+            Route::apiResource('asistencias', GAsistenciaController::class);
+            Route::apiResource('membresias', GMembresiaController::class);
+        });
     });
 });
 
