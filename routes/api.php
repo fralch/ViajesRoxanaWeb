@@ -43,14 +43,14 @@ Route::prefix('v1')->group(function () {
 
         // Notifications - protected
         Route::get('/endpoint/user/notificaciones/{dni}', [NotificacionController::class, 'index']);
+    });
 
-        // Gimnasio (agrupado)
-        Route::prefix('/endpoint/gimnasio')->group(function () {
-            Route::apiResource('miembros', GMiembroController::class);
-            Route::apiResource('asistencias', GAsistenciaController::class);
-            Route::apiResource('membresias', GMembresiaController::class);
-            Route::post('marcar-asistencia', [CheckinController::class, 'store']);
-        });
+    // Gimnasio (sin autenticación)
+    Route::prefix('/endpoint/gimnasio')->group(function () {
+        Route::apiResource('miembros', GMiembroController::class);
+        Route::apiResource('asistencias', GAsistenciaController::class);
+        Route::apiResource('membresias', GMembresiaController::class);
+        Route::post('marcar-asistencia', [CheckinController::class, 'store']);
     });
 });
 

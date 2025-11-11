@@ -17,18 +17,13 @@ class CheckinController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        // 1. Autenticación (auth:sanctum ya protege), doble chequeo por claridad
-        $user = $request->user();
-        if (!$user) {
-            return response()->json(['error' => 'No autenticado'], 401);
-        }
-
-        $idUsuario = $user->id; // id_usuario viene del JWT
-
-        // 2. Validar cuerpo y comparar token QR con BD
+        // 1. Validar cuerpo (sin autenticación): se requiere id_usuario y qr_token
         $data = $request->validate([
+            'id_usuario' => 'required|integer|exists:g_miembros,id_usuario',
             'qr_token' => 'required|string',
         ]);
+
+        $idUsuario = (int) $data['id_usuario'];
 
         $tokenBD = DB::table('g_configuracion')
             ->where('clave', 'qr_checkin_token')

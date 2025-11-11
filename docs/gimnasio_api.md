@@ -1,9 +1,9 @@
 # API Gimnasio v1
 
-Grupo de endpoints bajo `auth:sanctum` para gestión de miembros, membresías, asistencias y check-in por QR.
+Grupo de endpoints sin autenticación para gestión de miembros, membresías, asistencias y check-in por QR.
 
 - Base URL: `/api/v1/endpoint/gimnasio`
-- Autenticación: `Authorization: Bearer {token}` (Sanctum)
+- Autenticación: no requerida (no usar headers `Authorization`)
 - Formato: JSON
 
 ## Miembros
@@ -189,15 +189,14 @@ Endpoint: `marcar-asistencia`
 ### Marcar asistencia (QR)
 - Método: `POST`
 - Path: `/api/v1/endpoint/gimnasio/marcar-asistencia`
-- Requiere: usuario autenticado (el `id_usuario` proviene del JWT)
+- Requiere: `id_usuario` en el body (no se usan tokens)
 - Body requerido:
 ```json
-{ "qr_token": "GYM_TOKEN_2025" }
+{ "id_usuario": 1, "qr_token": "GYM_TOKEN_2025" }
 ```
 - Flujo y validaciones:
-  1. Autenticación: si no hay usuario → `401 {"error":"No autenticado"}`
-  2. Token QR: compara `qr_token` con `g_configuracion['qr_checkin_token']`; si no coincide → `403 {"error":"QR inválido"}`
-  3. Membresía activa: busca `GMembresia` con `estado='Activa'` y `fecha_fin >= hoy`; si no hay → `403 {"error":"Membresía inactiva"}`
+  1. Token QR: compara `qr_token` con `g_configuracion['qr_checkin_token']`; si no coincide → `403 {"error":"QR inválido"}`
+  2. Membresía activa: busca `GMembresia` con `estado='Activa'` y `fecha_fin >= hoy`; si no hay → `403 {"error":"Membresía inactiva"}`
   4. Duplicado: si ya existe `g_asistencias` para hoy → `200 {"mensaje":"Ya registrado hoy","hora":"HH:mm:ss"}`
   5. Inserción: crea asistencia y devuelve → `200 {"mensaje":"Asistencia registrada","hora":"HH:mm:ss"}`
 

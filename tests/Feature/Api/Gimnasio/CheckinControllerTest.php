@@ -8,7 +8,6 @@ use App\Models\Gimnasio\GMembresia;
 use App\Models\Gimnasio\GAsistencia;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class CheckinControllerTest extends TestCase
@@ -57,9 +56,8 @@ class CheckinControllerTest extends TestCase
         $user = $this->createUserAndMember();
         $this->createActiveMembershipFor($user);
 
-        Sanctum::actingAs($user);
-
         $response = $this->postJson('/api/v1/endpoint/gimnasio/marcar-asistencia', [
+            'id_usuario' => $user->id,
             'qr_token' => 'TEST_TOKEN',
         ]);
 
@@ -82,9 +80,8 @@ class CheckinControllerTest extends TestCase
         $user = $this->createUserAndMember();
         $this->createActiveMembershipFor($user);
 
-        Sanctum::actingAs($user);
-
         $response = $this->postJson('/api/v1/endpoint/gimnasio/marcar-asistencia', [
+            'id_usuario' => $user->id,
             'qr_token' => 'WRONG_TOKEN',
         ]);
 
@@ -106,9 +103,8 @@ class CheckinControllerTest extends TestCase
             'estado' => 'Inactiva',
         ]);
 
-        Sanctum::actingAs($user);
-
         $response = $this->postJson('/api/v1/endpoint/gimnasio/marcar-asistencia', [
+            'id_usuario' => $user->id,
             'qr_token' => 'TEST_TOKEN',
         ]);
 
@@ -129,9 +125,8 @@ class CheckinControllerTest extends TestCase
             'hora_entrada' => '08:30:00',
         ]);
 
-        Sanctum::actingAs($user);
-
         $response = $this->postJson('/api/v1/endpoint/gimnasio/marcar-asistencia', [
+            'id_usuario' => $user->id,
             'qr_token' => 'TEST_TOKEN',
         ]);
 
