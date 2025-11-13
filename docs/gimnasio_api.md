@@ -178,6 +178,88 @@ DELETE /api/v1/endpoint/gimnasio/miembros/1
 
 ---
 
+### 6. Actualizar Foto de Perfil
+**POST** `/api/v1/endpoint/gimnasio/miembros/{id}/foto-perfil`
+
+Actualiza la foto de perfil de un miembro y mantiene un historial de todas las fotos anteriores.
+
+**Parámetros de URL:**
+- `id`: ID del miembro (id_usuario)
+
+**Request Body:**
+- Content-Type: `multipart/form-data`
+- Campo: `foto` (archivo de imagen)
+
+**Validaciones:**
+- `foto`: requerido, debe ser una imagen (jpeg, png, jpg, gif)
+- Tamaño máximo: 5MB
+
+**Ejemplo Request:**
+```bash
+curl -X POST http://localhost/api/v1/endpoint/gimnasio/miembros/1/foto-perfil \
+  -F "foto=@/ruta/a/imagen.jpg"
+```
+
+**Respuesta exitosa (200):**
+```json
+{
+  "success": true,
+  "mensaje": "Foto de perfil actualizada exitosamente",
+  "data": {
+    "foto_perfil": "http://localhost/storage/gimnasio/fotos_perfil/miembro_1_1699999999.jpg",
+    "historial": [
+      {
+        "url": "http://localhost/storage/gimnasio/fotos_perfil/miembro_1_1699888888.jpg",
+        "fecha_cambio": "2025-11-13 15:30:00"
+      },
+      {
+        "url": "http://localhost/storage/gimnasio/fotos_perfil/miembro_1_1699777777.jpg",
+        "fecha_cambio": "2025-11-10 10:15:00"
+      }
+    ]
+  }
+}
+```
+
+**Respuesta - Primera foto (sin historial previo) (200):**
+```json
+{
+  "success": true,
+  "mensaje": "Foto de perfil actualizada exitosamente",
+  "data": {
+    "foto_perfil": "http://localhost/storage/gimnasio/fotos_perfil/miembro_1_1699999999.jpg",
+    "historial": []
+  }
+}
+```
+
+**Respuesta - Miembro no encontrado (404):**
+```json
+{
+  "message": "No query results for model [App\\Models\\Gimnasio\\GMiembro] {id}"
+}
+```
+
+**Respuesta - Validación fallida (422):**
+```json
+{
+  "message": "The foto field is required.",
+  "errors": {
+    "foto": [
+      "The foto field is required."
+    ]
+  }
+}
+```
+
+**Notas:**
+- Cada vez que se actualiza la foto, la foto anterior se guarda en el historial con la fecha y hora del cambio
+- El campo `historial_fotos` se almacena como JSON en la base de datos
+- Las fotos se guardan en `storage/gimnasio/fotos_perfil/`
+- El nombre del archivo incluye el ID del usuario y un timestamp único
+
+---
+
 ## Membresías
 
 ### 1. Listar Membresías
@@ -514,11 +596,31 @@ GET /api/v1/endpoint/gimnasio/verificar-membresia/12345678
 {
   "mensaje": "Asistencia registrada exitosamente",
   "nombre": "Juan Pérez",
+  "hora": "08:30:45",
+  "foto_perfil": "http://localhost/storage/gimnasio/fotos_perfil/miembro_1_1699999999.jpg"
+}
+```
+
+**Respuesta exitosa - Sin foto de perfil (200):**
+```json
+{
+  "mensaje": "Asistencia registrada exitosamente",
+  "nombre": "Juan Pérez",
   "hora": "08:30:45"
 }
 ```
 
-**Respuesta - Ya registrado hoy (200):**
+**Respuesta - Ya registrado hoy con foto (200):**
+```json
+{
+  "mensaje": "Ya registrado hoy",
+  "nombre": "Juan Pérez",
+  "hora": "08:30:00",
+  "foto_perfil": "http://localhost/storage/gimnasio/fotos_perfil/miembro_1_1699999999.jpg"
+}
+```
+
+**Respuesta - Ya registrado hoy sin foto (200):**
 ```json
 {
   "mensaje": "Ya registrado hoy",
@@ -534,18 +636,42 @@ GET /api/v1/endpoint/gimnasio/verificar-membresia/12345678
 }
 ```
 
-**Respuesta - Membresía inválida (403):**
+**Respuesta - Usuario sin membresía (404):**
 ```json
 {
-  "error": "Membresía inactiva o fuera de rango de fechas"
+  "error": "Usuario sin membresía",
+  "mensaje": "El usuario no tiene ninguna membresía registrada"
 }
 ```
 
-**Casos de membresía inválida:**
-- Estado diferente a "Activa"
-- Fecha actual antes de `fecha_inicio`
-- Fecha actual después de `fecha_fin`
-- No tiene ninguna membresía
+**Respuesta - Membresía vencida (403):**
+```json
+{
+  "error": "Membresía vencida",
+  "mensaje": "La membresía del usuario ha expirado",
+  "fecha_vencimiento": "2025-01-15"
+}
+```
+
+**Respuesta - Membresía inactiva (403):**
+```json
+{
+  "error": "Membresía inactiva",
+  "mensaje": "La membresía del usuario no está activa o está fuera del rango de fechas"
+}
+```
+
+**Diferenciación de errores de membresía:**
+- **Usuario sin membresía (404)**: El usuario existe pero nunca ha tenido una membresía registrada
+- **Membresía vencida (403)**: El usuario tiene membresías pero han expirado (fecha_fin < hoy)
+- **Membresía inactiva (403)**: La membresía existe pero:
+  - Estado diferente a "Activa"
+  - Fecha actual antes de `fecha_inicio`
+  - Está dentro del rango pero no tiene estado "Activa"
+
+**Notas:**
+- El campo `foto_perfil` solo se incluye en la respuesta si el usuario ha subido una foto
+- La URL de la foto es completa y accesible directamente desde el navegador
 
 ---
 
@@ -573,6 +699,18 @@ GET /api/v1/endpoint/gimnasio/verificar-membresia/12345678
    - Un miembro puede tener múltiples asistencias
    - Un miembro puede tener múltiples metas
 6. **Check-in**: La ruta de verificar membresía es la forma recomendada de registrar asistencias ya que valida todo automáticamente
+7. **Fotos de perfil**:
+   - Las fotos se almacenan en `storage/gimnasio/fotos_perfil/`
+   - Cada cambio de foto guarda la anterior en el historial
+   - El historial incluye la ruta y fecha/hora del cambio
+   - Tamaño máximo por foto: 5MB
+   - Formatos aceptados: jpeg, png, jpg, gif
+   - Las fotos son accesibles vía URL pública: `http://dominio/storage/ruta/archivo.jpg`
+8. **Historial de fotos**:
+   - Se almacena como JSON en el campo `historial_fotos`
+   - Cada entrada contiene: `ruta` y `fecha_cambio`
+   - El historial crece cada vez que se actualiza la foto
+   - La foto actual NO está en el historial, solo las anteriores
 
 ---
 
@@ -623,6 +761,32 @@ GET /api/v1/endpoint/gimnasio/asistencias?dni=87654321&fecha_asistencia=2025-01-
 ```bash
 # Listar todas las membresías activas
 GET /api/v1/endpoint/gimnasio/membresias?estado=Activa
+```
+
+### Actualizar foto de perfil y ver historial
+
+```bash
+# 1. Subir la primera foto de perfil
+curl -X POST http://localhost/api/v1/endpoint/gimnasio/miembros/5/foto-perfil \
+  -F "foto=@/ruta/a/foto1.jpg"
+
+# Respuesta: foto_perfil actualizada, historial = []
+
+# 2. Cambiar la foto de perfil (la primera foto se guarda en el historial)
+curl -X POST http://localhost/api/v1/endpoint/gimnasio/miembros/5/foto-perfil \
+  -F "foto=@/ruta/a/foto2.jpg"
+
+# Respuesta: foto_perfil = foto2.jpg, historial = [foto1.jpg con su fecha]
+
+# 3. Cambiar nuevamente la foto
+curl -X POST http://localhost/api/v1/endpoint/gimnasio/miembros/5/foto-perfil \
+  -F "foto=@/ruta/a/foto3.jpg"
+
+# Respuesta: foto_perfil = foto3.jpg, historial = [foto1.jpg, foto2.jpg con sus fechas]
+
+# 4. Verificar check-in (incluye la foto actual)
+GET /api/v1/endpoint/gimnasio/verificar-membresia/87654321
+# Respuesta incluirá el campo foto_perfil con la URL de foto3.jpg
 ```
 
 ---
