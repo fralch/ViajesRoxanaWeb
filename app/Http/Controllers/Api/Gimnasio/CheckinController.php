@@ -28,6 +28,10 @@ class CheckinController extends Controller
 
         // 2. Membresía activa: estado = 'Activa' y fecha_inicio <= hoy <= fecha_fin
         $hoy = Carbon::today();
+
+        // Buscar cualquier membresía del usuario para debug
+        $todasMembresias = GMembresia::where('id_usuario', $idUsuario)->get();
+
         $membresiaActiva = GMembresia::where('id_usuario', $idUsuario)
             ->where('estado', 'Activa')
             ->whereDate('fecha_inicio', '<=', $hoy)
@@ -35,7 +39,34 @@ class CheckinController extends Controller
             ->first();
 
         if (!$membresiaActiva) {
-            return response()->json(['error' => 'Membresía inactiva o fuera de rango de fechas'], 403);
+            // Debug: Mostrar información detallada
+            $debug = [
+                'error' => 'Membresía inactiva o fuera de rango de fechas',
+                'fecha_hoy' => $hoy->toDateString(),
+                'debug' => [
+                    'miembro' => [
+                        'id_usuario' => $miembro->id_usuario,
+                        'nombre' => $miembro->nombre,
+                        'dni' => $miembro->dni
+                    ],
+                    'membresias_encontradas' => $todasMembresias->map(function($m) use ($hoy) {
+                        return [
+                            'id_membresia' => $m->id_membresia,
+                            'tipo_plan' => $m->tipo_plan,
+                            'estado' => $m->estado,
+                            'estado_length' => strlen($m->estado),
+                            'fecha_inicio' => $m->fecha_inicio,
+                            'fecha_fin' => $m->fecha_fin,
+                            'validaciones' => [
+                                'estado_es_Activa' => $m->estado === 'Activa',
+                                'fecha_inicio_ok' => $m->fecha_inicio <= $hoy->toDateString(),
+                                'fecha_fin_ok' => $m->fecha_fin >= $hoy->toDateString(),
+                            ]
+                        ];
+                    })
+                ]
+            ];
+            return response()->json($debug, 403);
         }
 
         // 3. Sin duplicado hoy
