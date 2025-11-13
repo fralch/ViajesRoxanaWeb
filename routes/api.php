@@ -52,6 +52,7 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('asistencias', GAsistenciaController::class);
         Route::apiResource('membresias', GMembresiaController::class);
         Route::get('verificar-membresia/{dni}', [CheckinController::class, 'verificarMembresia']);
+        Route::get('usuario-tiene-foto/{dni}', [GMembresiaController::class, 'verificarFotoUsuario']);
     });
 });
 

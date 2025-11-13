@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Gimnasio;
 
 use App\Http\Controllers\Controller;
 use App\Models\Gimnasio\GMembresia;
+use App\Models\Gimnasio\GMiembro;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -61,5 +62,62 @@ class GMembresiaController extends Controller
         $found = GMembresia::findOrFail($membresia);
         $found->delete();
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * GET /endpoint/gimnasio/usuario-tiene-foto/{dni}
+     * Verifica si un usuario tiene foto de perfil
+     */
+    public function verificarFotoUsuario($dni): JsonResponse
+    {
+        // Buscar el miembro por DNI
+        $miembro = GMiembro::where('dni', $dni)->first();
+
+        if (!$miembro) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Miembro no encontrado'
+            ], 404);
+        }
+
+        // Verificar si tiene foto de perfil
+        $tieneFoto = !empty($miembro->foto_perfil);
+
+        $response = [
+            'success' => true,
+            'id_usuario' => $miembro->id_usuario,
+            'nombre' => $miembro->nombre,
+            'dni' => $miembro->dni,
+            'tiene_foto' => $tieneFoto,
+        ];
+
+        // Si tiene foto, incluir la URL
+        if ($tieneFoto) {
+            $response['foto_perfil'] = [
+                'url' => url('storage/' . $miembro->foto_perfil),
+                'ruta' => $miembro->foto_perfil,
+            ];
+        }
+
+        // Si tiene historial de fotos, incluirlo
+        if (!empty($miembro->historial_fotos) && is_array($miembro->historial_fotos)) {
+            $response['historial_fotos'] = [
+                'cantidad' => count($miembro->historial_fotos),
+                'fotos' => array_map(function($item) {
+                    return [
+                        'url' => url('storage/' . $item['ruta']),
+                        'ruta' => $item['ruta'],
+                        'fecha_cambio' => $item['fecha_cambio'],
+                    ];
+                }, $miembro->historial_fotos),
+            ];
+        } else {
+            $response['historial_fotos'] = [
+                'cantidad' => 0,
+                'fotos' => [],
+            ];
+        }
+
+        return response()->json($response, 200);
     }
 }

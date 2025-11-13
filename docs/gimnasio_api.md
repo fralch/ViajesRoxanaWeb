@@ -8,6 +8,67 @@ Todas las rutas del gimnasio son **públicas** (no requieren autenticación).
 
 ---
 
+## Índice de Contenidos
+
+1. [Miembros](#miembros)
+   - Listar Miembros
+   - Crear Miembro
+   - Ver Miembro
+   - Actualizar Miembro
+   - Eliminar Miembro
+   - Actualizar Foto de Perfil
+
+2. [Membresías](#membresías)
+   - Listar Membresías
+   - Crear Membresía
+   - Ver Membresía
+   - Actualizar Membresía
+   - Eliminar Membresía
+
+3. [Asistencias](#asistencias)
+   - Listar Asistencias
+   - Crear Asistencia
+   - Ver Asistencia
+   - Actualizar Asistencia
+   - Eliminar Asistencia
+
+4. [Verificar Foto de Usuario](#verificar-foto-de-usuario)
+
+5. [Check-in](#check-in-verificar-membresía-y-marcar-asistencia)
+
+6. [Códigos de Estado HTTP](#códigos-de-estado-http)
+
+7. [Notas Importantes](#notas-importantes)
+
+8. [Ejemplos de Flujo Completo](#ejemplos-de-flujo-completo)
+
+---
+
+## Resumen de Endpoints
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/miembros` | Listar miembros |
+| POST | `/miembros` | Crear miembro |
+| GET | `/miembros/{id}` | Ver detalles de un miembro |
+| PUT/PATCH | `/miembros/{id}` | Actualizar miembro |
+| DELETE | `/miembros/{id}` | Eliminar miembro |
+| POST | `/miembros/{id}/foto-perfil` | Actualizar foto de perfil |
+| GET | `/membresias` | Listar membresías |
+| POST | `/membresias` | Crear membresía |
+| GET | `/membresias/{id}` | Ver detalles de una membresía |
+| PUT/PATCH | `/membresias/{id}` | Actualizar membresía |
+| DELETE | `/membresias/{id}` | Eliminar membresía |
+| GET | `/asistencias` | Listar asistencias |
+| POST | `/asistencias` | Crear asistencia |
+| GET | `/asistencias/{id}` | Ver detalles de una asistencia |
+| PUT/PATCH | `/asistencias/{id}` | Actualizar asistencia |
+| DELETE | `/asistencias/{id}` | Eliminar asistencia |
+| GET | `/usuario-tiene-foto/{dni}` | Verificar si usuario tiene foto |
+| GET | `/verificar-membresia/{dni}` | Check-in automático con validación |
+
+---
+
 ## Miembros
 
 ### 1. Listar Miembros
@@ -35,13 +96,21 @@ GET /api/v1/endpoint/gimnasio/miembros?search=Juan
       "dni": "12345678",
       "fecha_nacimiento": "1990-01-15",
       "genero": "M",
-      "foto_perfil": null,
+      "foto_perfil": "gimnasio/fotos_perfil/miembro_1_1699999999.jpg",
+      "historial_fotos": [
+        {
+          "ruta": "gimnasio/fotos_perfil/miembro_1_1699888888.jpg",
+          "fecha_cambio": "2025-11-10 14:30:00"
+        }
+      ],
       "estado": "Activo",
       "fecha_registro": "2025-01-01"
     }
   ]
 }
 ```
+
+**Nota:** El campo `historial_fotos` contiene un array JSON con las fotos anteriores del usuario. Si el usuario no ha cambiado su foto, este campo será `null` o un array vacío.
 
 ---
 
@@ -111,7 +180,13 @@ GET /api/v1/endpoint/gimnasio/miembros/1
     "dni": "12345678",
     "fecha_nacimiento": "1990-01-15",
     "genero": "M",
-    "foto_perfil": null,
+    "foto_perfil": "gimnasio/fotos_perfil/miembro_1_1699999999.jpg",
+    "historial_fotos": [
+      {
+        "ruta": "gimnasio/fotos_perfil/miembro_1_1699888888.jpg",
+        "fecha_cambio": "2025-11-10 14:30:00"
+      }
+    ],
     "estado": "Activo",
     "fecha_registro": "2025-01-01",
     "membresias": [...],
@@ -120,6 +195,8 @@ GET /api/v1/endpoint/gimnasio/miembros/1
   }
 }
 ```
+
+**Nota:** Este endpoint incluye las relaciones del miembro (membresías, asistencias, metas) junto con su información de foto actual e historial.
 
 ---
 
@@ -570,6 +647,82 @@ DELETE /api/v1/endpoint/gimnasio/asistencias/1
 
 ---
 
+## Verificar Foto de Usuario
+
+### Verificar si un Usuario tiene Foto de Perfil
+**GET** `/api/v1/endpoint/gimnasio/usuario-tiene-foto/{dni}`
+
+Verifica si un miembro tiene foto de perfil y devuelve información sobre su foto actual e historial de fotos.
+
+**Parámetros de URL:**
+- `dni`: DNI del miembro (8 dígitos)
+
+**Ejemplo Request:**
+```bash
+GET /api/v1/endpoint/gimnasio/usuario-tiene-foto/12345678
+```
+
+**Respuesta exitosa - Con foto y historial (200):**
+```json
+{
+  "success": true,
+  "id_usuario": 1,
+  "nombre": "Juan Pérez",
+  "dni": "12345678",
+  "tiene_foto": true,
+  "foto_perfil": {
+    "url": "http://localhost/storage/gimnasio/fotos_perfil/miembro_1_1699999999.jpg",
+    "ruta": "gimnasio/fotos_perfil/miembro_1_1699999999.jpg"
+  },
+  "historial_fotos": {
+    "cantidad": 2,
+    "fotos": [
+      {
+        "url": "http://localhost/storage/gimnasio/fotos_perfil/miembro_1_1699888888.jpg",
+        "ruta": "gimnasio/fotos_perfil/miembro_1_1699888888.jpg",
+        "fecha_cambio": "2025-11-13 15:30:00"
+      },
+      {
+        "url": "http://localhost/storage/gimnasio/fotos_perfil/miembro_1_1699777777.jpg",
+        "ruta": "gimnasio/fotos_perfil/miembro_1_1699777777.jpg",
+        "fecha_cambio": "2025-11-10 10:15:00"
+      }
+    ]
+  }
+}
+```
+
+**Respuesta exitosa - Sin foto (200):**
+```json
+{
+  "success": true,
+  "id_usuario": 1,
+  "nombre": "Juan Pérez",
+  "dni": "12345678",
+  "tiene_foto": false,
+  "historial_fotos": {
+    "cantidad": 0,
+    "fotos": []
+  }
+}
+```
+
+**Respuesta - Miembro no encontrado (404):**
+```json
+{
+  "success": false,
+  "error": "Miembro no encontrado"
+}
+```
+
+**Casos de uso:**
+- Verificar si un usuario tiene foto antes de mostrarlo en una interfaz
+- Obtener el historial completo de fotos de un usuario
+- Validar que un usuario haya subido su foto de perfil
+- Mostrar todas las fotos anteriores de un usuario
+
+---
+
 ## Check-in (Verificar Membresía y Marcar Asistencia)
 
 ### Verificar Membresía y Registrar Asistencia
@@ -789,8 +942,116 @@ GET /api/v1/endpoint/gimnasio/verificar-membresia/87654321
 # Respuesta incluirá el campo foto_perfil con la URL de foto3.jpg
 ```
 
+### Verificar si un usuario tiene foto antes de realizar una operación
+
+```bash
+# 1. Verificar si el usuario con DNI 87654321 tiene foto
+GET /api/v1/endpoint/gimnasio/usuario-tiene-foto/87654321
+
+# Respuesta si tiene foto:
+{
+  "success": true,
+  "id_usuario": 5,
+  "nombre": "María González",
+  "dni": "87654321",
+  "tiene_foto": true,
+  "foto_perfil": {
+    "url": "http://localhost/storage/gimnasio/fotos_perfil/miembro_5_1699999999.jpg",
+    "ruta": "gimnasio/fotos_perfil/miembro_5_1699999999.jpg"
+  },
+  "historial_fotos": {
+    "cantidad": 2,
+    "fotos": [...]
+  }
+}
+
+# 2. Si tiene_foto es false, solicitar que suba una foto
+# 3. Si tiene_foto es true, usar la URL para mostrar la foto en la interfaz
+```
+
+### Flujo completo de registro e ingreso al gimnasio
+
+```bash
+# 1. Crear nuevo miembro
+POST /api/v1/endpoint/gimnasio/miembros
+{
+  "nombre": "Carlos Rodríguez",
+  "dni": "99887766",
+  "fecha_nacimiento": "1992-08-10",
+  "genero": "M",
+  "estado": "Activo",
+  "fecha_registro": "2025-11-13"
+}
+# Respuesta: id_usuario = 10
+
+# 2. Subir foto de perfil
+curl -X POST http://localhost/api/v1/endpoint/gimnasio/miembros/10/foto-perfil \
+  -F "foto=@/ruta/a/foto_carlos.jpg"
+
+# 3. Crear membresía activa
+POST /api/v1/endpoint/gimnasio/membresias
+{
+  "id_usuario": 10,
+  "tipo_plan": "Trimestral",
+  "fecha_inicio": "2025-11-13",
+  "fecha_fin": "2026-02-13",
+  "estado": "Activa"
+}
+
+# 4. Verificar que tiene foto antes del primer ingreso
+GET /api/v1/endpoint/gimnasio/usuario-tiene-foto/99887766
+
+# 5. Realizar check-in el día de ingreso
+GET /api/v1/endpoint/gimnasio/verificar-membresia/99887766
+# Respuesta: Asistencia registrada + foto_perfil incluida
+
+# 6. Intentar ingresar nuevamente el mismo día
+GET /api/v1/endpoint/gimnasio/verificar-membresia/99887766
+# Respuesta: "Ya registrado hoy" + hora de entrada + foto_perfil
+
+# 7. Consultar historial de asistencias
+GET /api/v1/endpoint/gimnasio/asistencias?dni=99887766
+```
+
+---
+
+## Estadísticas de la API
+
+- **Total de endpoints**: 18
+- **Recursos principales**: 3 (Miembros, Membresías, Asistencias)
+- **Endpoints especiales**: 2 (Check-in, Verificar Foto)
+- **Métodos HTTP utilizados**: GET, POST, PUT, PATCH, DELETE
+- **Autenticación requerida**: No (API pública)
+- **Formatos soportados**: JSON (requests y responses), multipart/form-data (upload de fotos)
+
+---
+
+## Changelog
+
+### Versión 1.2.0 (2025-11-13)
+- ✨ Agregado sistema de historial de fotos de perfil
+- ✨ Nuevo endpoint: `POST /miembros/{id}/foto-perfil` - Actualizar foto con historial
+- ✨ Nuevo endpoint: `GET /usuario-tiene-foto/{dni}` - Verificar si usuario tiene foto
+- 🔄 Actualizado: Check-in ahora incluye foto de perfil en las respuestas
+- 🔄 Diferenciación mejorada de errores de membresía (sin membresía vs vencida vs inactiva)
+- 📝 Campo `historial_fotos` agregado al modelo GMiembro
+- 📝 Todas las fotos ahora se almacenan en `storage/gimnasio/fotos_perfil/`
+
+### Versión 1.1.0 (2025-11-09)
+- ✨ Implementación de check-in automático por DNI
+- ✨ Filtrado de asistencias por DNI
+- 🔄 Validación de membresía con rango de fechas
+- 📝 Documentación inicial de la API
+
+### Versión 1.0.0 (2025-11-01)
+- 🎉 Lanzamiento inicial de la API de Gimnasio
+- ✨ CRUD completo para Miembros, Membresías y Asistencias
+- 📝 Documentación básica
+
 ---
 
 ## Información de Contacto y Soporte
 
 Para reportar problemas o solicitar nuevas funcionalidades, contacta al equipo de desarrollo.
+
+**Última actualización**: 2025-11-13
