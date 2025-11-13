@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Gimnasio;
 
 use App\Http\Controllers\Controller;
 use App\Models\Gimnasio\GAsistencia;
+use App\Models\Gimnasio\GMiembro;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -13,9 +14,20 @@ class GAsistenciaController extends Controller
     {
         $query = GAsistencia::query();
 
-        if ($request->has('id_usuario')) {
-            $query->where('id_usuario', $request->id_usuario);
+        // Filtrar por DNI en lugar de id_usuario
+        if ($request->has('dni')) {
+            $miembro = GMiembro::where('dni', $request->dni)->first();
+
+            if (!$miembro) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Miembro no encontrado'
+                ], 404);
+            }
+
+            $query->where('id_usuario', $miembro->id_usuario);
         }
+
         if ($request->has('fecha_asistencia')) {
             $query->where('fecha_asistencia', $request->fecha_asistencia);
         }

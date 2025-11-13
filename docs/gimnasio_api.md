@@ -343,17 +343,18 @@ DELETE /api/v1/endpoint/gimnasio/membresias/1
 Lista todas las asistencias con opciones de filtrado.
 
 **Query Parameters:**
-- `id_usuario` (opcional): Filtra por usuario específico
+- `dni` (opcional): Filtra por DNI del miembro
 - `fecha_asistencia` (opcional): Filtra por fecha específica (YYYY-MM-DD)
 
 **Ejemplo Request:**
 ```bash
 GET /api/v1/endpoint/gimnasio/asistencias
-GET /api/v1/endpoint/gimnasio/asistencias?id_usuario=1
+GET /api/v1/endpoint/gimnasio/asistencias?dni=12345678
 GET /api/v1/endpoint/gimnasio/asistencias?fecha_asistencia=2025-01-15
+GET /api/v1/endpoint/gimnasio/asistencias?dni=12345678&fecha_asistencia=2025-01-15
 ```
 
-**Respuesta (200):**
+**Respuesta exitosa (200):**
 ```json
 {
   "success": true,
@@ -365,6 +366,14 @@ GET /api/v1/endpoint/gimnasio/asistencias?fecha_asistencia=2025-01-15
       "hora_entrada": "08:30:00"
     }
   ]
+}
+```
+
+**Respuesta - DNI no encontrado (404):**
+```json
+{
+  "success": false,
+  "error": "Miembro no encontrado"
 }
 ```
 
@@ -602,8 +611,11 @@ GET /api/v1/endpoint/gimnasio/verificar-membresia/87654321
 ### Consultar historial de asistencias de un miembro
 
 ```bash
-# Obtener todas las asistencias del usuario 5
-GET /api/v1/endpoint/gimnasio/asistencias?id_usuario=5
+# Obtener todas las asistencias del miembro con DNI 87654321
+GET /api/v1/endpoint/gimnasio/asistencias?dni=87654321
+
+# Obtener asistencias de una fecha específica para ese miembro
+GET /api/v1/endpoint/gimnasio/asistencias?dni=87654321&fecha_asistencia=2025-01-15
 ```
 
 ### Verificar membresías activas
