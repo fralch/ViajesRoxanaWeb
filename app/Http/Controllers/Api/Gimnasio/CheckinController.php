@@ -39,34 +39,32 @@ class CheckinController extends Controller
             ->first();
 
         if (!$membresiaActiva) {
-            // Debug: Mostrar información detallada
-            $debug = [
-                'error' => 'Membresía inactiva o fuera de rango de fechas',
-                'fecha_hoy' => $hoy->toDateString(),
-                'debug' => [
-                    'miembro' => [
-                        'id_usuario' => $miembro->id_usuario,
-                        'nombre' => $miembro->nombre,
-                        'dni' => $miembro->dni
-                    ],
-                    'membresias_encontradas' => $todasMembresias->map(function($m) use ($hoy) {
-                        return [
-                            'id_membresia' => $m->id_membresia,
-                            'tipo_plan' => $m->tipo_plan,
-                            'estado' => $m->estado,
-                            'estado_length' => strlen($m->estado),
-                            'fecha_inicio' => $m->fecha_inicio,
-                            'fecha_fin' => $m->fecha_fin,
-                            'validaciones' => [
-                                'estado_es_Activa' => $m->estado === 'Activa',
-                                'fecha_inicio_ok' => $m->fecha_inicio <= $hoy->toDateString(),
-                                'fecha_fin_ok' => $m->fecha_fin >= $hoy->toDateString(),
-                            ]
-                        ];
-                    })
-                ]
-            ];
-            return response()->json($debug, 403);
+            // Diferenciar entre usuario sin membresía y usuario con membresía vencida
+            if ($todasMembresias->isEmpty()) {
+                return response()->json([
+                    'error' => 'Usuario sin membresía',
+                    'mensaje' => 'El usuario no tiene ninguna membresía registrada'
+                ], 404);
+            }
+
+            // Verificar si tiene membresías vencidas
+            $membresiaVencida = $todasMembresias->first(function($m) use ($hoy) {
+                return $m->fecha_fin < $hoy->toDateString();
+            });
+
+            if ($membresiaVencida) {
+                return response()->json([
+                    'error' => 'Membresía vencida',
+                    'mensaje' => 'La membresía del usuario ha expirado',
+                    'fecha_vencimiento' => $membresiaVencida->fecha_fin
+                ], 403);
+            }
+
+            // Si no está vencida, está inactiva o fuera de rango
+            return response()->json([
+                'error' => 'Membresía inactiva',
+                'mensaje' => 'La membresía del usuario no está activa o está fuera del rango de fechas'
+            ], 403);
         }
 
         // 3. Sin duplicado hoy
@@ -75,11 +73,18 @@ class CheckinController extends Controller
             ->first();
 
         if ($existeHoy) {
-            return response()->json([
+            $response = [
                 'mensaje' => 'Ya registrado hoy',
                 'nombre' => $miembro->nombre,
                 'hora' => Carbon::parse($existeHoy->hora_entrada)->format('H:i:s'),
-            ], 200);
+            ];
+
+            // Agregar foto del usuario si existe
+            if ($miembro->foto_perfil) {
+                $response['foto_perfil'] = url('storage/' . $miembro->foto_perfil);
+            }
+
+            return response()->json($response, 200);
         }
 
         // 4. Insertar asistencia
@@ -90,10 +95,17 @@ class CheckinController extends Controller
             'hora_entrada' => $now->format('H:i:s'),
         ]);
 
-        return response()->json([
+        $response = [
             'mensaje' => 'Asistencia registrada exitosamente',
             'nombre' => $miembro->nombre,
             'hora' => Carbon::parse($asistencia->hora_entrada)->format('H:i:s'),
-        ], 200);
+        ];
+
+        // Agregar foto del usuario si existe
+        if ($miembro->foto_perfil) {
+            $response['foto_perfil'] = url('storage/' . $miembro->foto_perfil);
+        }
+
+        return response()->json($response, 200);
     }
 }
