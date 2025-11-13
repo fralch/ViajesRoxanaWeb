@@ -4,47 +4,41 @@ namespace App\Http\Controllers\Api\Gimnasio;
 
 use App\Http\Controllers\Controller;
 use App\Models\Gimnasio\GAsistencia;
+use App\Models\Gimnasio\GMiembro;
 use App\Models\Gimnasio\GMembresia;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class CheckinController extends Controller
 {
     /**
-     * POST /endpoint/gimnasio/marcar-asistencia
+     * GET /endpoint/gimnasio/verificar-membresia/{dni}
      */
-    public function store(Request $request): JsonResponse
+    public function verificarMembresia($dni): JsonResponse
     {
-        // 1. Validar cuerpo (sin autenticación): se requiere id_usuario y qr_token
-        $data = $request->validate([
-            'id_usuario' => 'required|integer|exists:g_miembros,id_usuario',
-            'qr_token' => 'required|string',
-        ]);
+        // 1. Buscar el miembro por DNI
+        $miembro = GMiembro::where('dni', $dni)->first();
 
-        $idUsuario = (int) $data['id_usuario'];
-
-        $tokenBD = DB::table('g_configuracion')
-            ->where('clave', 'qr_checkin_token')
-            ->value('valor');
-
-        if (!$tokenBD || $data['qr_token'] !== $tokenBD) {
-            return response()->json(['error' => 'QR inválido'], 403);
+        if (!$miembro) {
+            return response()->json(['error' => 'Miembro no encontrado'], 404);
         }
 
-        // 3. Membresía activa: estado = 'Activa' y fecha_fin >= hoy
+        $idUsuario = $miembro->id_usuario;
+
+        // 2. Membresía activa: estado = 'Activa' y fecha_inicio <= hoy <= fecha_fin
         $hoy = Carbon::today();
         $membresiaActiva = GMembresia::where('id_usuario', $idUsuario)
             ->where('estado', 'Activa')
+            ->whereDate('fecha_inicio', '<=', $hoy)
             ->whereDate('fecha_fin', '>=', $hoy)
             ->first();
 
         if (!$membresiaActiva) {
-            return response()->json(['error' => 'Membresía inactiva'], 403);
+            return response()->json(['error' => 'Membresía inactiva o fuera de rango de fechas'], 403);
         }
 
-        // 4. Sin duplicado hoy
+        // 3. Sin duplicado hoy
         $existeHoy = GAsistencia::where('id_usuario', $idUsuario)
             ->whereDate('fecha_asistencia', $hoy)
             ->first();
@@ -52,11 +46,12 @@ class CheckinController extends Controller
         if ($existeHoy) {
             return response()->json([
                 'mensaje' => 'Ya registrado hoy',
+                'nombre' => $miembro->nombre,
                 'hora' => Carbon::parse($existeHoy->hora_entrada)->format('H:i:s'),
             ], 200);
         }
 
-        // 5. Insertar asistencia
+        // 4. Insertar asistencia
         $now = Carbon::now();
         $asistencia = GAsistencia::create([
             'id_usuario' => $idUsuario,
@@ -65,7 +60,8 @@ class CheckinController extends Controller
         ]);
 
         return response()->json([
-            'mensaje' => 'Asistencia registrada',
+            'mensaje' => 'Asistencia registrada exitosamente',
+            'nombre' => $miembro->nombre,
             'hora' => Carbon::parse($asistencia->hora_entrada)->format('H:i:s'),
         ], 200);
     }

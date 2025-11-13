@@ -50,7 +50,7 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('miembros', GMiembroController::class);
         Route::apiResource('asistencias', GAsistenciaController::class);
         Route::apiResource('membresias', GMembresiaController::class);
-        Route::post('marcar-asistencia', [CheckinController::class, 'store']);
+        Route::get('verificar-membresia/{dni}', [CheckinController::class, 'verificarMembresia']);
     });
 });
 
