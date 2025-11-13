@@ -16,8 +16,13 @@ class GMiembro extends Model
         'fecha_nacimiento',
         'genero',
         'foto_perfil',
+        'historial_fotos',
         'estado',
         'fecha_registro',
+    ];
+
+    protected $casts = [
+        'historial_fotos' => 'array',
     ];
 
     public function asistencias()

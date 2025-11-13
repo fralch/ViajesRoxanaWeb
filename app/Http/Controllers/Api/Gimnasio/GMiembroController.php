@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Gimnasio\GMiembro;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
 
 class GMiembroController extends Controller
 {
@@ -70,5 +72,54 @@ class GMiembroController extends Controller
         $found = GMiembro::findOrFail($miembro);
         $found->delete();
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * POST /endpoint/gimnasio/miembros/{id_usuario}/foto-perfil
+     * Actualizar la foto de perfil y agregar al historial
+     */
+    public function actualizarFotoPerfil(Request $request, $miembro): JsonResponse
+    {
+        $found = GMiembro::findOrFail($miembro);
+
+        $request->validate([
+            'foto' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120', // Max 5MB
+        ]);
+
+        // Subir la nueva foto
+        $foto = $request->file('foto');
+        $nombreArchivo = 'miembro_' . $found->id_usuario . '_' . time() . '.' . $foto->getClientOriginalExtension();
+        $rutaFoto = $foto->storeAs('gimnasio/fotos_perfil', $nombreArchivo, 'public');
+
+        // Obtener el historial actual o crear uno nuevo
+        $historial = $found->historial_fotos ?? [];
+
+        // Si ya tiene una foto de perfil actual, agregarla al historial
+        if ($found->foto_perfil) {
+            $historial[] = [
+                'ruta' => $found->foto_perfil,
+                'fecha_cambio' => Carbon::now()->toDateTimeString(),
+            ];
+        }
+
+        // Actualizar el miembro con la nueva foto y el historial
+        $found->update([
+            'foto_perfil' => $rutaFoto,
+            'historial_fotos' => $historial,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'mensaje' => 'Foto de perfil actualizada exitosamente',
+            'data' => [
+                'foto_perfil' => url('storage/' . $rutaFoto),
+                'historial' => array_map(function($item) {
+                    return [
+                        'url' => url('storage/' . $item['ruta']),
+                        'fecha_cambio' => $item['fecha_cambio'],
+                    ];
+                }, $historial),
+            ],
+        ], 200);
     }
 }

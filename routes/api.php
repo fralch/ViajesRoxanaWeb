@@ -48,6 +48,7 @@ Route::prefix('v1')->group(function () {
     // Gimnasio (sin autenticación)
     Route::prefix('/endpoint/gimnasio')->group(function () {
         Route::apiResource('miembros', GMiembroController::class);
+        Route::post('miembros/{miembro}/foto-perfil', [GMiembroController::class, 'actualizarFotoPerfil']);
         Route::apiResource('asistencias', GAsistenciaController::class);
         Route::apiResource('membresias', GMembresiaController::class);
         Route::get('verificar-membresia/{dni}', [CheckinController::class, 'verificarMembresia']);
