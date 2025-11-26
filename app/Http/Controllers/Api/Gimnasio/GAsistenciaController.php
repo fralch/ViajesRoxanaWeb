@@ -45,14 +45,38 @@ class GAsistenciaController extends Controller
             'hora_entrada' => 'required|date_format:H:i:s',
         ]);
 
+        $miembro = null;
+
         if (isset($data['dni'])) {
             $miembro = GMiembro::where('dni', $data['dni'])->first();
             $data['id_usuario'] = $miembro->id_usuario;
             unset($data['dni']);
+        } else {
+            $miembro = GMiembro::find($data['id_usuario']);
         }
 
         $asistencia = GAsistencia::create($data);
-        return response()->json(['success' => true, 'data' => $asistencia], 201);
+
+        // Construir la URL de la foto
+        $fotoUrl = null;
+        if ($miembro->foto_perfil) {
+            if (filter_var($miembro->foto_perfil, FILTER_VALIDATE_URL)) {
+                $fotoUrl = $miembro->foto_perfil;
+            } else {
+                // Asumimos que está en storage/public
+                $fotoUrl = asset('storage/' . $miembro->foto_perfil);
+            }
+        }
+
+        // Agregar datos del miembro a la respuesta
+        $asistencia->load('miembro'); // Cargar la relación si es necesario, pero ya tenemos los datos
+        $responseData = $asistencia->toArray();
+        $responseData['miembro'] = [
+            'nombre' => $miembro->nombre,
+            'foto_perfil' => $fotoUrl
+        ];
+
+        return response()->json(['success' => true, 'data' => $responseData], 201);
     }
 
     public function show($asistencia): JsonResponse
