@@ -39,10 +39,17 @@ class GAsistenciaController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'id_usuario' => 'required|integer|exists:g_miembros,id_usuario',
+            'id_usuario' => 'required_without:dni|integer|exists:g_miembros,id_usuario',
+            'dni' => 'required_without:id_usuario|exists:g_miembros,dni',
             'fecha_asistencia' => 'required|date',
             'hora_entrada' => 'required|date_format:H:i:s',
         ]);
+
+        if (isset($data['dni'])) {
+            $miembro = GMiembro::where('dni', $data['dni'])->first();
+            $data['id_usuario'] = $miembro->id_usuario;
+            unset($data['dni']);
+        }
 
         $asistencia = GAsistencia::create($data);
         return response()->json(['success' => true, 'data' => $asistencia], 201);
