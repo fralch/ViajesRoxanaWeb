@@ -546,6 +546,14 @@ Crea un registro de asistencia manualmente.
 **Request Body:**
 ```json
 {
+  "dni": "12345678",
+  "fecha_asistencia": "2025-01-15",
+  "hora_entrada": "08:30:00"
+}
+```
+*O alternativamente con `id_usuario`:*
+```json
+{
   "id_usuario": 1,
   "fecha_asistencia": "2025-01-15",
   "hora_entrada": "08:30:00"
@@ -553,7 +561,8 @@ Crea un registro de asistencia manualmente.
 ```
 
 **Validaciones:**
-- `id_usuario`: requerido, integer, debe existir en tabla `g_miembros`
+- `id_usuario`: requerido si no se envía `dni`, integer, debe existir en tabla `g_miembros`
+- `dni`: requerido si no se envía `id_usuario`, string, debe existir en tabla `g_miembros`
 - `fecha_asistencia`: requerido, formato fecha (YYYY-MM-DD)
 - `hora_entrada`: requerido, formato hora (HH:mm:ss)
 
