@@ -88,6 +88,7 @@ class GMembresiaController extends Controller
             'id_usuario' => $miembro->id_usuario,
             'nombre' => $miembro->nombre,
             'dni' => $miembro->dni,
+            'celular' => $miembro->celular,
             'tiene_foto' => $tieneFoto,
         ];
 

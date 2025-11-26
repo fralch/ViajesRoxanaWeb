@@ -19,7 +19,8 @@ class GMiembroController extends Controller
             $s = $request->search;
             $query->where(function ($q) use ($s) {
                 $q->where('nombre', 'like', "%{$s}%")
-                  ->orWhere('dni', 'like', "%{$s}%");
+                  ->orWhere('dni', 'like', "%{$s}%")
+                  ->orWhere('celular', 'like', "%{$s}%");
             });
         }
 
@@ -33,6 +34,7 @@ class GMiembroController extends Controller
         $data = $request->validate([
             'nombre' => 'required|string|max:255',
             'dni' => 'required|string|max:50',
+            'celular' => 'nullable|string|max:20',
             'fecha_nacimiento' => 'required|date',
             'genero' => 'required|string|max:50',
             'foto_perfil' => 'nullable|string|max:1024',
@@ -56,6 +58,7 @@ class GMiembroController extends Controller
         $data = $request->validate([
             'nombre' => 'sometimes|required|string|max:255',
             'dni' => 'sometimes|required|string|max:50',
+            'celular' => 'sometimes|nullable|string|max:20',
             'fecha_nacimiento' => 'sometimes|required|date',
             'genero' => 'sometimes|required|string|max:50',
             'foto_perfil' => 'nullable|string|max:1024',

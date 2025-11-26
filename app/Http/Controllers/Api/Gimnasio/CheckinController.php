@@ -76,6 +76,7 @@ class CheckinController extends Controller
             $response = [
                 'mensaje' => 'Ya registrado hoy',
                 'nombre' => $miembro->nombre,
+                'celular' => $miembro->celular,
                 'hora' => Carbon::parse($existeHoy->hora_entrada)->format('H:i:s'),
             ];
 
@@ -98,6 +99,7 @@ class CheckinController extends Controller
         $response = [
             'mensaje' => 'Asistencia registrada exitosamente',
             'nombre' => $miembro->nombre,
+            'celular' => $miembro->celular,
             'hora' => Carbon::parse($asistencia->hora_entrada)->format('H:i:s'),
         ];
 

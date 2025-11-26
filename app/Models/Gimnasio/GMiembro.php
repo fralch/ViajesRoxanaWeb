@@ -13,6 +13,7 @@ class GMiembro extends Model
     protected $fillable = [
         'nombre',
         'dni',
+        'celular',
         'fecha_nacimiento',
         'genero',
         'foto_perfil',
