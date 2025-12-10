@@ -47,6 +47,7 @@ Route::prefix('v1')->group(function () {
 
     // Gimnasio (sin autenticación)
     Route::prefix('/endpoint/gimnasio')->group(function () {
+        Route::post('miembros/login', [GMiembroController::class, 'login']);
         Route::apiResource('miembros', GMiembroController::class);
         Route::post('miembros/{miembro}/foto-perfil', [GMiembroController::class, 'actualizarFotoPerfil']);
         Route::apiResource('asistencias', GAsistenciaController::class);

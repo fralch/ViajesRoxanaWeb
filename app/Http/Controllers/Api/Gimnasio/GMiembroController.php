@@ -125,4 +125,54 @@ class GMiembroController extends Controller
             ],
         ], 200);
     }
+    /**
+     * POST /endpoint/gimnasio/miembros/login
+     * Identificar miembro por DNI y retornar sus datos completos
+     */
+    public function login(Request $request): JsonResponse
+    {
+        $request->validate([
+            'dni' => 'required|string',
+        ]);
+
+        $miembro = GMiembro::where('dni', $request->dni)
+            ->with([
+                'membresias' => function ($query) {
+                    $query->orderBy('fecha_fin', 'desc');
+                },
+                'asistencias' => function ($query) {
+                    $query->orderBy('fecha_hora', 'desc')->take(20); // Limitamos a las últimas 20 asistencias
+                },
+                'metas'
+            ])
+            ->first();
+
+        if (!$miembro) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Miembro no encontrado',
+            ], 404);
+        }
+
+        // Calculamos información adicional de la membresía activa si existe
+        $membresiaActiva = $miembro->membresias->where('estado', 'Activo')->first();
+        if (!$membresiaActiva) {
+            // Si no hay activa, buscamos la última aunque esté vencida
+            $membresiaActiva = $miembro->membresias->first();
+        }
+
+        $tiempoRestante = null;
+        if ($membresiaActiva && $membresiaActiva->fecha_fin && Carbon::parse($membresiaActiva->fecha_fin)->isFuture()) {
+            $tiempoRestante = Carbon::now()->diffInDays(Carbon::parse($membresiaActiva->fecha_fin), false);
+        }
+
+        // Añadimos datos calculados al objeto respuesta (no persistimos)
+        $miembro->setAttribute('membresia_actual', $membresiaActiva);
+        $miembro->setAttribute('dias_restantes', $tiempoRestante);
+
+        return response()->json([
+            'success' => true,
+            'data' => $miembro,
+        ]);
+    }
 }
