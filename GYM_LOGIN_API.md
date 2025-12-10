@@ -16,18 +16,20 @@ El cuerpo de la solicitud debe enviarse en formato JSON.
 | Campo | Tipo   | Requerido | Descripción |
 |-------|--------|-----------|-------------|
 | `dni` | String | Sí        | Documento Nacional de Identidad del miembro. |
+| `password` | String | Sí     | Contraseña del miembro (Por defecto: 12345678). |
 
 **Ejemplo de Request:**
 
 ```json
 {
-    "dni": "12345678"
+    "dni": "12345678",
+    "password": "mi_password_seguro"
 }
 ```
 
 ### Respuesta Exitosa (200 OK)
 
-Si el miembro es encontrado, se devuelve un objeto JSON con `success: true` y los datos del miembro en `data`.
+Si las credenciales son correctas, se devuelve un objeto JSON con `success: true` y los datos del miembro en `data`.
 
 **Estructura de la respuesta:**
 
@@ -93,27 +95,27 @@ Si el miembro es encontrado, se devuelve un objeto JSON con `success: true` y lo
 
 ### Respuesta de Error
 
-**Miembro no encontrado (404 Not Found)**
+**Credenciales Incorrectas (401 Unauthorized)**
 
-Si el DNI no corresponde a ningún miembro registrado.
+Si el DNI o la contraseña no coinciden.
 
 ```json
 {
     "success": false,
-    "message": "Miembro no encontrado"
+    "message": "Credenciales incorrectas"
 }
 ```
 
 **Validación Fallida (422 Unprocessable Entity)**
 
-Si no se envía el campo `dni`.
+Si no se envía el campo `dni` o `password`.
 
 ```json
 {
-    "message": "The dni field is required.",
+    "message": "The password field is required.",
     "errors": {
-        "dni": [
-            "The dni field is required."
+        "password": [
+            "The password field is required."
         ]
     }
 }
@@ -124,14 +126,11 @@ Si no se envía el campo `dni`.
 ### Controlador: `GMiembroController`
 
 El método `login` realiza las siguientes acciones:
-1.  Busca al miembro por `dni`.
-2.  Carga relaciones usando *Eager Loading* (`with`):
-    *   `membresias`: Ordenadas por fecha de fin descendente.
-    *   `asistencias`: Limitadas a las últimas 20 para optimizar la carga.
-    *   `metas`.
-3.  Calcula la `membresiaActiva` buscando en la colección aquella con estado 'Activo'. Si no existe, toma la más reciente.
-4.  Calcula `dias_restantes` usando `Carbon` si la fecha de fin es futura.
-5.  Inyecta estos atributos calculados en el modelo antes de retornar la respuesta JSON.
+1.  Valida que se reciban `dni` y `password`.
+2.  Busca al miembro por `dni` con sus relaciones.
+3.  Verifica la contraseña usando `Hash::check`.
+4.  Calcula la `membresiaActiva` y `dias_restantes`.
+5.  Retorna los datos o un error 401 si falla la autenticación.
 
 ### Ruta
 

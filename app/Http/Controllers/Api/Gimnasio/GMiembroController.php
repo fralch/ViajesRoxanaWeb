@@ -6,11 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Gimnasio\GMiembro;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
 class GMiembroController extends Controller
 {
+
+
     public function index(Request $request): JsonResponse
     {
         $query = GMiembro::query();
@@ -34,6 +37,7 @@ class GMiembroController extends Controller
         $data = $request->validate([
             'nombre' => 'required|string|max:255',
             'dni' => 'required|string|max:50',
+            'password' => 'nullable|string|min:6',
             'celular' => 'nullable|string|max:20',
             'fecha_nacimiento' => 'required|date',
             'genero' => 'required|string|max:50',
@@ -41,6 +45,10 @@ class GMiembroController extends Controller
             'estado' => 'required|string|max:50',
             'fecha_registro' => 'required|date',
         ]);
+
+        if (isset($data['password'])) {
+            $data['password'] = Hash::make($data['password']);
+        }
 
         $miembro = GMiembro::create($data);
         return response()->json(['success' => true, 'data' => $miembro], 201);
@@ -127,12 +135,13 @@ class GMiembroController extends Controller
     }
     /**
      * POST /endpoint/gimnasio/miembros/login
-     * Identificar miembro por DNI y retornar sus datos completos
+     * Identificar miembro por DNI y Contraseña y retornar sus datos completos
      */
     public function login(Request $request): JsonResponse
     {
         $request->validate([
             'dni' => 'required|string',
+            'password' => 'required|string',
         ]);
 
         $miembro = GMiembro::where('dni', $request->dni)
@@ -147,11 +156,11 @@ class GMiembroController extends Controller
             ])
             ->first();
 
-        if (!$miembro) {
+        if (!$miembro || !Hash::check($request->password, $miembro->password)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Miembro no encontrado',
-            ], 404);
+                'message' => 'Credenciales incorrectas',
+            ], 401);
         }
 
         // Calculamos información adicional de la membresía activa si existe

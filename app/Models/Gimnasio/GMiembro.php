@@ -13,6 +13,7 @@ class GMiembro extends Model
     protected $fillable = [
         'nombre',
         'dni',
+        'password',
         'celular',
         'fecha_nacimiento',
         'genero',
@@ -20,6 +21,10 @@ class GMiembro extends Model
         'historial_fotos',
         'estado',
         'fecha_registro',
+    ];
+
+    protected $hidden = [
+        'password',
     ];
 
     protected $casts = [
