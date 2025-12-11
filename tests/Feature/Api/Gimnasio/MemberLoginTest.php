@@ -192,4 +192,29 @@ class MemberLoginTest extends TestCase
         $response->assertOk();
         $this->assertEquals($newerMembership->id_membresia, $response->json('data.membresia_actual.id_membresia'));
     }
+
+    public function test_login_success_with_specific_user_credentials()
+    {
+        $dni = '45530278';
+        $password = '12345678';
+
+        $member = $this->createMember([
+            'dni' => $dni,
+            'password' => Hash::make($password),
+        ]);
+
+        $response = $this->postJson($this->baseUrl, [
+            'dni' => $dni,
+            'password' => $password,
+        ]);
+
+        $response->assertOk()
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'id_usuario' => $member->id_usuario,
+                    'dni' => $dni,
+                ],
+            ]);
+    }
 }

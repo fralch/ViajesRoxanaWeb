@@ -50,7 +50,12 @@ Si las credenciales son correctas, se devuelve un objeto JSON con `success: true
         "id_usuario": 15,
         "nombre": "Juan Perez",
         "dni": "12345678",
+        "celular": "999999999",
+        "fecha_nacimiento": "1990-01-01",
+        "genero": "M",
         "foto_perfil": "gimnasio/fotos_perfil/miembro_15_1700000000.jpg",
+        "historial_fotos": [],
+        "fecha_registro": "2023-01-01",
         "estado": "Activo",
         "membresia_actual": {
             "id_membresia": 102,
@@ -79,13 +84,15 @@ Si las credenciales son correctas, se devuelve un objeto JSON con `success: true
         "asistencias": [
             {
                 "id_asistencia": 505,
-                "fecha_hora": "2024-01-15 08:30:00",
-                "tipo": "Entrada"
+                "id_usuario": 15,
+                "fecha_asistencia": "2024-01-15",
+                "hora_entrada": "08:30:00"
             },
             {
                 "id_asistencia": 504,
-                "fecha_hora": "2024-01-14 09:00:00",
-                "tipo": "Entrada"
+                "id_usuario": 15,
+                "fecha_asistencia": "2024-01-14",
+                "hora_entrada": "09:00:00"
             }
         ],
         "metas": []
