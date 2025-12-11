@@ -172,7 +172,7 @@ class GMiembroController extends Controller
 
         $tiempoRestante = null;
         if ($membresiaActiva && $membresiaActiva->fecha_fin && Carbon::parse($membresiaActiva->fecha_fin)->isFuture()) {
-            $tiempoRestante = Carbon::now()->diffInDays(Carbon::parse($membresiaActiva->fecha_fin), false);
+            $tiempoRestante = Carbon::today()->diffInDays(Carbon::parse($membresiaActiva->fecha_fin), false);
         }
 
         // Añadimos datos calculados al objeto respuesta (no persistimos)
