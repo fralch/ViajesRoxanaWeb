@@ -150,7 +150,7 @@ class GMiembroController extends Controller
                     $query->orderBy('fecha_fin', 'desc');
                 },
                 'asistencias' => function ($query) {
-                    $query->orderBy('fecha_hora', 'desc')->take(20); // Limitamos a las últimas 20 asistencias
+                    $query->orderBy('fecha_asistencia', 'desc')->orderBy('hora_entrada', 'desc')->take(20); // Limitamos a las últimas 20 asistencias
                 },
                 'metas'
             ])
